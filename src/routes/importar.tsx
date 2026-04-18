@@ -145,7 +145,9 @@ function Importar() {
       )}
 
       {step === "map" && parsed && (
-        <MapStep
+        <>
+          <BlocksOverview parsed={parsed} />
+          <MapStep
           parsed={parsed}
           mapping={mapping}
           setMapping={setMapping}
