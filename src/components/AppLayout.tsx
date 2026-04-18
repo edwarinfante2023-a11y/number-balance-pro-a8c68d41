@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+const NAV: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/historial", label: "Historial", icon: History },
   { to: "/importar", label: "Importar Excel", icon: FileSpreadsheet },
@@ -23,7 +24,7 @@ const NAV = [
   { to: "/analisis-hora", label: "Análisis por hora", icon: Clock },
   { to: "/reportes", label: "Reportes", icon: FileBarChart },
   { to: "/configuracion", label: "Configuración", icon: Settings },
-] as const;
+];
 
 export function AppLayout() {
   const [open, setOpen] = useState(false);
