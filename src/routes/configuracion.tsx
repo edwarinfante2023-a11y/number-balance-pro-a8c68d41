@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { defaultConfig } from "@/lib/lottery";
+import {
+  useClassificationConfig,
+  useUpdateClassificationConfig,
+} from "@/hooks/useSettings";
+import {
+  useLotteries,
+  useCreateLottery,
+  useDeleteLottery,
+} from "@/hooks/useLotteries";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/configuracion")({
   head: () => ({
@@ -15,10 +24,45 @@ export const Route = createFileRoute("/configuracion")({
 });
 
 function Configuracion() {
-  const [rangeMin, setRangeMin] = useState(defaultConfig.rangeMin);
-  const [rangeMax, setRangeMax] = useState(defaultConfig.rangeMax);
-  const [threshold, setThreshold] = useState(defaultConfig.altoThreshold);
-  const [loterias, setLoterias] = useState(["Quiniela Diaria", "Sorteo Horario", "Tarde Express"]);
+  const { data: cfg, isLoading } = useClassificationConfig();
+  const updateCfg = useUpdateClassificationConfig();
+  const { data: lotteries = [] } = useLotteries();
+  const createLottery = useCreateLottery();
+  const deleteLottery = useDeleteLottery();
+
+  const [draft, setDraft] = useState<{ rangeMin: number; rangeMax: number; altoThreshold: number } | null>(null);
+  const current = draft ?? cfg ?? { rangeMin: 0, rangeMax: 99, altoThreshold: 50 };
+  const dirty = draft !== null && cfg !== undefined &&
+    (draft.rangeMin !== cfg.rangeMin || draft.rangeMax !== cfg.rangeMax || draft.altoThreshold !== cfg.altoThreshold);
+
+  function patch(p: Partial<typeof current>) {
+    setDraft({ ...current, ...p });
+  }
+
+  async function save() {
+    if (!draft) return;
+    try {
+      await updateCfg.mutateAsync(draft);
+      toast.success("Configuración guardada");
+      setDraft(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al guardar");
+    }
+  }
+
+  const [newLot, setNewLot] = useState("");
+  async function addLottery(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newLot.trim()) return;
+    try {
+      await createLottery.mutateAsync({ nombre: newLot.trim() });
+      toast.success(`Lotería "${newLot.trim()}" añadida`);
+      setNewLot("");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      toast.error(msg.includes("duplicate") ? "Esa lotería ya existe" : msg);
+    }
+  }
 
   return (
     <div>
@@ -29,68 +73,115 @@ function Configuracion() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-2xl border border-border bg-card p-6">
-          <h3 className="text-base font-semibold mb-4">Reglas de clasificación</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Rango mínimo">
-              <input
-                type="number"
-                value={rangeMin}
-                onChange={(e) => setRangeMin(parseInt(e.target.value))}
-                className="w-full h-10 px-3 rounded-md border border-border bg-background tabular-nums"
-              />
-            </Field>
-            <Field label="Rango máximo">
-              <input
-                type="number"
-                value={rangeMax}
-                onChange={(e) => setRangeMax(parseInt(e.target.value))}
-                className="w-full h-10 px-3 rounded-md border border-border bg-background tabular-nums"
-              />
-            </Field>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold">Reglas de clasificación</h3>
+            {dirty && (
+              <button
+                onClick={save}
+                disabled={updateCfg.isPending}
+                className="inline-flex items-center gap-1.5 h-8 rounded-md bg-foreground text-background px-3 text-xs font-medium disabled:opacity-50"
+              >
+                {updateCfg.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+                Guardar
+              </button>
+            )}
           </div>
-          <div className="mt-4">
-            <Field label={`Umbral ALTO/BAJO — números ≥ ${threshold} son ALTO`}>
-              <input
-                type="range"
-                min={rangeMin}
-                max={rangeMax}
-                value={threshold}
-                onChange={(e) => setThreshold(parseInt(e.target.value))}
-                className="w-full"
-              />
-              <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums mt-1">
-                <span>BAJO: {rangeMin}–{threshold - 1}</span>
-                <span>ALTO: {threshold}–{rangeMax}</span>
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin inline mr-2" /> Cargando...</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Rango mínimo">
+                  <input
+                    type="number"
+                    value={current.rangeMin}
+                    onChange={(e) => patch({ rangeMin: parseInt(e.target.value || "0") })}
+                    className="w-full h-10 px-3 rounded-md border border-border bg-background tabular-nums"
+                  />
+                </Field>
+                <Field label="Rango máximo">
+                  <input
+                    type="number"
+                    value={current.rangeMax}
+                    onChange={(e) => patch({ rangeMax: parseInt(e.target.value || "0") })}
+                    className="w-full h-10 px-3 rounded-md border border-border bg-background tabular-nums"
+                  />
+                </Field>
               </div>
-            </Field>
-          </div>
-          <div className="mt-5 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-            Par/Impar se evalúa siempre por la última cifra del número.
-          </div>
+              <div className="mt-4">
+                <Field label={`Umbral ALTO/BAJO — números ≥ ${current.altoThreshold} son ALTO`}>
+                  <input
+                    type="range"
+                    min={current.rangeMin}
+                    max={current.rangeMax}
+                    value={current.altoThreshold}
+                    onChange={(e) => patch({ altoThreshold: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums mt-1">
+                    <span>BAJO: {current.rangeMin}–{current.altoThreshold - 1}</span>
+                    <span>ALTO: {current.altoThreshold}–{current.rangeMax}</span>
+                  </div>
+                </Field>
+              </div>
+              <div className="mt-5 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                Par/Impar se evalúa siempre por la última cifra del número. Cambiar el umbral
+                <strong className="text-foreground"> no recalcula sorteos pasados</strong> automáticamente todavía.
+              </div>
+            </>
+          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold">Loterías y horarios</h3>
-            <button className="inline-flex items-center gap-1.5 h-8 rounded-md bg-foreground text-background px-2.5 text-xs font-medium">
-              <Plus className="size-3.5" /> Añadir
-            </button>
           </div>
+          <form onSubmit={addLottery} className="flex gap-2 mb-4">
+            <input
+              value={newLot}
+              onChange={(e) => setNewLot(e.target.value)}
+              placeholder="Nombre de la lotería"
+              className="flex-1 h-9 px-3 rounded-md border border-border bg-background text-sm"
+            />
+            <button
+              type="submit"
+              disabled={!newLot.trim() || createLottery.isPending}
+              className="inline-flex items-center gap-1.5 h-9 rounded-md bg-foreground text-background px-3 text-xs font-medium disabled:opacity-50"
+            >
+              {createLottery.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+              Añadir
+            </button>
+          </form>
           <ul className="space-y-2">
-            {loterias.map((l) => (
-              <li key={l} className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
-                <div>
-                  <div className="font-medium text-sm">{l}</div>
-                  <div className="text-[11px] text-muted-foreground">Cada hora · 09:00 – 21:00</div>
-                </div>
-                <button
-                  onClick={() => setLoterias((arr) => arr.filter((x) => x !== l))}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              </li>
-            ))}
+            {lotteries.length === 0 && (
+              <li className="text-sm text-muted-foreground">Sin loterías activas.</li>
+            )}
+            {lotteries.map((l) => {
+              const horarios = (l.horarios as string[] | null) ?? [];
+              return (
+                <li key={l.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
+                  <div>
+                    <div className="font-medium text-sm">{l.nombre}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {horarios.length > 0
+                        ? `${horarios.length} horarios · ${horarios[0]} – ${horarios[horarios.length - 1]}`
+                        : "Sin horarios definidos"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`¿Desactivar "${l.nombre}"?`)) return;
+                      await deleteLottery.mutateAsync(l.id);
+                      toast.success("Lotería desactivada");
+                    }}
+                    className="text-muted-foreground hover:text-destructive"
+                    aria-label="Eliminar"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
