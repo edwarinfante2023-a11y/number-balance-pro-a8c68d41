@@ -145,19 +145,19 @@ function Importar() {
       )}
 
       {step === "map" && parsed && (
-        <>
+        <div>
           <BlocksOverview parsed={parsed} />
           <MapStep
-          parsed={parsed}
-          mapping={mapping}
-          setMapping={setMapping}
-          loteriaFallback={loteriaFallback}
-          setLoteriaFallback={setLoteriaFallback}
-          lotteries={lotteries.map((l) => l.nombre)}
-          onNext={() => setStep("preview")}
-          onBack={reset}
+            parsed={parsed}
+            mapping={mapping}
+            setMapping={setMapping}
+            loteriaFallback={loteriaFallback}
+            setLoteriaFallback={setLoteriaFallback}
+            lotteries={lotteries.map((l) => l.nombre)}
+            onNext={() => setStep("preview")}
+            onBack={reset}
           />
-        </>
+        </div>
       )}
 
       {step === "preview" && parsed && built && (
