@@ -127,24 +127,31 @@ export function useExecuteImport() {
         })
         .filter((x): x is { row: BuiltRow; sorteo_id: string } => x !== null);
 
+      // Pre-cargar duplicados existentes UNA sola vez por (sorteo_id, fecha) usando IN
+      const sorteoIdsAll = Array.from(new Set(enriched.map((e) => e.sorteo_id)));
+      const fechasAll = Array.from(new Set(enriched.map((e) => e.row.fecha)));
+      const existingSet = new Set<string>();
+      if (sorteoIdsAll.length > 0 && fechasAll.length > 0) {
+        // Paginar por bloques de 500 sorteos x 500 fechas para no romper la URL
+        const ID_CHUNK = 500;
+        for (let i = 0; i < sorteoIdsAll.length; i += ID_CHUNK) {
+          const idsSlice = sorteoIdsAll.slice(i, i + ID_CHUNK);
+          const { data: existing, error: existErr } = await supabase
+            .from("draws")
+            .select("sorteo_id, fecha")
+            .in("sorteo_id", idsSlice)
+            .in("fecha", fechasAll);
+          if (existErr) throw existErr;
+          for (const e of existing ?? []) {
+            existingSet.add(`${e.sorteo_id}|${e.fecha}`);
+          }
+        }
+      }
+
       // Insertamos en lotes de 200
       const CHUNK = 200;
       for (let i = 0; i < enriched.length; i += CHUNK) {
         const slice = enriched.slice(i, i + CHUNK);
-
-        // Detectar duplicados por (sorteo_id, fecha)
-        const orFilter = slice
-          .map((s) => `and(sorteo_id.eq.${s.sorteo_id},fecha.eq.${s.row.fecha})`)
-          .join(",");
-
-        const { data: existing } = await supabase
-          .from("draws")
-          .select("sorteo_id, fecha")
-          .or(orFilter);
-
-        const existingSet = new Set(
-          (existing ?? []).map((e) => `${e.sorteo_id}|${e.fecha}`),
-        );
 
         const toInsert = slice.filter((s) => {
           const key = `${s.sorteo_id}|${s.row.fecha}`;
@@ -152,6 +159,8 @@ export function useExecuteImport() {
             duplicados++;
             return false;
           }
+          // marcar para dedupe dentro del mismo archivo
+          existingSet.add(key);
           return true;
         });
 
