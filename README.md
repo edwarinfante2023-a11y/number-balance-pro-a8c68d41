@@ -155,3 +155,6 @@ Instala/elimina con `bun add <pkg>` / `bun remove <pkg>`. Si trabajas desde Lova
 - **Proyecto Lovable:** https://lovable.dev/projects/eaae42aa-34c4-457c-a07c-36f8131c182e
 - **Docs Lovable:** https://docs.lovable.dev
 - **Docs TanStack Start:** https://tanstack.com/start
+
+<!-- sync-check: GitHub ↔ Lovable verificado -->
+
