@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
@@ -13,7 +13,10 @@ export const Route = createFileRoute("/captura")({
   head: () => ({
     meta: [
       { title: "Captura manual — Cuadrante" },
-      { name: "description", content: "Registra resultados manualmente con clasificación automática." },
+      {
+        name: "description",
+        content: "Registra resultados manualmente con clasificación automática.",
+      },
     ],
   }),
   component: Captura,
@@ -21,7 +24,9 @@ export const Route = createFileRoute("/captura")({
 
 function todayStr() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
 }
 
 function Captura() {
@@ -31,12 +36,31 @@ function Captura() {
 
   const [numero, setNumero] = useState<string>("");
   const [fecha, setFecha] = useState<string>(todayStr());
-  const [hora, setHora] = useState<string>(new Date().toTimeString().slice(0, 5));
-  const [loteria, setLoteria] = useState("");
+  const [loteriaId, setLoteriaId] = useState<string>("");
+  const [sorteoId, setSorteoId] = useState<string>("");
   const [observacion, setObservacion] = useState("");
 
-  // Pick first lottery once loaded
-  if (!loteria && lotteries[0]) setLoteria(lotteries[0].nombre);
+  // Auto-seleccionar la primera lotería disponible
+  useEffect(() => {
+    if (!loteriaId && lotteries[0]) setLoteriaId(lotteries[0].id);
+  }, [loteriaId, lotteries]);
+
+  const loteriaSel = useMemo(
+    () => lotteries.find((l) => l.id === loteriaId),
+    [lotteries, loteriaId],
+  );
+
+  // Auto-seleccionar el primer sorteo de la lotería actual
+  useEffect(() => {
+    if (loteriaSel && (!sorteoId || !loteriaSel.draws.find((d) => d.id === sorteoId))) {
+      setSorteoId(loteriaSel.draws[0]?.id ?? "");
+    }
+  }, [loteriaSel, sorteoId]);
+
+  const sorteoSel = useMemo(
+    () => loteriaSel?.draws.find((d) => d.id === sorteoId),
+    [loteriaSel, sorteoId],
+  );
 
   const config = cfg ?? { rangeMin: 0, rangeMax: 99, altoThreshold: 50 };
   const n = parseInt(numero);
@@ -45,22 +69,23 @@ function Captura() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!valid || !loteria) return;
+    if (!valid || !sorteoId) return;
     try {
       await createDraw.mutateAsync({
+        sorteo_id: sorteoId,
         fecha,
-        hora,
-        loteria,
         numero: n,
         observacion: observacion.trim() || undefined,
       });
-      toast.success(`Sorteo registrado: ${n.toString().padStart(2, "0")} (${c?.subcuadrante})`);
+      toast.success(
+        `Sorteo registrado: ${n.toString().padStart(2, "0")} (${c?.subcuadrante})`,
+      );
       setNumero("");
       setObservacion("");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error al guardar";
       if (msg.includes("duplicate") || msg.includes("unique")) {
-        toast.error("Ya existe un sorteo para esa fecha, hora y lotería.");
+        toast.error("Ya existe un sorteo para esa fecha y horario.");
       } else {
         toast.error(msg);
       }
@@ -75,7 +100,10 @@ function Captura() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-2xl border border-border bg-card p-6 space-y-4"
+        >
           <Field label="Número">
             <input
               type="number"
@@ -87,38 +115,47 @@ function Captura() {
               className="w-full h-11 px-3 rounded-md border border-border bg-background text-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </Field>
+          <Field label="Fecha">
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full h-11 px-3 rounded-md border border-border bg-background tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Fecha">
-              <input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                className="w-full h-11 px-3 rounded-md border border-border bg-background tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+            <Field label="Lotería">
+              <select
+                value={loteriaId}
+                onChange={(e) => setLoteriaId(e.target.value)}
+                className="w-full h-11 px-3 rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {lotteries.length === 0 && <option value="">Cargando...</option>}
+                {lotteries.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.nombre}
+                  </option>
+                ))}
+              </select>
             </Field>
-            <Field label="Hora">
-              <input
-                type="time"
-                value={hora}
-                onChange={(e) => setHora(e.target.value)}
-                className="w-full h-11 px-3 rounded-md border border-border bg-background tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+            <Field label="Sorteo (horario)">
+              <select
+                value={sorteoId}
+                onChange={(e) => setSorteoId(e.target.value)}
+                disabled={!loteriaSel || loteriaSel.draws.length === 0}
+                className="w-full h-11 px-3 rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                {(!loteriaSel || loteriaSel.draws.length === 0) && (
+                  <option value="">Sin sorteos</option>
+                )}
+                {loteriaSel?.draws.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.hora} — {d.nombre}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
-          <Field label="Lotería">
-            <select
-              value={loteria}
-              onChange={(e) => setLoteria(e.target.value)}
-              className="w-full h-11 px-3 rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              {lotteries.length === 0 && <option value="">Cargando...</option>}
-              {lotteries.map((l) => (
-                <option key={l.id} value={l.nombre}>
-                  {l.nombre}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field label="Observación (opcional)">
             <textarea
               value={observacion}
@@ -130,7 +167,7 @@ function Captura() {
           </Field>
           <button
             type="submit"
-            disabled={!valid || !loteria || createDraw.isPending}
+            disabled={!valid || !sorteoId || createDraw.isPending}
             className="w-full h-11 rounded-md bg-foreground text-background font-medium hover:opacity-90 disabled:opacity-40 inline-flex items-center justify-center gap-2"
           >
             {createDraw.isPending && <Loader2 className="size-4 animate-spin" />}
@@ -149,7 +186,7 @@ function Captura() {
                   {n.toString().padStart(2, "0")}
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
-                  {fecha} · {hora} · {loteria || "—"}
+                  {fecha} · {sorteoSel ? `${sorteoSel.hora} · ${loteriaSel?.nombre}` : "—"}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 justify-center">
@@ -165,8 +202,8 @@ function Captura() {
             </div>
           ) : (
             <div className="mt-4 text-sm text-muted-foreground">
-              Ingresa un número válido entre {config.rangeMin} y {config.rangeMax} para
-              ver la clasificación.
+              Ingresa un número válido entre {config.rangeMin} y {config.rangeMax} para ver
+              la clasificación.
             </div>
           )}
         </div>
