@@ -9,7 +9,10 @@ import {
   AlertTriangle,
   TrendingUp,
   Clock as ClockIcon,
+  Loader2,
+  Database,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { BalanceBar } from "@/components/BalanceBar";
@@ -19,13 +22,15 @@ import {
   SubcuadranteBadge,
 } from "@/components/ClassificationBadge";
 import {
-  generateDemoHistory,
   computeBalance,
   computeRachas,
   computeFrecuencias,
   computeEscenarioProbable,
   subcuadranteLabel,
+  type Sorteo,
 } from "@/lib/lottery";
+import { useDraws } from "@/hooks/useDraws";
+import { drawToSorteo } from "@/lib/drawAdapter";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -42,25 +47,74 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const sorteos = useMemo(() => generateDemoHistory(30), []);
-  const today = sorteos[0]?.fecha;
-  const todaySorteos = useMemo(
-    () => sorteos.filter((s) => s.fecha === today),
-    [sorteos, today],
+  const { data: draws = [], isLoading } = useDraws({ limit: 1000 });
+  const sorteos = useMemo(() => draws.map(drawToSorteo), [draws]);
+
+  if (isLoading) {
+    return (
+      <div className="grid place-items-center py-24 text-muted-foreground">
+        <Loader2 className="size-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (sorteos.length === 0) {
+    return <EmptyState />;
+  }
+
+  return <DashboardContent sorteos={sorteos} />;
+}
+
+function EmptyState() {
+  return (
+    <div>
+      <PageHeader
+        title="Panel de análisis"
+        description="Bienvenido a Cuadrante. Para empezar a ver análisis necesitas registrar al menos algunos sorteos."
+      />
+      <div className="rounded-2xl border border-border bg-card p-10 text-center">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted">
+          <Database className="size-5 text-muted-foreground" />
+        </div>
+        <h3 className="mt-4 text-base font-semibold">Aún no hay datos</h3>
+        <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+          Registra resultados manualmente o importa tu histórico de Excel para que el sistema
+          empiece a calcular balance, rachas, patrones y escenarios probables.
+        </p>
+        <div className="mt-6 flex gap-2 justify-center">
+          <Link
+            to="/captura"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90"
+          >
+            Captura manual
+          </Link>
+          <Link
+            to="/importar"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-md border border-border bg-card text-sm font-medium hover:bg-accent"
+          >
+            Importar Excel
+          </Link>
+        </div>
+      </div>
+    </div>
   );
+}
+
+function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
+  const ordered = useMemo(
+    () => [...sorteos].sort((a, b) => `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`)),
+    [sorteos],
+  );
+  const ultimo = ordered[0];
+  const today = ultimo?.fecha;
+  const todaySorteos = useMemo(() => sorteos.filter((s) => s.fecha === today), [sorteos, today]);
   const balance = useMemo(() => computeBalance(sorteos.slice(-20)), [sorteos]);
   const rachas = useMemo(() => computeRachas(sorteos), [sorteos]);
   const escenario = useMemo(() => computeEscenarioProbable(sorteos), [sorteos]);
-  const ultimo = useMemo(() => {
-    const ordered = [...sorteos].sort((a, b) =>
-      `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`),
-    );
-    return ordered[0];
-  }, [sorteos]);
 
   const frecuencias = useMemo(() => computeFrecuencias(sorteos), [sorteos]);
   const calientes = useMemo(
-    () => [...frecuencias].sort((a, b) => b.count - a.count).slice(0, 6),
+    () => [...frecuencias].filter((f) => f.count > 0).sort((a, b) => b.count - a.count).slice(0, 6),
     [frecuencias],
   );
   const frios = useMemo(
@@ -69,10 +123,7 @@ function Dashboard() {
   );
 
   const ruedaDia = useMemo(
-    () =>
-      [...todaySorteos]
-        .filter((s) => s.loteria === "Quiniela Diaria")
-        .sort((a, b) => a.hora.localeCompare(b.hora)),
+    () => [...todaySorteos].sort((a, b) => a.hora.localeCompare(b.hora)),
     [todaySorteos],
   );
 
@@ -80,22 +131,7 @@ function Dashboard() {
     <div className="space-y-8">
       <PageHeader
         title="Panel de análisis"
-        description="Comportamiento del ecosistema en tiempo real. Balance, rachas, patrones activos y escenarios probables basados en histórico."
-        actions={
-          <>
-            <select className="h-9 rounded-md border border-border bg-card px-3 text-sm">
-              <option>Quiniela Diaria</option>
-              <option>Sorteo Horario</option>
-              <option>Tarde Express</option>
-              <option>Todas las loterías</option>
-            </select>
-            <select className="h-9 rounded-md border border-border bg-card px-3 text-sm">
-              <option>Hoy</option>
-              <option>Últimos 7 días</option>
-              <option>Últimos 30 días</option>
-            </select>
-          </>
-        }
+        description="Comportamiento del ecosistema. Balance, rachas, patrones activos y escenarios probables basados en histórico real."
       />
 
       {/* Resumen */}
@@ -103,11 +139,7 @@ function Dashboard() {
         <StatCard
           label="Último número"
           value={ultimo?.numero.toString().padStart(2, "0") ?? "—"}
-          hint={
-            ultimo
-              ? `${ultimo.hora} · ${ultimo.loteria}`
-              : "sin datos"
-          }
+          hint={ultimo ? `${ultimo.hora} · ${ultimo.loteria}` : "sin datos"}
           accent={ultimo?.altoBajo === "ALTO" ? "alto" : "bajo"}
           icon={<Activity className="size-4" />}
         />
@@ -148,7 +180,7 @@ function Dashboard() {
         <StatCard
           label="Sorteos analizados"
           value={sorteos.length.toLocaleString("es")}
-          hint={`30 días · ${todaySorteos.length} hoy`}
+          hint={`${todaySorteos.length} hoy · ${today ?? ""}`}
           icon={<ClockIcon className="size-4" />}
         />
       </div>
@@ -187,7 +219,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Escenario probable */}
         <div className="rounded-2xl border border-border bg-foreground text-background p-6 shadow-[var(--shadow-elevated)]">
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide opacity-70">
             <Sparkles className="size-3.5" />
@@ -220,7 +251,7 @@ function Dashboard() {
             <div>
               <h2 className="text-base font-semibold tracking-tight">Línea del día</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Rueda vertical · Quiniela Diaria · {today}
+                Rueda vertical · {today}
               </p>
             </div>
           </div>
@@ -229,7 +260,7 @@ function Dashboard() {
           ) : (
             <div className="overflow-x-auto -mx-2">
               <div className="min-w-full px-2">
-                <div className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-x-4 gap-y-2 text-sm">
+                <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-x-4 gap-y-2 text-sm">
                   {ruedaDia.map((s) => (
                     <RowDia key={s.id} s={s} />
                   ))}
@@ -240,7 +271,6 @@ function Dashboard() {
         </div>
 
         <div className="space-y-4">
-          {/* Rachas */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
             <h2 className="text-base font-semibold tracking-tight mb-3">Rachas activas</h2>
             {rachas.length === 0 ? (
@@ -263,19 +293,20 @@ function Dashboard() {
             )}
           </div>
 
-          {/* Alertas */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="size-4 text-warning" />
               <h2 className="text-base font-semibold tracking-tight">Alertas inteligentes</h2>
             </div>
             <ul className="space-y-2 text-sm">
-              <li className="flex gap-2">
-                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-warning" />
-                <span>
-                  Posible ruptura: {rachas[0]?.valor ?? "—"} repetido {rachas[0]?.longitud ?? 0}×
-                </span>
-              </li>
+              {rachas[0] && (
+                <li className="flex gap-2">
+                  <span className="mt-1 size-1.5 shrink-0 rounded-full bg-warning" />
+                  <span>
+                    Posible ruptura: {rachas[0].valor} repetido {rachas[0].longitud}×
+                  </span>
+                </li>
+              )}
               <li className="flex gap-2">
                 <span className="mt-1 size-1.5 shrink-0 rounded-full bg-info" />
                 <span>
@@ -284,16 +315,18 @@ function Dashboard() {
                 </span>
               </li>
               <li className="flex gap-2">
-                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-success" />
-                <span>Patrón histórico “3 altos → bajo” cumplido 7/10 últimas veces</span>
+                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-info" />
+                <span>
+                  Balance Par/Impar {balance.pctPares.toFixed(0)}/{balance.pctImpares.toFixed(0)}
+                </span>
               </li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Calientes / Fríos / Patrones */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Calientes / Fríos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <NumeroPanel title="Números calientes" icon={<Flame className="size-4" />} items={calientes} />
         <NumeroPanel
           title="Números fríos"
@@ -301,40 +334,16 @@ function Dashboard() {
           items={frios}
           variant="cold"
         />
-
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-          <h2 className="text-base font-semibold tracking-tight mb-3">Patrones activos</h2>
-          <ul className="space-y-3">
-            {[
-              { name: "3 ALTOS → BAJO", pct: 72 },
-              { name: "PAR + PAR → IMPAR", pct: 65 },
-              { name: "Repetición de cuadrante 2× → ruptura", pct: 58 },
-              { name: "Exceso impares → compensación par", pct: 70 },
-            ].map((p) => (
-              <li key={p.name}>
-                <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="font-medium">{p.name}</span>
-                  <span className="tabular-nums text-muted-foreground">{p.pct}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-foreground"
-                    style={{ width: `${p.pct}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </div>
   );
 }
 
-function RowDia({ s }: { s: ReturnType<typeof generateDemoHistory>[number] }) {
+function RowDia({ s }: { s: Sorteo }) {
   return (
     <>
       <div className="text-xs text-muted-foreground tabular-nums">{s.hora}</div>
+      <div className="text-xs text-muted-foreground truncate max-w-[120px]">{s.loteria}</div>
       <div className="font-mono text-base font-semibold tabular-nums">
         {s.numero.toString().padStart(2, "0")}
       </div>
@@ -362,21 +371,25 @@ function NumeroPanel({
         <span className={variant === "hot" ? "text-alto" : "text-bajo"}>{icon}</span>
         <h2 className="text-base font-semibold tracking-tight">{title}</h2>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {items.map((n) => (
-          <div
-            key={n.numero}
-            className="rounded-lg border border-border bg-background p-3 text-center"
-          >
-            <div className="font-mono text-xl font-semibold tabular-nums">
-              {n.numero.toString().padStart(2, "0")}
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Sin datos suficientes.</p>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {items.map((n) => (
+            <div
+              key={n.numero}
+              className="rounded-lg border border-border bg-background p-3 text-center"
+            >
+              <div className="font-mono text-xl font-semibold tabular-nums">
+                {n.numero.toString().padStart(2, "0")}
+              </div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                {n.count}×
+              </div>
             </div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
-              {n.count}× en 30d
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

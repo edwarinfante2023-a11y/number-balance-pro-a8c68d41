@@ -14,16 +14,311 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          activa: boolean
+          contexto: Json | null
+          created_at: string
+          descripcion: string
+          id: string
+          nivel: Database["public"]["Enums"]["alert_nivel"]
+          tipo: string
+        }
+        Insert: {
+          activa?: boolean
+          contexto?: Json | null
+          created_at?: string
+          descripcion: string
+          id?: string
+          nivel?: Database["public"]["Enums"]["alert_nivel"]
+          tipo: string
+        }
+        Update: {
+          activa?: boolean
+          contexto?: Json | null
+          created_at?: string
+          descripcion?: string
+          id?: string
+          nivel?: Database["public"]["Enums"]["alert_nivel"]
+          tipo?: string
+        }
+        Relationships: []
+      }
+      draws: {
+        Row: {
+          alto_bajo: string
+          created_at: string
+          cuadrante: string
+          extra: Json | null
+          fecha: string
+          hora: string
+          id: string
+          loteria: string
+          movimiento: string | null
+          numero: number
+          observacion: string | null
+          origen: Database["public"]["Enums"]["draw_origen"]
+          par_impar: string
+          patron_detectado: string | null
+          subcuadrante: string | null
+          updated_at: string
+        }
+        Insert: {
+          alto_bajo: string
+          created_at?: string
+          cuadrante: string
+          extra?: Json | null
+          fecha: string
+          hora: string
+          id?: string
+          loteria: string
+          movimiento?: string | null
+          numero: number
+          observacion?: string | null
+          origen?: Database["public"]["Enums"]["draw_origen"]
+          par_impar: string
+          patron_detectado?: string | null
+          subcuadrante?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alto_bajo?: string
+          created_at?: string
+          cuadrante?: string
+          extra?: Json | null
+          fecha?: string
+          hora?: string
+          id?: string
+          loteria?: string
+          movimiento?: string | null
+          numero?: number
+          observacion?: string | null
+          origen?: Database["public"]["Enums"]["draw_origen"]
+          par_impar?: string
+          patron_detectado?: string | null
+          subcuadrante?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      imports: {
+        Row: {
+          archivo: string
+          created_at: string
+          detalle_errores: Json | null
+          errores: number
+          estado: string
+          id: string
+          registros_duplicados: number
+          registros_importados: number
+        }
+        Insert: {
+          archivo: string
+          created_at?: string
+          detalle_errores?: Json | null
+          errores?: number
+          estado?: string
+          id?: string
+          registros_duplicados?: number
+          registros_importados?: number
+        }
+        Update: {
+          archivo?: string
+          created_at?: string
+          detalle_errores?: Json | null
+          errores?: number
+          estado?: string
+          id?: string
+          registros_duplicados?: number
+          registros_importados?: number
+        }
+        Relationships: []
+      }
+      lotteries: {
+        Row: {
+          activa: boolean
+          created_at: string
+          descripcion: string | null
+          horarios: Json | null
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          descripcion?: string | null
+          horarios?: Json | null
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          descripcion?: string | null
+          horarios?: Json | null
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patterns: {
+        Row: {
+          aciertos: number
+          condiciones: Json
+          created_at: string
+          descripcion: string
+          efectividad: number
+          id: string
+          ocurrencias: number
+          ultima_deteccion: string | null
+          updated_at: string
+        }
+        Insert: {
+          aciertos?: number
+          condiciones?: Json
+          created_at?: string
+          descripcion: string
+          efectividad?: number
+          id?: string
+          ocurrencias?: number
+          ultima_deteccion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aciertos?: number
+          condiciones?: Json
+          created_at?: string
+          descripcion?: string
+          efectividad?: number
+          id?: string
+          ocurrencias?: number
+          ultima_deteccion?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rules: {
+        Row: {
+          aciertos: number
+          activo: boolean
+          condiciones: Json
+          created_at: string
+          descripcion: string | null
+          efectividad: number
+          id: string
+          nombre: string
+          ocurrencias: number
+          resultado_esperado: string | null
+          tipo: Database["public"]["Enums"]["rule_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          aciertos?: number
+          activo?: boolean
+          condiciones?: Json
+          created_at?: string
+          descripcion?: string | null
+          efectividad?: number
+          id?: string
+          nombre: string
+          ocurrencias?: number
+          resultado_esperado?: string | null
+          tipo?: Database["public"]["Enums"]["rule_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          aciertos?: number
+          activo?: boolean
+          condiciones?: Json
+          created_at?: string
+          descripcion?: string | null
+          efectividad?: number
+          id?: string
+          nombre?: string
+          ocurrencias?: number
+          resultado_esperado?: string | null
+          tipo?: Database["public"]["Enums"]["rule_tipo"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          clave: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          updated_at: string
+          valor: Json
+        }
+        Insert: {
+          clave: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          updated_at?: string
+          valor: Json
+        }
+        Update: {
+          clave?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          updated_at?: string
+          valor?: Json
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      classify_number: {
+        Args: { _numero: number }
+        Returns: {
+          alto_bajo: string
+          cuadrante: string
+          par_impar: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      alert_nivel: "info" | "warning" | "critical"
+      app_role: "admin" | "user"
+      draw_origen: "manual" | "scraper" | "excel"
+      rule_tipo: "racha" | "compensacion" | "patron" | "bloqueo" | "otro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +445,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      alert_nivel: ["info", "warning", "critical"],
+      app_role: ["admin", "user"],
+      draw_origen: ["manual", "scraper", "excel"],
+      rule_tipo: ["racha", "compensacion", "patron", "bloqueo", "otro"],
+    },
   },
 } as const
