@@ -685,3 +685,42 @@ function RecentImports({
     </div>
   );
 }
+
+// ---------- Bloques detectados ----------
+
+function BlocksOverview({ parsed }: { parsed: ParsedFile }) {
+  if (!parsed.blocks || parsed.blocks.length <= 1) return null;
+  return (
+    <div className="mb-4 rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-semibold">
+            Bloques detectados ({parsed.blocks.length})
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            El archivo contiene varios bloques diarios. Se importarán todos en conjunto.
+          </p>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {parsed.totalRows.toLocaleString("es")} filas totales
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+        {parsed.blocks.map((b, i) => (
+          <div key={i} className="rounded-lg border border-border p-2.5 text-xs">
+            <div className="font-medium truncate">{b.label}</div>
+            <div className="text-muted-foreground mt-0.5 flex items-center justify-between">
+              <span>{b.rows.length} filas</span>
+              {b.contextoFecha && (
+                <span className="tabular-nums text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                  {b.contextoFecha}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
