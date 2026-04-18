@@ -156,7 +156,8 @@ function Importar() {
           lotteries={lotteries.map((l) => l.nombre)}
           onNext={() => setStep("preview")}
           onBack={reset}
-        />
+          />
+        </>
       )}
 
       {step === "preview" && parsed && built && (
