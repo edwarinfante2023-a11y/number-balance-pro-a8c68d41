@@ -15,6 +15,7 @@ import { Route as ImportarRouteImport } from './routes/importar'
 import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as CapturaRouteImport } from './routes/captura'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -48,6 +49,11 @@ const CapturaRoute = CapturaRouteImport.update({
   path: '/captura',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalisisHoraRoute = AnalisisHoraRouteImport.update({
   id: '/analisis-hora',
   path: '/analisis-hora',
@@ -62,6 +68,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analisis-hora': typeof AnalisisHoraRoute
+  '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analisis-hora': typeof AnalisisHoraRoute
+  '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analisis-hora': typeof AnalisisHoraRoute
+  '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/analisis-hora'
+    | '/auth'
     | '/captura'
     | '/configuracion'
     | '/historial'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/analisis-hora'
+    | '/auth'
     | '/captura'
     | '/configuracion'
     | '/historial'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/analisis-hora'
+    | '/auth'
     | '/captura'
     | '/configuracion'
     | '/historial'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalisisHoraRoute: typeof AnalisisHoraRoute
+  AuthRoute: typeof AuthRoute
   CapturaRoute: typeof CapturaRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   HistorialRoute: typeof HistorialRoute
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CapturaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analisis-hora': {
       id: '/analisis-hora'
       path: '/analisis-hora'
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalisisHoraRoute: AnalisisHoraRoute,
+  AuthRoute: AuthRoute,
   CapturaRoute: CapturaRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   HistorialRoute: HistorialRoute,
@@ -208,3 +229,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
