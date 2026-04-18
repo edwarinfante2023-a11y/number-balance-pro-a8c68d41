@@ -159,6 +159,8 @@ export function useExecuteImport() {
             duplicados++;
             return false;
           }
+          // marcar para dedupe dentro del mismo archivo
+          existingSet.add(key);
           return true;
         });
 
