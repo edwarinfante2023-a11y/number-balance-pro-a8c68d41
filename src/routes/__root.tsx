@@ -1,4 +1,5 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { AppLayout } from "@/components/AppLayout";
 
 import appCss from "../styles.css?url";
 
@@ -29,14 +30,20 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Cuadrante — Análisis inteligente de sorteos" },
+      {
+        name: "description",
+        content:
+          "Plataforma de análisis estructurado de sorteos por hora. Patrones, rachas, equilibrio y escenarios probables.",
+      },
+      { name: "author", content: "Cuadrante" },
+      { property: "og:title", content: "Cuadrante — Análisis inteligente de sorteos" },
+      {
+        property: "og:description",
+        content: "Patrones, rachas, equilibrio y escenarios probables basados en histórico.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -65,5 +72,5 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return <AppLayout />;
 }

@@ -9,8 +9,50 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ReportesRouteImport } from './routes/reportes'
+import { Route as ReglasRouteImport } from './routes/reglas'
+import { Route as ImportarRouteImport } from './routes/importar'
+import { Route as HistorialRouteImport } from './routes/historial'
+import { Route as ConfiguracionRouteImport } from './routes/configuracion'
+import { Route as CapturaRouteImport } from './routes/captura'
+import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ReportesRoute = ReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReglasRoute = ReglasRouteImport.update({
+  id: '/reglas',
+  path: '/reglas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportarRoute = ImportarRouteImport.update({
+  id: '/importar',
+  path: '/importar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistorialRoute = HistorialRouteImport.update({
+  id: '/historial',
+  path: '/historial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracionRoute = ConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CapturaRoute = CapturaRouteImport.update({
+  id: '/captura',
+  path: '/captura',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalisisHoraRoute = AnalisisHoraRouteImport.update({
+  id: '/analisis-hora',
+  path: '/analisis-hora',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +61,130 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analisis-hora': typeof AnalisisHoraRoute
+  '/captura': typeof CapturaRoute
+  '/configuracion': typeof ConfiguracionRoute
+  '/historial': typeof HistorialRoute
+  '/importar': typeof ImportarRoute
+  '/reglas': typeof ReglasRoute
+  '/reportes': typeof ReportesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analisis-hora': typeof AnalisisHoraRoute
+  '/captura': typeof CapturaRoute
+  '/configuracion': typeof ConfiguracionRoute
+  '/historial': typeof HistorialRoute
+  '/importar': typeof ImportarRoute
+  '/reglas': typeof ReglasRoute
+  '/reportes': typeof ReportesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analisis-hora': typeof AnalisisHoraRoute
+  '/captura': typeof CapturaRoute
+  '/configuracion': typeof ConfiguracionRoute
+  '/historial': typeof HistorialRoute
+  '/importar': typeof ImportarRoute
+  '/reglas': typeof ReglasRoute
+  '/reportes': typeof ReportesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/analisis-hora'
+    | '/captura'
+    | '/configuracion'
+    | '/historial'
+    | '/importar'
+    | '/reglas'
+    | '/reportes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/analisis-hora'
+    | '/captura'
+    | '/configuracion'
+    | '/historial'
+    | '/importar'
+    | '/reglas'
+    | '/reportes'
+  id:
+    | '__root__'
+    | '/'
+    | '/analisis-hora'
+    | '/captura'
+    | '/configuracion'
+    | '/historial'
+    | '/importar'
+    | '/reglas'
+    | '/reportes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalisisHoraRoute: typeof AnalisisHoraRoute
+  CapturaRoute: typeof CapturaRoute
+  ConfiguracionRoute: typeof ConfiguracionRoute
+  HistorialRoute: typeof HistorialRoute
+  ImportarRoute: typeof ImportarRoute
+  ReglasRoute: typeof ReglasRoute
+  ReportesRoute: typeof ReportesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reportes': {
+      id: '/reportes'
+      path: '/reportes'
+      fullPath: '/reportes'
+      preLoaderRoute: typeof ReportesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reglas': {
+      id: '/reglas'
+      path: '/reglas'
+      fullPath: '/reglas'
+      preLoaderRoute: typeof ReglasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/importar': {
+      id: '/importar'
+      path: '/importar'
+      fullPath: '/importar'
+      preLoaderRoute: typeof ImportarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historial': {
+      id: '/historial'
+      path: '/historial'
+      fullPath: '/historial'
+      preLoaderRoute: typeof HistorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracion': {
+      id: '/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof ConfiguracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/captura': {
+      id: '/captura'
+      path: '/captura'
+      fullPath: '/captura'
+      preLoaderRoute: typeof CapturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analisis-hora': {
+      id: '/analisis-hora'
+      path: '/analisis-hora'
+      fullPath: '/analisis-hora'
+      preLoaderRoute: typeof AnalisisHoraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,16 +197,14 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalisisHoraRoute: AnalisisHoraRoute,
+  CapturaRoute: CapturaRoute,
+  ConfiguracionRoute: ConfiguracionRoute,
+  HistorialRoute: HistorialRoute,
+  ImportarRoute: ImportarRoute,
+  ReglasRoute: ReglasRoute,
+  ReportesRoute: ReportesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
