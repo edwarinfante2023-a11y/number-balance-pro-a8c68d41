@@ -528,10 +528,19 @@ function PreviewStep({
                   <td className="py-2 px-4 text-muted-foreground text-xs">
                     {r.observacion ?? "—"}
                   </td>
-                  <td className="py-2 px-4 text-xs text-muted-foreground">
-                    {Object.keys(r.extra).length === 0
-                      ? "—"
-                      : Object.keys(r.extra).join(", ")}
+                  <td className="py-2 px-4 text-xs">
+                    {(() => {
+                      const ma = (r.extra as { manual_analysis?: Record<string, unknown> })
+                        .manual_analysis;
+                      if (!ma || Object.keys(ma).length === 0) {
+                        return <span className="text-muted-foreground">—</span>;
+                      }
+                      return (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-foreground">
+                          {Object.keys(ma).length} campos
+                        </span>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}
