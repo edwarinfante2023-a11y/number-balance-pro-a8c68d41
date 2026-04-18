@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { generateDemoHistory, computeBalance, subcuadranteLabel } from "@/lib/lottery";
+import { computeBalance, subcuadranteLabel } from "@/lib/lottery";
 import type { Subcuadrante } from "@/lib/lottery";
 import { BalanceBar } from "@/components/BalanceBar";
+import { useDraws } from "@/hooks/useDraws";
+import { drawToSorteo } from "@/lib/drawAdapter";
 
 const HORAS = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"];
 
@@ -18,9 +21,20 @@ export const Route = createFileRoute("/analisis-hora")({
 });
 
 function AnalisisHora() {
-  const all = useMemo(() => generateDemoHistory(30), []);
-  const [hora, setHora] = useState("13:00");
-  const subset = useMemo(() => all.filter((s) => s.hora === hora), [all, hora]);
+  const { data: draws = [], isLoading } = useDraws({ limit: 5000 });
+  const all = useMemo(() => draws.map(drawToSorteo), [draws]);
+
+  // Detectar horas presentes en BD; fallback al set fijo
+  const horasDisponibles = useMemo(() => {
+    const set = new Set(all.map((s) => s.hora));
+    const found = Array.from(set).sort();
+    return found.length > 0 ? found : HORAS;
+  }, [all]);
+
+  const [hora, setHora] = useState<string>(() => "13:00");
+  const horaActiva = horasDisponibles.includes(hora) ? hora : (horasDisponibles[0] ?? "13:00");
+
+  const subset = useMemo(() => all.filter((s) => s.hora === horaActiva), [all, horaActiva]);
   const balance = useMemo(() => computeBalance(subset), [subset]);
 
   const distribucion = useMemo(() => {
@@ -34,6 +48,14 @@ function AnalisisHora() {
     return map;
   }, [subset]);
 
+  if (isLoading) {
+    return (
+      <div className="grid place-items-center py-24 text-muted-foreground">
+        <Loader2 className="size-6 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
@@ -44,11 +66,11 @@ function AnalisisHora() {
       <div className="rounded-2xl border border-border bg-card p-4 mb-6">
         <div className="text-xs text-muted-foreground mb-2">Selecciona una hora</div>
         <div className="flex flex-wrap gap-1.5">
-          {HORAS.map((h) => (
+          {horasDisponibles.map((h) => (
             <button
               key={h}
               onClick={() => setHora(h)}
-              className={`px-3 h-9 rounded-md text-sm tabular-nums border ${h === hora ? "bg-foreground text-background border-foreground" : "bg-card border-border text-foreground hover:bg-accent"}`}
+              className={`px-3 h-9 rounded-md text-sm tabular-nums border ${h === horaActiva ? "bg-foreground text-background border-foreground" : "bg-card border-border text-foreground hover:bg-accent"}`}
             >
               {h}
             </button>
@@ -59,15 +81,21 @@ function AnalisisHora() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-2xl border border-border bg-card p-6">
           <h3 className="text-base font-semibold mb-4">
-            Balance histórico — {hora}
+            Balance histórico — {horaActiva}
           </h3>
-          <div className="space-y-5">
-            <BalanceBar leftLabel="ALTO" rightLabel="BAJO" leftValue={balance.altos} rightValue={balance.bajos} leftClass="bg-alto" rightClass="bg-bajo" />
-            <BalanceBar leftLabel="PAR" rightLabel="IMPAR" leftValue={balance.pares} rightValue={balance.impares} leftClass="bg-par" rightClass="bg-impar" />
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Basado en {subset.length} sorteos en esta hora durante 30 días.
-          </p>
+          {subset.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin sorteos en esta hora todavía.</p>
+          ) : (
+            <>
+              <div className="space-y-5">
+                <BalanceBar leftLabel="ALTO" rightLabel="BAJO" leftValue={balance.altos} rightValue={balance.bajos} leftClass="bg-alto" rightClass="bg-bajo" />
+                <BalanceBar leftLabel="PAR" rightLabel="IMPAR" leftValue={balance.pares} rightValue={balance.impares} leftClass="bg-par" rightClass="bg-impar" />
+              </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Basado en {subset.length} sorteos en esta hora.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6">
@@ -95,21 +123,21 @@ function AnalisisHora() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-border bg-card p-6">
-        <h3 className="text-base font-semibold mb-4">Patrones más comunes en esta hora</h3>
-        <ul className="space-y-3 text-sm">
-          {[
-            { p: `En ${hora} domina ${balance.pctAltos > balance.pctBajos ? "ALTO" : "BAJO"}`, pct: Math.max(balance.pctAltos, balance.pctBajos) },
-            { p: `Tendencia ${balance.pctPares > balance.pctImpares ? "PAR" : "IMPAR"}`, pct: Math.max(balance.pctPares, balance.pctImpares) },
-            { p: "Subcuadrante más frecuente", pct: 0 },
-          ].map((x, i) => (
-            <li key={i} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
-              <span>{x.p}</span>
-              {x.pct > 0 && <span className="font-semibold tabular-nums">{x.pct.toFixed(0)}%</span>}
+      {subset.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-border bg-card p-6">
+          <h3 className="text-base font-semibold mb-4">Patrones más comunes en esta hora</h3>
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+              <span>En {horaActiva} domina {balance.pctAltos > balance.pctBajos ? "ALTO" : "BAJO"}</span>
+              <span className="font-semibold tabular-nums">{Math.max(balance.pctAltos, balance.pctBajos).toFixed(0)}%</span>
             </li>
-          ))}
-        </ul>
-      </div>
+            <li className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
+              <span>Tendencia {balance.pctPares > balance.pctImpares ? "PAR" : "IMPAR"}</span>
+              <span className="font-semibold tabular-nums">{Math.max(balance.pctPares, balance.pctImpares).toFixed(0)}%</span>
+            </li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
