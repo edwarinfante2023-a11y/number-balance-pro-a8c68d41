@@ -51,15 +51,14 @@ export type Database = {
           cuadrante: string
           extra: Json | null
           fecha: string
-          hora: string
           id: string
-          loteria: string
           movimiento: string | null
           numero: number
           observacion: string | null
           origen: Database["public"]["Enums"]["draw_origen"]
           par_impar: string
           patron_detectado: string | null
+          sorteo_id: string
           subcuadrante: string | null
           updated_at: string
         }
@@ -69,15 +68,14 @@ export type Database = {
           cuadrante: string
           extra?: Json | null
           fecha: string
-          hora: string
           id?: string
-          loteria: string
           movimiento?: string | null
           numero: number
           observacion?: string | null
           origen?: Database["public"]["Enums"]["draw_origen"]
           par_impar: string
           patron_detectado?: string | null
+          sorteo_id: string
           subcuadrante?: string | null
           updated_at?: string
         }
@@ -87,19 +85,26 @@ export type Database = {
           cuadrante?: string
           extra?: Json | null
           fecha?: string
-          hora?: string
           id?: string
-          loteria?: string
           movimiento?: string | null
           numero?: number
           observacion?: string | null
           origen?: Database["public"]["Enums"]["draw_origen"]
           par_impar?: string
           patron_detectado?: string | null
+          sorteo_id?: string
           subcuadrante?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "draws_sorteo_id_fkey"
+            columns: ["sorteo_id"]
+            isOneToOne: false
+            referencedRelation: "lottery_draws"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       imports: {
         Row: {
@@ -163,6 +168,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      lottery_draws: {
+        Row: {
+          activa: boolean
+          created_at: string
+          hora: string
+          id: string
+          loteria_id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          hora: string
+          id?: string
+          loteria_id: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          hora?: string
+          id?: string
+          loteria_id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lottery_draws_loteria_id_fkey"
+            columns: ["loteria_id"]
+            isOneToOne: false
+            referencedRelation: "lotteries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patterns: {
         Row: {
