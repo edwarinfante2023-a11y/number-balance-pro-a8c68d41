@@ -5,6 +5,33 @@ export type ParImpar = "PAR" | "IMPAR";
 export type Subcuadrante = "ALTO_PAR" | "ALTO_IMPAR" | "BAJO_PAR" | "BAJO_IMPAR";
 export type Origen = "scraper" | "manual" | "excel";
 
+/** Columnas de análisis manual extraídas del Excel del cliente y guardadas en draws.extra.manual_analysis */
+export interface ManualAnalysis {
+  escenario_probable?: string | number | null;
+  rango?: string | number | null;
+  paridad?: string | number | null;
+  cuadrante?: string | number | null;
+  racha_cuadr?: string | number | null;
+  racha_rango?: string | number | null;
+  racha_paridad?: string | number | null;
+  bajo_acum?: string | number | null;
+  alto_acum?: string | number | null;
+  par_acum?: string | number | null;
+  impar_acum?: string | number | null;
+  deuda_rango?: string | number | null;
+  deuda_paridad?: string | number | null;
+  tend_rango_hora?: string | number | null;
+  tend_paridad_hora?: string | number | null;
+  [key: string]: unknown;
+}
+
+/** Campo JSONB extra del draw — contenedor tipado para manual_analysis e internos */
+export interface DrawExtra {
+  manual_analysis?: ManualAnalysis;
+  _meta?: { bloque?: string; [key: string]: unknown };
+  [key: string]: unknown;
+}
+
 export interface ClassificationConfig {
   /** Rango inferior inclusivo (ej. 0) */
   rangeMin: number;
@@ -33,6 +60,8 @@ export interface Sorteo {
   movimiento?: string;
   origen: Origen;
   patronDetectado?: string;
+  /** Datos extra — incluye manual_analysis importado del Excel */
+  extra?: DrawExtra | null;
 }
 
 export function classify(numero: number, cfg: ClassificationConfig = defaultConfig) {

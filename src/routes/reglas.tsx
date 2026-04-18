@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, Power, Pencil } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+import { Plus, Power, Pencil, DatabaseZap } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Regla {
   id: string;
@@ -24,8 +24,8 @@ const REGLAS: Regla[] = [
 export const Route = createFileRoute("/reglas")({
   head: () => ({
     meta: [
-      { title: "Reglas y patrones — Cuadrante" },
-      { name: "description", content: "Define, mide y activa tus propias reglas de análisis." },
+      { title: "Reglas Lógicas — Cuadrante" },
+      { name: "description", content: "Define, mide y activa tus propias reglas de análisis predictivo." },
     ],
   }),
   component: Reglas,
@@ -37,77 +37,118 @@ function Reglas() {
     setItems((arr) => arr.map((r) => (r.id === id ? { ...r, activa: !r.activa } : r)));
 
   return (
-    <div>
-      <PageHeader
-        title="Reglas y patrones"
-        description="Tus leyes personales de análisis. Cada regla mide su propia efectividad sobre el histórico."
-        actions={
-          <button className="inline-flex items-center gap-2 h-9 rounded-md bg-foreground text-background px-3 text-sm font-medium hover:opacity-90">
-            <Plus className="size-4" /> Nueva regla
-          </button>
-        }
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((r) => (
-          <div
-            key={r.id}
-            className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {r.tipo}
-                </span>
-                <h3 className="mt-2 font-semibold">{r.nombre}</h3>
-              </div>
-              <button
-                onClick={() => toggle(r.id)}
-                className={`inline-flex size-9 items-center justify-center rounded-md border ${r.activa ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground"}`}
-                title={r.activa ? "Desactivar" : "Activar"}
-              >
-                <Power className="size-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-2 text-sm">
-              <Row k="Condición" v={r.condicion} />
-              <Row k="Consecuencia" v={r.consecuencia} />
-            </div>
-
-            <div className="mt-4">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Efectividad histórica</span>
-                <span className="font-semibold tabular-nums">{r.efectividad}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-foreground"
-                  style={{ width: `${r.efectividad}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <span className={`text-xs font-medium ${r.activa ? "text-success" : "text-muted-foreground"}`}>
-                {r.activa ? "● Activa" : "○ Pausada"}
-              </span>
-              <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                <Pencil className="size-3" /> Editar
-              </button>
-            </div>
-          </div>
-        ))}
+    <div className="space-y-6 pt-2">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+         <div>
+           <h1 className="text-[32px] font-bold tracking-tight text-foreground">Reglas Lógicas</h1>
+           <p className="text-[15px] text-muted-foreground mt-1 max-w-xl">Leyes del sistema. Cada módulo evalúa su efectividad predictiva analizando la entropía del histórico.</p>
+         </div>
+         <button className="shrink-0 flex items-center gap-2 h-12 rounded-[16px] bg-foreground px-6 text-[13px] font-bold uppercase tracking-widest text-background shadow-md hover:-translate-y-0.5 hover:bg-muted-foreground transition-all duration-300">
+            <Plus className="size-4" /> 
+            <span>Definir módulo</span>
+         </button>
       </div>
+
+      {items.length === 0 ? (
+        <div className="py-32 text-center bg-white rounded-[32px] border border-border shadow-sm">
+          <DatabaseZap className="size-12 mx-auto text-muted-foreground/30 mb-5" />
+          <p className="text-[14px] font-bold text-muted-foreground uppercase tracking-widest">SIN REGLAS ACTIVAS EN EL MOTOR DE INFERENCIA</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {items.map((r) => (
+            <div
+              key={r.id}
+              className={cn(
+                "relative flex flex-col rounded-[24px] p-8 transition-all duration-300 overflow-hidden group border",
+                r.activa 
+                  ? "bg-white shadow-sm border-border hover:shadow-md hover:border-primary/30" 
+                  : "bg-muted/40 shadow-none border-border/50 hover:bg-muted/60"
+              )}
+            >
+              
+              <div className="relative z-10 flex items-start justify-between gap-4 mb-8">
+                <div>
+                  <span className={cn(
+                    "inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest mb-3 border", 
+                    r.activa ? "bg-muted text-foreground border-border" : "bg-transparent text-muted-foreground border-border/50"
+                  )}>
+                    {r.tipo}
+                  </span>
+                  <h3 className={cn("text-[16px] font-bold tracking-tight leading-tight", r.activa ? "text-foreground" : "text-muted-foreground")}>
+                    {r.nombre}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => toggle(r.id)}
+                  className={cn(
+                    "relative shrink-0 inline-flex size-12 items-center justify-center rounded-[14px] border transition-all duration-300",
+                    r.activa 
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm hover:bg-emerald-100 hover:scale-105" 
+                      : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm"
+                  )}
+                  title={r.activa ? "Desactivar" : "Activar"}
+                >
+                  <Power className={cn("size-5", r.activa && "text-emerald-500")} />
+                </button>
+              </div>
+
+              <div className="relative z-10 space-y-4 mb-10 flex-1">
+                <Row k="Trigger" v={r.condicion} active={r.activa} />
+                <Row k="Resolución" v={r.consecuencia} active={r.activa} />
+              </div>
+
+              {/* Progress System */}
+              <div className="relative z-10 mt-auto border-t border-border pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Eficacia Histórica</span>
+                  <span className={cn("font-mono text-[14px] font-extrabold tabular-nums", r.activa ? "text-primary" : "text-muted-foreground")}>
+                    {r.efectividad}%
+                  </span>
+                </div>
+                <div className={cn(
+                   "h-2 rounded-full overflow-hidden border",
+                   r.activa ? "bg-muted border-border shadow-inner" : "bg-muted border-border/50"
+                )}>
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-1000",
+                      r.activa ? "bg-primary" : "bg-muted-foreground/30"
+                    )}
+                    style={{ width: `${r.efectividad}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="relative z-10 mt-6 pt-4 flex items-center justify-between border-t border-border/50">
+                <div className="flex items-center gap-2.5">
+                  <span className={cn("size-2 rounded-full", r.activa ? "bg-emerald-500 animate-pulse-subtle" : "bg-muted-foreground/30")} />
+                  <span className={cn("text-[11px] font-bold uppercase tracking-widest", r.activa ? "text-emerald-700" : "text-muted-foreground")}>
+                    {r.activa ? "Online" : "Bypass"}
+                  </span>
+                </div>
+                <button className={cn(
+                   "flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-bold uppercase tracking-widest transition-colors",
+                   r.activa ? "text-muted-foreground hover:bg-muted hover:text-foreground" : "text-muted-foreground/60 hover:bg-white hover:text-foreground border border-border shadow-sm"
+                )}>
+                  <Pencil className="size-3.5" /> Edit
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function Row({ k, v, active }: { k: string; v: string; active: boolean }) {
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className="text-xs text-muted-foreground">{k}</span>
-      <span className="font-medium text-right">{v}</span>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">{k}</span>
+      <span className={cn("text-[14px] font-bold leading-snug", active ? "text-foreground" : "text-muted-foreground")}>
+        {v}
+      </span>
     </div>
   );
 }

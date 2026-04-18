@@ -11,9 +11,9 @@ import {
   Clock as ClockIcon,
   Loader2,
   Database,
+  Zap,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { BalanceBar } from "@/components/BalanceBar";
 import {
@@ -31,16 +31,12 @@ import {
 } from "@/lib/lottery";
 import { useDraws } from "@/hooks/useDraws";
 import { drawToSorteo } from "@/lib/drawAdapter";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Dashboard — Cuadrante" },
-      {
-        name: "description",
-        content:
-          "Panel principal de análisis de sorteos: balance, rachas, escenario probable y patrones activos.",
-      },
     ],
   }),
   component: Dashboard,
@@ -52,8 +48,13 @@ function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="grid place-items-center py-24 text-muted-foreground">
-        <Loader2 className="size-6 animate-spin" />
+      <div className="grid place-items-center py-32">
+        <div className="flex flex-col items-center gap-4">
+          <div className="size-16 rounded-[24px] surface-elevated grid place-items-center shadow-md">
+            <Loader2 className="size-6 animate-spin text-primary" />
+          </div>
+          <span className="text-[13px] font-bold text-muted-foreground mr-1">Booting...</span>
+        </div>
       </div>
     );
   }
@@ -67,32 +68,32 @@ function Dashboard() {
 
 function EmptyState() {
   return (
-    <div>
-      <PageHeader
-        title="Panel de análisis"
-        description="Bienvenido a Cuadrante. Para empezar a ver análisis necesitas registrar al menos algunos sorteos."
-      />
-      <div className="rounded-2xl border border-border bg-card p-10 text-center">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted">
-          <Database className="size-5 text-muted-foreground" />
+    <div className="pt-2">
+      <div className="mb-8">
+         <h1 className="text-[32px] font-bold tracking-tight text-foreground">Dashboard</h1>
+         <p className="text-[15px] text-muted-foreground">Analizador predictivo de matrices numéricas.</p>
+      </div>
+
+      <div className="bg-white rounded-[32px] p-16 text-center max-w-2xl mx-auto mt-12 relative overflow-hidden shadow-sm border border-border">
+        <div className="mx-auto flex size-20 items-center justify-center rounded-[24px] bg-primary/10 mb-6">
+          <Database className="size-8 text-primary" />
         </div>
-        <h3 className="mt-4 text-base font-semibold">Aún no hay datos</h3>
-        <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-          Registra resultados manualmente o importa tu histórico de Excel para que el sistema
-          empiece a calcular balance, rachas, patrones y escenarios probables.
+        <h3 className="text-2xl font-bold tracking-tight text-foreground mb-3">Workspace Vacío</h3>
+        <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mx-auto mb-10">
+          Inyecta datos históricos o inicia capturas manuales para que el motor algorítmico evalúe el balance.
         </p>
-        <div className="mt-6 flex gap-2 justify-center">
-          <Link
-            to="/captura"
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90"
-          >
-            Captura manual
-          </Link>
+        <div className="flex justify-center gap-4">
           <Link
             to="/importar"
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-md border border-border bg-card text-sm font-medium hover:bg-accent"
+            className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-primary text-primary-foreground text-[15px] font-bold tracking-wide shadow-[0_8px_20px_oklch(0.42_0.09_155/0.25)] hover:shadow-[0_12px_24px_oklch(0.42_0.09_155/0.35)] transition-all transform hover:-translate-y-1"
           >
             Importar Excel
+          </Link>
+          <Link
+            to="/captura"
+            className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-white border border-border text-foreground text-[15px] font-bold hover:bg-muted/30 transition-all hover:-translate-y-0.5"
+          >
+            Captura manual
           </Link>
         </div>
       </div>
@@ -128,268 +129,278 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
   );
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Panel de análisis"
-        description="Comportamiento del ecosistema. Balance, rachas, patrones activos y escenarios probables basados en histórico real."
-      />
-
-      {/* Resumen */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <StatCard
-          label="Último número"
-          value={ultimo?.numero.toString().padStart(2, "0") ?? "—"}
-          hint={ultimo ? `${ultimo.hora} · ${ultimo.loteria}` : "sin datos"}
-          accent={ultimo?.altoBajo === "ALTO" ? "alto" : "bajo"}
-          icon={<Activity className="size-4" />}
-        />
-        <StatCard
-          label="Clasificación actual"
-          value={
-            ultimo ? (
-              <div className="flex flex-wrap gap-1.5">
-                <AltoBajoBadge value={ultimo.altoBajo} soft={false} />
-                <ParImparBadge value={ultimo.parImpar} soft={false} />
-              </div>
-            ) : (
-              "—"
-            )
-          }
-          hint={ultimo ? subcuadranteLabel[ultimo.subcuadrante] : ""}
-          icon={<Sparkles className="size-4" />}
-        />
-        <StatCard
-          label="Racha activa más larga"
-          value={
-            rachas.length > 0
-              ? `${rachas[0].longitud}× ${rachas[0].valor}`
-              : "—"
-          }
-          hint={rachas.length > 0 ? `${rachas[0].tipo} consecutivos` : "sin racha relevante"}
-          accent={
-            rachas[0]?.valor === "ALTO"
-              ? "alto"
-              : rachas[0]?.valor === "BAJO"
-                ? "bajo"
-                : rachas[0]?.valor === "PAR"
-                  ? "par"
-                  : "impar"
-          }
-          icon={<TrendingUp className="size-4" />}
-        />
-        <StatCard
-          label="Sorteos analizados"
-          value={sorteos.length.toLocaleString("es")}
-          hint={`${todaySorteos.length} hoy · ${today ?? ""}`}
-          icon={<ClockIcon className="size-4" />}
-        />
+    <div className="space-y-6 pt-2">
+      
+      {/* Header Match Donezo */}
+      <div className="mb-8">
+         <h1 className="text-[32px] font-bold tracking-tight text-foreground">Dashboard</h1>
+         <p className="text-[15px] text-muted-foreground mt-1">Plan, prioritize, and analyze network patterns with precision.</p>
       </div>
 
-      {/* Balance + Escenario */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-base font-semibold tracking-tight">Estado del sistema</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Balance acumulado de los últimos 20 sorteos
-              </p>
-            </div>
-            <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
-              n = {balance.total}
-            </span>
-          </div>
-          <div className="space-y-5">
-            <BalanceBar
-              leftLabel="ALTO"
-              rightLabel="BAJO"
-              leftValue={balance.altos}
-              rightValue={balance.bajos}
-              leftClass="bg-alto"
-              rightClass="bg-bajo"
-            />
-            <BalanceBar
-              leftLabel="PAR"
-              rightLabel="IMPAR"
-              leftValue={balance.pares}
-              rightValue={balance.impares}
-              leftClass="bg-par"
-              rightClass="bg-impar"
-            />
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-foreground text-background p-6 shadow-[var(--shadow-elevated)]">
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide opacity-70">
-            <Sparkles className="size-3.5" />
-            Escenario probable
-          </div>
-          <div className="mt-3 flex items-baseline gap-3">
-            <div className="text-3xl font-semibold tracking-tight">{escenario.escenario}</div>
-            <div className="text-lg font-medium opacity-80 tabular-nums">
-              {escenario.porcentaje}%
-            </div>
-          </div>
-          <p className="mt-1 text-xs opacity-60">
-            Apoyo basado en histórico, equilibrio actual y rachas. No es una predicción garantizada.
-          </p>
-          <ul className="mt-4 space-y-2">
-            {escenario.razones.map((r, i) => (
-              <li key={i} className="flex gap-2 text-xs leading-relaxed opacity-90">
-                <ArrowUpRight className="size-3.5 shrink-0 mt-0.5 opacity-60" />
-                <span>{r}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* Rueda del día + Rachas/Alertas */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-base font-semibold tracking-tight">Línea del día</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Rueda vertical · {today}
-              </p>
-            </div>
-          </div>
-          {ruedaDia.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Sin sorteos hoy todavía.</div>
-          ) : (
-            <div className="overflow-x-auto -mx-2">
-              <div className="min-w-full px-2">
-                <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-x-4 gap-y-2 text-sm">
-                  {ruedaDia.map((s) => (
-                    <RowDia key={s.id} s={s} />
-                  ))}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* HERO GREEN CARD - Escenario Probable (Replaces Top Left Dark Card) */}
+        <div className="col-span-1 lg:col-span-5 relative group transform transition-all duration-300 hover:-translate-y-1 stagger-1 animate-fade-up">
+          <div className="surface-hero-green h-full rounded-[32px] p-8 overflow-hidden flex flex-col justify-between shadow-[0_12px_30px_oklch(0.42_0.09_155/0.25)] border-none">
+            {/* Decoration Circles */}
+            <div className="absolute -top-20 -right-20 size-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 size-40 bg-white/5 rounded-full blur-xl pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col">
+                  <span className="text-[15px] font-medium text-white/90">
+                    Escenario Probable
+                  </span>
+                  <span className="text-[12px] font-semibold text-white/60 uppercase tracking-widest mt-1">PREDICTION ENGINE</span>
+                </div>
+                <div className="size-10 rounded-full bg-white/20 backdrop-blur-md grid place-items-center shadow-inner border border-white/20 group-hover:bg-white/30 transition-colors cursor-pointer">
+                  <ArrowUpRight className="size-5 text-white" />
                 </div>
               </div>
+
+              {/* Main value */}
+              <div className="flex flex-col gap-1 mb-6 mt-auto">
+                <div className="flex flex-col gap-y-3">
+                  <span className="text-[56px] font-extrabold tracking-tighter text-white leading-none drop-shadow-sm">
+                    {escenario.escenario}
+                  </span>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="bg-white px-3 py-1.5 rounded-[8px] shadow-sm flex items-center gap-1.5 w-max">
+                      <div className="size-2 rounded-full bg-primary" />
+                      <span className="text-[13px] font-bold text-primary tabular-nums">
+                        Confianza {escenario.porcentaje}%
+                      </span>
+                    </div>
+                    <span className="text-[12px] text-white/80 font-medium ml-2">Alto bias.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reasons */}
+              <div className="mt-4 pt-4 border-t border-white/20 space-y-2">
+                {escenario.razones.slice(0, 2).map((r, i) => (
+                  <div key={i} className="flex gap-2 text-[12px] font-medium text-white/90 items-center">
+                    <div className="size-1 rounded-full bg-white/60" />
+                    <span className="truncate">{r}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* TOP STATS CLUSTER (Remaining 7 columns) */}
+        <div className="col-span-1 lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-6">
+           <div className="stagger-2 animate-fade-up">
+             <StatCard
+               label="Última lectura"
+               value={ultimo?.numero.toString().padStart(2, "0") ?? "—"}
+               hint={ultimo ? `Varianza actual` : "Sin datos"}
+               accent={ultimo?.altoBajo === "ALTO" ? "alto" : "bajo"}
+               icon={<Activity className="size-5 text-foreground" />}
+             />
+           </div>
+           <div className="stagger-3 animate-fade-up">
+             <StatCard
+               label="Vector dominante"
+               value={
+                 rachas.length > 0
+                   ? rachas[0].valor
+                   : "—"
+               }
+               hint={rachas.length > 0 ? `Se repitió ${rachas[0].longitud} veces` : "Vector neutro"}
+               accent={
+                 rachas[0]?.valor === "ALTO"
+                   ? "alto"
+                   : rachas[0]?.valor === "BAJO"
+                     ? "bajo"
+                     : rachas[0]?.valor === "PAR"
+                       ? "par"
+                       : "impar"
+               }
+               icon={<TrendingUp className="size-5 text-foreground" />}
+             />
+           </div>
+           <div className="stagger-4 animate-fade-up">
+             <StatCard
+               label="Volumen total"
+               value={sorteos.length.toLocaleString("es")}
+               hint={`${todaySorteos.length} deltas hoy`}
+               icon={<ClockIcon className="size-5 text-foreground" />}
+             />
+           </div>
+
+           {/* Second row of stats inside the cluster */}
+           <div className="col-span-1 sm:col-span-3 surface-elevated rounded-[24px] p-6 lg:p-8 flex flex-col justify-between stagger-5 animate-fade-up">
+              <div className="flex items-center justify-between mb-6">
+                 <div>
+                    <h2 className="text-[16px] font-bold text-foreground">Balance Analítico</h2>
+                    <p className="text-[13px] text-muted-foreground mt-1">Oscilación de cuadrantes (Últimos {balance.total} impactos)</p>
+                 </div>
+              </div>
+              <div className="space-y-6">
+                <BalanceBar
+                  leftLabel="ALTO"
+                  rightLabel="BAJO"
+                  leftValue={balance.altos}
+                  rightValue={balance.bajos}
+                  leftClass="bg-alto"
+                  rightClass="bg-bajo"
+                />
+                <BalanceBar
+                  leftLabel="PAR"
+                  rightLabel="IMPAR"
+                  leftValue={balance.pares}
+                  rightValue={balance.impares}
+                  leftClass="bg-par"
+                  rightClass="bg-impar"
+                />
+              </div>
+           </div>
+        </div>
+
+      </div>
+
+      {/* ─── Línea del día + Sidebar: Rachas + Alertas ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        
+        {/* Stream */}
+        <div className="col-span-1 lg:col-span-2 surface-elevated rounded-[32px] p-8 overflow-hidden stagger-5 animate-fade-up">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-[18px] font-bold text-foreground">Timeline en vivo</h2>
+              <p className="text-[13px] text-muted-foreground mt-1 font-medium">{today}</p>
+            </div>
+            {ruedaDia.length > 0 && (
+              <div className="flex items-center gap-2 bg-muted/50 border border-border px-4 py-1.5 rounded-full">
+                <span className="size-2 rounded-full bg-primary" />
+                <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">{ruedaDia.length} Eventos</span>
+              </div>
+            )}
+          </div>
+          {ruedaDia.length === 0 ? (
+            <div className="text-[14px] text-muted-foreground py-10 text-center bg-muted/20 rounded-[20px] border border-dashed border-border flex flex-col items-center">
+              <ClockIcon className="size-6 text-muted-foreground/30 mb-3" />
+              Esperando señales...
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {ruedaDia.map((s) => (
+                <RowDia key={s.id} s={s} />
+              ))}
             </div>
           )}
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-            <h2 className="text-base font-semibold tracking-tight mb-3">Rachas activas</h2>
+        {/* Anomalies */}
+        <div className="col-span-1 space-y-6">
+          <div className="surface-elevated rounded-[32px] p-8 stagger-6 animate-fade-up h-full relative overflow-hidden">
+            <h2 className="text-[16px] font-bold text-foreground mb-6">Anomalías Activas</h2>
             {rachas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sin rachas relevantes.</p>
+              <div className="text-[13px] text-muted-foreground text-center py-6 bg-primary/5 rounded-[16px] font-medium text-primary">
+                Entropía estable
+              </div>
             ) : (
-              <ul className="space-y-2.5">
-                {rachas.map((r, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center justify-between gap-3 rounded-lg bg-muted px-3 py-2"
-                  >
-                    <div>
-                      <div className="text-sm font-medium">{r.valor}</div>
-                      <div className="text-[11px] text-muted-foreground">{r.tipo}</div>
+              <div className="space-y-3">
+                {rachas.map((r, i) => {
+                  const isPrimary = i === 0;
+                  const color =
+                    r.valor === "ALTO"
+                      ? "bg-alto"
+                      : r.valor === "BAJO"
+                        ? "bg-bajo"
+                        : r.valor === "PAR"
+                          ? "bg-par"
+                          : "bg-impar";
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 border transition-all cursor-default",
+                        isPrimary ? "bg-white border-border shadow-sm" : "bg-muted/30 border-transparent"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`size-3 rounded-full ${color} shadow-sm`} />
+                        <div>
+                          <div className="text-[14px] font-bold text-foreground">{r.valor}</div>
+                          <div className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">{r.tipo}</div>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "text-[12px] font-bold tabular-nums px-2.5 py-1 rounded-lg",
+                        isPrimary ? "bg-primary/10 text-primary" : "bg-foreground/5 text-foreground"
+                      )}>
+                        ×{r.longitud}
+                      </div>
                     </div>
-                    <div className="text-sm font-semibold tabular-nums">×{r.longitud}</div>
-                  </li>
-                ))}
-              </ul>
+                  );
+                })}
+              </div>
             )}
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="size-4 text-warning" />
-              <h2 className="text-base font-semibold tracking-tight">Alertas inteligentes</h2>
+            
+            <div className="absolute inset-x-0 bottom-0 p-8 pt-0 mt-8">
+               <button className="w-full py-3 rounded-[12px] bg-foreground text-white text-[13px] font-bold shadow-md hover:bg-foreground/90 transition-colors">
+                  Purge Cache
+               </button>
             </div>
-            <ul className="space-y-2 text-sm">
-              {rachas[0] && (
-                <li className="flex gap-2">
-                  <span className="mt-1 size-1.5 shrink-0 rounded-full bg-warning" />
-                  <span>
-                    Posible ruptura: {rachas[0].valor} repetido {rachas[0].longitud}×
-                  </span>
-                </li>
-              )}
-              <li className="flex gap-2">
-                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-info" />
-                <span>
-                  Balance Alto/Bajo {balance.pctAltos.toFixed(0)}/{balance.pctBajos.toFixed(0)} —
-                  monitorear compensación
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-info" />
-                <span>
-                  Balance Par/Impar {balance.pctPares.toFixed(0)}/{balance.pctImpares.toFixed(0)}
-                </span>
-              </li>
-            </ul>
           </div>
         </div>
       </div>
 
-      {/* Calientes / Fríos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <NumeroPanel title="Números calientes" icon={<Flame className="size-4" />} items={calientes} />
-        <NumeroPanel
-          title="Números fríos"
-          icon={<Snowflake className="size-4" />}
-          items={frios}
-          variant="cold"
-        />
+    </div>
+  );
+}
+
+/* ─── Sub-components ──────────────────────────────────────────────────────── */
+
+function RowDia({ s }: { s: Sorteo }) {
+  return (
+    <div
+      className="flex items-center gap-4 py-3 px-4 surface-interactive rounded-[16px] group border-b border-border mb-0 hover:bg-muted/30"
+    >
+      <div className="flex items-center gap-3 w-32 shrink-0">
+          <div className="size-6 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground/50 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+            {">"}
+          </div>
+          <span className="text-[13px] font-semibold text-foreground tabular-nums">{s.hora}</span>
+      </div>
+      
+      <span className="font-mono text-xl font-bold tabular-nums w-12 shrink-0 text-foreground text-center">
+        {s.numero.toString().padStart(2, "0")}
+      </span>
+      
+      <span className="text-[13px] font-semibold text-muted-foreground uppercase tracking-widest hidden sm:block w-32">
+        {s.loteria}
+      </span>
+      
+      <div className="flex gap-2 flex-1 justify-end">
+        <AltoBajoBadge value={s.altoBajo} />
+        <ParImparBadge value={s.parImpar} />
+        <div className="hidden sm:block">
+          <SubcuadranteBadge value={s.subcuadrante} />
+        </div>
       </div>
     </div>
   );
 }
 
-function RowDia({ s }: { s: Sorteo }) {
+function AlertRow({ level, text }: { level: "warning" | "info"; text: string }) {
+  const isWarning = level === "warning";
   return (
-    <>
-      <div className="text-xs text-muted-foreground tabular-nums">{s.hora}</div>
-      <div className="text-xs text-muted-foreground truncate max-w-[120px]">{s.loteria}</div>
-      <div className="font-mono text-base font-semibold tabular-nums">
-        {s.numero.toString().padStart(2, "0")}
-      </div>
-      <AltoBajoBadge value={s.altoBajo} />
-      <ParImparBadge value={s.parImpar} />
-      <SubcuadranteBadge value={s.subcuadrante} />
-    </>
-  );
-}
-
-function NumeroPanel({
-  title,
-  icon,
-  items,
-  variant = "hot",
-}: {
-  title: string;
-  icon: React.ReactNode;
-  items: { numero: number; count: number }[];
-  variant?: "hot" | "cold";
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
-      <div className="flex items-center gap-2 mb-3">
-        <span className={variant === "hot" ? "text-alto" : "text-bajo"}>{icon}</span>
-        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-      </div>
-      {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Sin datos suficientes.</p>
-      ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {items.map((n) => (
-            <div
-              key={n.numero}
-              className="rounded-lg border border-border bg-background p-3 text-center"
-            >
-              <div className="font-mono text-xl font-semibold tabular-nums">
-                {n.numero.toString().padStart(2, "0")}
-              </div>
-              <div className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
-                {n.count}×
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    <div className={`flex gap-3 items-center text-[13px] font-bold leading-relaxed rounded-xl p-3 border ${
+      isWarning 
+        ? "bg-warning/10 border-warning/20 text-warning" 
+        : "bg-info/10 border-info/20 text-info"
+    }`}>
+      <span
+        className={`size-2 shrink-0 rounded-full ${
+          isWarning ? "bg-warning" : "bg-info"
+        }`}
+      />
+      <span>{text}</span>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { Sorteo, AltoBajo, ParImpar, Subcuadrante, Origen } from "@/lib/lottery";
+import type { Sorteo, AltoBajo, ParImpar, Subcuadrante, Origen, DrawExtra } from "@/lib/lottery";
 import type { Draw } from "@/hooks/useDraws";
 
 export function drawToSorteo(d: Draw): Sorteo {
@@ -15,5 +15,7 @@ export function drawToSorteo(d: Draw): Sorteo {
     movimiento: d.movimiento ?? undefined,
     origen: d.origen as Origen,
     patronDetectado: d.patron_detectado ?? undefined,
+    // Pasar campo extra tipado para que manual_analysis sea accesible en UI
+    extra: (d.extra as DrawExtra) ?? undefined,
   };
 }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, Trash2, Loader2 } from "lucide-react";
+import { Search, Trash2, Loader2, Database, SlidersHorizontal, ArrowDownToLine } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import {
   AltoBajoBadge,
@@ -11,6 +11,7 @@ import { useDraws, useDeleteDraw } from "@/hooks/useDraws";
 import { useLotteries } from "@/hooks/useLotteries";
 import { drawToSorteo } from "@/lib/drawAdapter";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/historial")({
   head: () => ({
@@ -47,102 +48,134 @@ function Historial() {
   }, [all, q, loteria, origen]);
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este sorteo?")) return;
+    if (!confirm("¿Eliminar este registro permanentemente?")) return;
     try {
       await deleteDraw.mutateAsync(id);
-      toast.success("Sorteo eliminado");
+      toast.success("Secuencia purgada del sistema.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al eliminar");
+      toast.error(err instanceof Error ? err.message : "Error borrando matriz.");
     }
   }
 
   return (
-    <div>
-      <PageHeader
-        title="Historial de sorteos"
-        description="Cada resultado clasificado automáticamente por Alto/Bajo, Par/Impar y subcuadrante."
-      />
+    <div className="space-y-6 pt-2">
+      <div className="mb-8">
+         <h1 className="text-[32px] font-bold tracking-tight text-foreground">Registro Histórico</h1>
+         <p className="text-[15px] text-muted-foreground mt-1 max-w-2xl">Explorador profundo del historial de secuencias. Motor de filtrado indexado por dimensiones.</p>
+      </div>
 
-      <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden">
-        <div className="flex flex-col sm:flex-row gap-2 p-4 border-b border-border">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+      <div className="bg-white rounded-[32px] border border-border shadow-sm overflow-hidden relative">
+        {/* Toolbar */}
+        <div className="relative z-10 flex flex-col md:flex-row gap-3 p-6 border-b border-border bg-muted/10">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar por número, fecha, hora o lotería..."
-              className="w-full h-10 pl-9 pr-3 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Query: número, fecha, matriz..."
+              className="w-full h-12 pl-12 pr-5 rounded-[16px] border border-border bg-white text-[14px] font-mono font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
             />
           </div>
-          <select
-            value={loteria}
-            onChange={(e) => setLoteria(e.target.value)}
-            className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-          >
-            <option>Todas</option>
-            {lotteries.map((l) => (
-              <option key={l.id}>{l.nombre}</option>
-            ))}
-          </select>
-          <select
-            value={origen}
-            onChange={(e) => setOrigen(e.target.value)}
-            className="h-10 rounded-md border border-border bg-background px-3 text-sm"
-          >
-            <option>Todos</option>
-            <option value="scraper">Scraper</option>
-            <option value="manual">Manual</option>
-            <option value="excel">Excel</option>
-          </select>
+          <div className="flex gap-3">
+            <div className="relative group">
+              <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <select
+                value={loteria}
+                onChange={(e) => setLoteria(e.target.value)}
+                className="h-12 pl-11 pr-10 rounded-[16px] border border-border bg-white text-[14px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer shadow-sm min-w-[160px] transition-all hover:border-border/80"
+              >
+                <option value="Todas">Network: Todas</option>
+                {lotteries.map((l) => (
+                  <option key={l.id} value={l.nombre}>{l.nombre}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="relative group hidden sm:block">
+              <ArrowDownToLine className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <select
+                value={origen}
+                onChange={(e) => setOrigen(e.target.value)}
+                className="h-12 pl-11 pr-10 rounded-[16px] border border-border bg-white text-[14px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer shadow-sm min-w-[160px] transition-all hover:border-border/80"
+              >
+                <option value="Todos">Source: Todos</option>
+                <option value="scraper">Script</option>
+                <option value="manual">Manual</option>
+                <option value="excel">Batch (Excel)</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        {isLoading ? (
-          <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-            <Loader2 className="size-5 animate-spin mx-auto mb-2" />
-            Cargando sorteos...
-          </div>
-        ) : all.length === 0 ? (
-          <div className="px-4 py-16 text-center">
-            <p className="text-sm font-medium">Aún no hay sorteos registrados</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Usa <strong>Captura manual</strong> o <strong>Importar Excel</strong> para añadir resultados.
-            </p>
-          </div>
-        ) : (
-          <>
+        {/* Content */}
+        <div className="relative z-10 w-full overflow-hidden">
+          {isLoading ? (
+            <div className="px-5 py-32 text-center bg-muted/5">
+              <div className="size-14 rounded-[16px] bg-white border border-border shadow-sm grid place-items-center mx-auto mb-5">
+                <Loader2 className="size-6 animate-spin text-primary" />
+              </div>
+              <p className="text-[12px] font-bold tracking-widest uppercase text-muted-foreground animate-pulse-subtle">
+                Montando stream de datos...
+              </p>
+            </div>
+          ) : all.length === 0 ? (
+            <div className="px-5 py-32 text-center group bg-muted/5">
+              <div className="mx-auto flex size-16 items-center justify-center rounded-[20px] bg-white border border-border shadow-sm mb-6 relative hover:scale-105 transition-transform duration-500">
+                <Database className="size-6 text-muted-foreground group-hover:text-primary transition-colors duration-500" />
+              </div>
+              <p className="text-[18px] font-bold text-foreground tracking-tight">Buffer vacío</p>
+              <p className="text-[14px] text-muted-foreground mt-2 max-w-md mx-auto leading-relaxed">
+                El sistema requiere inyección de datos para procesar la historia. Navega a Captura Manual o Ingestión de Datos.
+              </p>
+            </div>
+          ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground border-b border-border">
-                    <th className="px-4 py-2.5 font-medium">Fecha</th>
-                    <th className="px-4 py-2.5 font-medium">Hora</th>
-                    <th className="px-4 py-2.5 font-medium">Lotería</th>
-                    <th className="px-4 py-2.5 font-medium">Número</th>
-                    <th className="px-4 py-2.5 font-medium">Alto/Bajo</th>
-                    <th className="px-4 py-2.5 font-medium">Par/Impar</th>
-                    <th className="px-4 py-2.5 font-medium">Cuadrante</th>
-                    <th className="px-4 py-2.5 font-medium">Origen</th>
-                    <th className="px-4 py-2.5 font-medium w-10"></th>
+                  <tr className="border-b border-border bg-muted/20">
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Timestamp</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Hora</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Matriz</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Valor</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap hidden sm:table-cell">A/B</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap hidden sm:table-cell">P/I</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Sector</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap hidden md:table-cell">I/O</th>
+                    <th className="px-8 py-5 w-12"></th>
                   </tr>
                 </thead>
-                <tbody>
-                  {rows.map((s) => (
-                    <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/40">
-                      <td className="px-4 py-2.5 text-muted-foreground tabular-nums">{s.fecha}</td>
-                      <td className="px-4 py-2.5 tabular-nums">{s.hora}</td>
-                      <td className="px-4 py-2.5">{s.loteria}</td>
-                      <td className="px-4 py-2.5 font-mono font-semibold tabular-nums">
-                        {s.numero.toString().padStart(2, "0")}
+                <tbody className="divide-y divide-border bg-white">
+                  {rows.map((s, index) => (
+                    <tr 
+                      key={s.id} 
+                      className="group hover:bg-muted/30 transition-colors duration-200"
+                      style={{ animationDelay: `${index * 0.02}s` }}
+                    >
+                      <td className="px-8 py-4 text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
+                        {s.fecha}
                       </td>
-                      <td className="px-4 py-2.5"><AltoBajoBadge value={s.altoBajo} /></td>
-                      <td className="px-4 py-2.5"><ParImparBadge value={s.parImpar} /></td>
-                      <td className="px-4 py-2.5"><SubcuadranteBadge value={s.subcuadrante} /></td>
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground capitalize">{s.origen}</td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-8 py-4 text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
+                        {s.hora}
+                      </td>
+                      <td className="px-8 py-4 text-[14px] font-bold text-foreground">
+                        {s.loteria}
+                      </td>
+                      <td className="px-8 py-4">
+                        <span className="font-mono text-[18px] lg:text-[20px] font-extrabold text-foreground bg-muted px-3 py-1 rounded-[8px] border border-border shadow-sm">
+                          {s.numero.toString().padStart(2, "0")}
+                        </span>
+                      </td>
+                      <td className="px-8 py-4 hidden sm:table-cell"><AltoBajoBadge value={s.altoBajo} soft={false} /></td>
+                      <td className="px-8 py-4 hidden sm:table-cell"><ParImparBadge value={s.parImpar} soft={false} /></td>
+                      <td className="px-8 py-4"><SubcuadranteBadge value={s.subcuadrante} /></td>
+                      <td className="px-8 py-4 text-[12px] font-mono text-muted-foreground capitalize hidden md:table-cell">
+                        {s.origen}
+                      </td>
+                      <td className="px-8 py-4 text-right">
                         <button
                           onClick={() => handleDelete(s.id)}
-                          className="text-muted-foreground hover:text-destructive"
-                          aria-label="Eliminar"
+                          className="opacity-0 group-hover:opacity-100 p-2 rounded-[8px] hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all duration-200"
+                          aria-label="Purgar"
                         >
                           <Trash2 className="size-4" />
                         </button>
@@ -152,10 +185,20 @@ function Historial() {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 text-xs text-muted-foreground border-t border-border">
-              Mostrando {rows.length} de {all.length} sorteos.
+          )}
+        </div>
+
+        {/* Footer */}
+        {all.length > 0 && (
+          <div className="relative z-10 px-8 py-5 border-t border-border bg-muted/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+               <span className="size-2 rounded-full bg-primary animate-pulse" />
+               <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Rows rendered</span>
             </div>
-          </>
+            <div className="text-[12px] font-bold text-muted-foreground">
+              <span className="text-foreground">{rows.length}</span> / {all.length}
+            </div>
+          </div>
         )}
       </div>
     </div>

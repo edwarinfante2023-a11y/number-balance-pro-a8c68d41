@@ -10,27 +10,39 @@ import {
   FileBarChart,
   Settings,
   Menu,
-  Sparkles,
   LogOut,
   Loader2,
   ShieldAlert,
+  X,
+  Search,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+  section?: string;
+  badge?: number;
+};
+
 const NAV: NavItem[] = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/historial", label: "Historial", icon: History },
-  { to: "/importar", label: "Importar Excel", icon: FileSpreadsheet },
-  { to: "/captura", label: "Captura manual", icon: PencilLine },
-  { to: "/reglas", label: "Reglas y patrones", icon: ScrollText },
-  { to: "/analisis-hora", label: "Análisis por hora", icon: Clock },
-  { to: "/reportes", label: "Reportes", icon: FileBarChart },
-  { to: "/configuracion", label: "Configuración", icon: Settings },
+  { to: "/", label: "Panel Principal", icon: LayoutDashboard, exact: true, section: "MENU", badge: 12 },
+  { to: "/historial", label: "Registro Histórico", icon: History, section: "MENU" },
+  { to: "/analisis-hora", label: "Análisis por hora", icon: Clock, section: "MENU" },
+  { to: "/reglas", label: "Reglas Lógicas", icon: ScrollText, section: "MENU" },
+  { to: "/importar", label: "Ingestión de Datos", icon: FileSpreadsheet, section: "DATA" },
+  { to: "/captura", label: "Captura Manual", icon: PencilLine, section: "DATA" },
+  { to: "/reportes", label: "Exportar Reportes", icon: FileBarChart, section: "DATA" },
+  { to: "/configuracion", label: "Configuración", icon: Settings, section: "GENERAL" },
 ];
+
+const SECTIONS = ["MENU", "DATA", "GENERAL"];
 
 export function AppLayout() {
   const [open, setOpen] = useState(false);
@@ -38,7 +50,6 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { session, isAdmin, loading } = useAuth();
 
-  // No proteger /auth
   const isAuthRoute = location.pathname === "/auth";
 
   useEffect(() => {
@@ -47,136 +58,206 @@ export function AppLayout() {
     }
   }, [loading, session, isAuthRoute, navigate]);
 
-  if (isAuthRoute) {
-    return <Outlet />;
-  }
+  if (isAuthRoute) return <Outlet />;
 
   if (loading) {
     return (
-      <div className="min-h-screen grid place-items-center text-muted-foreground">
-        <Loader2 className="size-5 animate-spin" />
+      <div className="min-h-screen grid place-items-center bg-background">
+        <div className="size-16 rounded-[24px] surface-elevated grid place-items-center">
+           <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
       </div>
     );
   }
 
-  if (!session) {
-    return null; // redirigiendo
-  }
+  if (!session) return null;
 
   if (!isAdmin) {
     return (
       <div className="min-h-screen grid place-items-center bg-background px-4">
-        <div className="max-w-md text-center">
-          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-warning/10">
-            <ShieldAlert className="size-6 text-warning" />
+        <div className="max-w-md text-center surface-raised p-10 rounded-[32px]">
+          <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-[20px] bg-warning/10">
+            <ShieldAlert className="size-8 text-warning" />
           </div>
-          <h1 className="text-xl font-semibold">Acceso restringido</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Tu cuenta no tiene permisos de administrador. Pide al admin del sistema que te asigne
-            el rol <code className="px-1 py-0.5 rounded bg-muted">admin</code> en la tabla{" "}
-            <code className="px-1 py-0.5 rounded bg-muted">user_roles</code>.
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-3">Acceso restringido</h1>
+          <p className="text-[14px] text-muted-foreground leading-relaxed mb-8">
+            Su cuenta no cuenta con los privilegios administrativos requeridos para ingresar al hub analítico.
           </p>
           <button
             onClick={async () => {
               await supabase.auth.signOut();
-              toast.success("Sesión cerrada");
+              toast.success("Conexión terminada");
             }}
-            className="mt-5 inline-flex items-center gap-2 h-9 px-4 rounded-md border border-border bg-card text-sm hover:bg-accent"
+            className="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-foreground text-[14px] font-semibold text-white transition-all hover:shadow-lg hover:-translate-y-0.5"
           >
-            <LogOut className="size-4" /> Cerrar sesión
+            <LogOut className="size-4" /> Desconectar
           </button>
         </div>
       </div>
     );
   }
 
+  const currentPage = NAV.find((n) =>
+    n.exact ? location.pathname === n.to : location.pathname.startsWith(n.to),
+  );
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Mobile top bar */}
-      <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur px-4 h-14">
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-center justify-center rounded-md p-2 hover:bg-accent"
-          aria-label="Abrir menú"
-        >
-          <Menu className="size-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="size-7 rounded-lg bg-foreground text-background grid place-items-center">
-            <Sparkles className="size-4" />
-          </div>
-          <span className="font-semibold tracking-tight">Cuadrante</span>
-        </div>
-        <div className="w-9" />
-      </header>
-
-      <div className="lg:flex">
-        {/* Sidebar */}
-        <aside
-          className={cn(
-            "fixed lg:static inset-y-0 left-0 z-40 w-72 border-r border-border bg-card transition-transform lg:translate-x-0 flex flex-col",
-            open ? "translate-x-0" : "-translate-x-full",
-          )}
-        >
-          <div className="hidden lg:flex items-center gap-2.5 px-6 h-16 border-b border-border shrink-0">
-            <div className="size-8 rounded-lg bg-foreground text-background grid place-items-center">
-              <Sparkles className="size-4" />
-            </div>
-            <div className="leading-tight">
-              <div className="font-semibold tracking-tight">Cuadrante</div>
-              <div className="text-xs text-muted-foreground">Análisis de sorteos</div>
-            </div>
-          </div>
-          <nav className="p-3 space-y-0.5 flex-1 overflow-y-auto">
-            {NAV.map((item) => {
-              const active = item.exact
-                ? location.pathname === item.to
-                : location.pathname.startsWith(item.to);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-foreground text-background font-medium"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                >
-                  <Icon className="size-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="p-4 border-t border-border bg-card shrink-0">
-            <div className="rounded-lg bg-muted px-3 py-2.5 mb-2">
-              <div className="text-xs font-medium truncate">{session.user.email}</div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">Administrador</div>
-            </div>
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                toast.success("Sesión cerrada");
-              }}
-              className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-md border border-border bg-card text-xs hover:bg-accent"
-            >
-              <LogOut className="size-3.5" /> Cerrar sesión
-            </button>
-          </div>
-        </aside>
-
-        {open && (
-          <div
-            onClick={() => setOpen(false)}
-            className="lg:hidden fixed inset-0 z-30 bg-foreground/20"
-          />
+    <div className="min-h-screen bg-background text-foreground flex relative font-sans overflow-hidden">
+      
+      {/* ─── Sidebar (Donezo Style) ───────────────────────────────────────────── */}
+      <aside
+        className={cn(
+          "fixed lg:static inset-y-0 left-0 z-40 w-[260px] m-4 lg:my-6 lg:ml-6 flex flex-col shrink-0 bg-white rounded-[32px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:translate-x-0 shadow-sm border border-border border-b-2 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
+      >
+        {/* Brand */}
+        <div className="flex items-center gap-3 px-8 h-[88px] shrink-0">
+          <div className="flex size-[28px] items-center justify-center rounded-full bg-primary/10 border-2 border-primary/20">
+            <div className="size-3 rounded-full bg-primary" />
+          </div>
+          <div className="leading-none flex items-center gap-1.5">
+            <span className="text-[20px] font-bold text-foreground tracking-tight">
+              Cuadrante
+            </span>
+          </div>
+          {/* Close on mobile */}
+          <button
+            onClick={() => setOpen(false)}
+            className="lg:hidden ml-auto p-2 rounded-full bg-muted text-muted-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
 
-        <main className="flex-1 min-w-0">
-          <div className="mx-auto max-w-7xl px-4 lg:px-8 py-6 lg:py-10">
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-5 py-2 space-y-8 custom-scrollbar">
+          {SECTIONS.map((section) => {
+            const items = NAV.filter((n) => n.section === section);
+            if (!items.length) return null;
+            return (
+              <div key={section} className="space-y-4">
+                <div className="px-3 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">
+                  {section === "MENU" ? "Menú Principal" : section === "DATA" ? "Procesamiento" : "Preferencias"}
+                </div>
+                <div className="space-y-1.5">
+                  {items.map((item) => {
+                    const active = item.exact
+                      ? location.pathname === item.to
+                      : location.pathname.startsWith(item.to);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          "group relative flex items-center justify-between rounded-xl px-4 py-3 text-[14px] font-semibold transition-all duration-200 outline-none overflow-hidden",
+                          active
+                            ? "text-primary bg-primary/[0.06] shadow-inner"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                        )}
+                      >
+                        {/* The green active bar on the left */}
+                        {active && (
+                           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-3/5 rounded-r-full bg-primary" />
+                        )}
+                        
+                        <div className="flex items-center gap-3 relative z-10 transition-transform duration-200 group-hover:translate-x-1">
+                          <Icon className={cn("size-[18px]", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                          <span>{item.label}</span>
+                        </div>
+                        
+                        {item.badge && (
+                           <div className="px-2 py-0.5 rounded-[6px] bg-foreground text-background text-[10px] font-bold relative z-10">
+                             {item.badge}+
+                           </div>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Ad Block Fake Footer */}
+        <div className="p-5 mt-auto">
+           <div className="surface-hero-green rounded-[24px] p-5 text-center relative overflow-hidden shadow-xl shadow-primary/20">
+              <div className="absolute -top-10 -right-10 size-32 bg-white/10 rounded-full blur-2xl" />
+              <div className="flex size-10 mx-auto items-center justify-center rounded-full bg-white/20 backdrop-blur-md mb-3 border border-white/10">
+                 <ShieldAlert className="size-5 text-white" />
+              </div>
+              <div className="font-bold text-white text-[14px]">Sistema Premium</div>
+              <div className="text-white/80 text-[11px] mt-1 mb-4 leading-snug">Algoritmo en máxima capacidad analítica.</div>
+              <button 
+                 className="w-full py-2.5 rounded-[12px] bg-white text-primary text-[12px] font-bold shadow-sm hover:shadow-md transition-shadow"
+                 onClick={async () => {
+                   await supabase.auth.signOut();
+                   toast.success("Conexión terminada");
+                 }}
+               >
+                 Cerrar sesión
+              </button>
+           </div>
+        </div>
+      </aside>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          className="lg:hidden fixed inset-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity"
+        />
+      )}
+
+      {/* ─── Main area ──────────────────────────────────────────── */}
+      <div className="relative flex-1 flex flex-col min-w-0 z-10 lg:my-6 lg:mr-6">
+        
+        {/* Top Header (SearchBar + Profile) like Donezo */}
+        <header className="flex items-center gap-4 px-4 lg:px-8 h-[88px] shrink-0">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="lg:hidden p-2 rounded-xl bg-white border border-border text-foreground hover:shadow-sm"
+          >
+            <Menu className="size-5" />
+          </button>
+
+          {/* Search bar mock */}
+          <div className="hidden md:flex items-center h-12 bg-white border border-border rounded-full px-4 w-full max-w-[400px] shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-primary/20">
+             <Search className="size-4 text-muted-foreground mr-3" />
+             <input type="text" placeholder="Búsqueda rápida..." className="bg-transparent border-none outline-none flex-1 text-[14px] text-foreground placeholder:text-muted-foreground font-medium" />
+             <div className="flex items-center justify-center p-1 px-2 rounded-md bg-muted text-[10px] font-bold text-muted-foreground ml-2">
+               ⌘ F
+             </div>
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Profile Cluster */}
+          <div className="flex items-center gap-3">
+             <button className="hidden sm:flex size-12 items-center justify-center rounded-full bg-white border border-border text-muted-foreground hover:text-foreground hover:shadow-sm transition-all">
+                <Bell className="size-5" />
+             </button>
+             
+             <div className="flex items-center gap-3 h-12 bg-white border border-border rounded-full pl-2 pr-5 cursor-pointer shadow-sm hover:shadow-md transition-shadow">
+               <div className="size-8 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden border border-emerald-200">
+                  <span className="text-[12px] font-bold text-emerald-800">
+                    {(session.user.email ?? "A")[0].toUpperCase()}
+                  </span>
+               </div>
+               <div className="hidden lg:flex flex-col justify-center">
+                 <span className="text-[13px] font-bold text-foreground leading-none">{session.user.email?.split("@")[0] || "Administrador"}</span>
+                 <span className="text-[11px] text-muted-foreground mt-1 leading-none">{session.user.email}</span>
+               </div>
+             </div>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 min-w-0 relative">
+          <div className="mx-auto h-full px-4 lg:px-8 pb-10 animate-fade-in relative z-10">
             <Outlet />
           </div>
         </main>

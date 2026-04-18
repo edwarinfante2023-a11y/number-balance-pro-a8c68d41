@@ -1,16 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import type { DrawExtra } from "@/lib/lottery";
 
 type DrawRow = Database["public"]["Tables"]["draws"]["Row"];
 export type DrawInsert = Database["public"]["Tables"]["draws"]["Insert"];
 
-/** Draw enriquecido: incluye hora + nombre de la lotería madre via join. */
-export type Draw = DrawRow & {
+/** Draw enriquecido: incluye hora + nombre de la lottería madre via join.
+ *  El campo `extra` sobreescribe el Json genérico de DrawRow con el tipo tipado DrawExtra.
+ */
+export type Draw = Omit<DrawRow, "extra"> & {
   hora: string;
   loteria: string;
   loteria_id: string;
   sorteo_nombre: string;
+  extra?: DrawExtra | null;
 };
 
 interface RawDrawJoined extends DrawRow {
