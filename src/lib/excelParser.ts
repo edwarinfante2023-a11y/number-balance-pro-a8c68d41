@@ -586,6 +586,7 @@ export function buildRows(rows: RawRow[], opts: BuildOptions): BuildResult {
   const valid: BuiltRow[] = [];
   const errors: BuildError[] = [];
   const { mapping } = opts;
+  const seenKeys = new Set<string>();
 
   rows.forEach((row, i) => {
     const fechaRaw = mapping.fecha ? row[mapping.fecha] : null;
@@ -621,21 +622,47 @@ export function buildRows(rows: RawRow[], opts: BuildOptions): BuildResult {
       return;
     }
 
-    const extra: Record<string, unknown> = {};
+    // Duplicados dentro del mismo archivo
+    const key = `${fecha}|${hora}|${loteria}`;
+    if (seenKeys.has(key)) {
+      errors.push({
+        index: i,
+        message: `Duplicado en archivo: ${fecha} ${hora} ${loteria}`,
+        raw: row,
+      });
+      return;
+    }
+    seenKeys.add(key);
+
+    // manual_analysis: solo las columnas analíticas del cliente
+    const manualAnalysis: Record<string, unknown> = {};
     for (const k of MANUAL_KEYS) {
       const col = mapping[k];
-      if (col && row[col] !== "" && row[col] != null) extra[k] = row[col];
+      if (col && row[col] !== "" && row[col] != null) {
+        manualAnalysis[k] = row[col];
+      }
     }
-    if (row["__bloque"]) extra["__bloque"] = row["__bloque"];
 
+    // extra: contenedor que separa manual_analysis del metadata interno
+    const extra: Record<string, unknown> = {};
+    if (Object.keys(manualAnalysis).length > 0) {
+      extra.manual_analysis = manualAnalysis;
+    }
+    if (row["__bloque"]) {
+      extra._meta = { bloque: row["__bloque"] };
+    }
+
+    // Resumen humano legible para el campo observacion
     const obsParts: string[] = [];
     if (mapping.observacion && row[mapping.observacion]) {
       obsParts.push(String(row[mapping.observacion]));
     }
-    if (extra.escenario_probable) obsParts.push(`Esc: ${extra.escenario_probable}`);
-    if (extra.racha_cuadr) obsParts.push(`R.cuadr: ${extra.racha_cuadr}`);
-    if (extra.racha_rango) obsParts.push(`R.rango: ${extra.racha_rango}`);
-    if (extra.racha_paridad) obsParts.push(`R.par: ${extra.racha_paridad}`);
+    if (manualAnalysis.escenario_probable) {
+      obsParts.push(`Esc: ${manualAnalysis.escenario_probable}`);
+    }
+    if (manualAnalysis.racha_cuadr) obsParts.push(`R.cuadr: ${manualAnalysis.racha_cuadr}`);
+    if (manualAnalysis.racha_rango) obsParts.push(`R.rango: ${manualAnalysis.racha_rango}`);
+    if (manualAnalysis.racha_paridad) obsParts.push(`R.par: ${manualAnalysis.racha_paridad}`);
 
     valid.push({
       fecha,
@@ -651,3 +678,4 @@ export function buildRows(rows: RawRow[], opts: BuildOptions): BuildResult {
 
   return { valid, errors };
 }
+
