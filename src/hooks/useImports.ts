@@ -26,6 +26,78 @@ export interface ImportSummary {
   errores: number;
 }
 
+interface SorteoLookupRow {
+  id: string;
+  hora: string;
+  loteria_id: string;
+  lotteries: { nombre: string };
+}
+
+/**
+ * Resuelve sorteo_id buscando por (lotería madre, hora). Si no existe el sorteo,
+ * lo crea automáticamente bajo la lotería indicada.
+ */
+async function resolveSorteoIds(
+  rows: BuiltRow[],
+): Promise<{ map: Map<string, string>; missing: string[] }> {
+  // 1. Cargar todos los sorteos activos con su lotería
+  const { data: sorteos, error } = await supabase
+    .from("lottery_draws")
+    .select("id, hora, loteria_id, lotteries!inner(nombre)")
+    .eq("activa", true);
+  if (error) throw error;
+
+  const lookup = new Map<string, string>(); // "loteria|hora" -> sorteo_id
+  const lotteryByName = new Map<string, string>(); // nombre -> loteria_id
+  for (const s of (sorteos ?? []) as unknown as SorteoLookupRow[]) {
+    const lotName = s.lotteries.nombre;
+    lookup.set(`${lotName.toLowerCase()}|${s.hora}`, s.id);
+    lotteryByName.set(lotName.toLowerCase(), s.loteria_id);
+  }
+
+  const map = new Map<string, string>();
+  const missing: string[] = [];
+  const toCreate: Array<{ loteria_id: string; hora: string; key: string }> = [];
+
+  for (const r of rows) {
+    const key = `${r.loteria.toLowerCase()}|${r.hora}`;
+    if (map.has(key)) continue;
+    const id = lookup.get(key);
+    if (id) {
+      map.set(key, id);
+      continue;
+    }
+    const loteriaId = lotteryByName.get(r.loteria.toLowerCase());
+    if (!loteriaId) {
+      if (!missing.includes(r.loteria)) missing.push(r.loteria);
+      continue;
+    }
+    if (!toCreate.find((c) => c.key === key)) {
+      toCreate.push({ loteria_id: loteriaId, hora: r.hora, key });
+    }
+  }
+
+  // Crear sorteos faltantes (auto-provisión por horario)
+  if (toCreate.length > 0) {
+    const payload = toCreate.map((c) => ({
+      loteria_id: c.loteria_id,
+      hora: c.hora,
+      nombre: `Sorteo ${c.hora}`,
+    }));
+    const { data: created, error: createErr } = await supabase
+      .from("lottery_draws")
+      .insert(payload)
+      .select("id, hora, loteria_id");
+    if (createErr) throw createErr;
+    for (const c of created ?? []) {
+      const lotName = [...lotteryByName.entries()].find(([, id]) => id === c.loteria_id)?.[0];
+      if (lotName) map.set(`${lotName}|${c.hora}`, c.id);
+    }
+  }
+
+  return { map, missing };
+}
+
 export function useExecuteImport() {
   const qc = useQueryClient();
   return useMutation({
@@ -39,31 +111,43 @@ export function useExecuteImport() {
       let duplicados = 0;
       const erroresInsert: Array<{ index: number; message: string }> = [];
 
-      // Insertamos en lotes de 200 para no exceder límites
+      // Resolver sorteo_id por (lotería, hora)
+      const { map: sorteoMap, missing } = await resolveSorteoIds(input.rows);
+      if (missing.length > 0) {
+        throw new Error(
+          `Las siguientes loterías no existen en el sistema: ${missing.join(", ")}. Créalas en Configuración antes de importar.`,
+        );
+      }
+
+      const enriched = input.rows
+        .map((r) => {
+          const key = `${r.loteria.toLowerCase()}|${r.hora}`;
+          const sorteo_id = sorteoMap.get(key);
+          return sorteo_id ? { row: r, sorteo_id } : null;
+        })
+        .filter((x): x is { row: BuiltRow; sorteo_id: string } => x !== null);
+
+      // Insertamos en lotes de 200
       const CHUNK = 200;
-      for (let i = 0; i < input.rows.length; i += CHUNK) {
-        const slice = input.rows.slice(i, i + CHUNK);
-        // Detectar duplicados existentes (mismo fecha+hora+loteria+numero)
+      for (let i = 0; i < enriched.length; i += CHUNK) {
+        const slice = enriched.slice(i, i + CHUNK);
+
+        // Detectar duplicados por (sorteo_id, fecha)
         const orFilter = slice
-          .map(
-            (r) =>
-              `and(fecha.eq.${r.fecha},hora.eq.${r.hora},loteria.eq.${encodeURIComponent(
-                r.loteria,
-              )},numero.eq.${r.numero})`,
-          )
+          .map((s) => `and(sorteo_id.eq.${s.sorteo_id},fecha.eq.${s.row.fecha})`)
           .join(",");
 
         const { data: existing } = await supabase
           .from("draws")
-          .select("fecha,hora,loteria,numero")
+          .select("sorteo_id, fecha")
           .or(orFilter);
 
         const existingSet = new Set(
-          (existing ?? []).map((e) => `${e.fecha}|${e.hora}|${e.loteria}|${e.numero}`),
+          (existing ?? []).map((e) => `${e.sorteo_id}|${e.fecha}`),
         );
 
-        const toInsert = slice.filter((r) => {
-          const key = `${r.fecha}|${r.hora}|${r.loteria}|${r.numero}`;
+        const toInsert = slice.filter((s) => {
+          const key = `${s.sorteo_id}|${s.row.fecha}`;
           if (existingSet.has(key)) {
             duplicados++;
             return false;
@@ -72,10 +156,9 @@ export function useExecuteImport() {
         });
 
         if (toInsert.length) {
-          const payload = toInsert.map((r) => ({
+          const payload = toInsert.map(({ row: r, sorteo_id }) => ({
+            sorteo_id,
             fecha: r.fecha,
-            hora: r.hora,
-            loteria: r.loteria,
             numero: r.numero,
             // placeholders: el trigger recalcula
             alto_bajo: "BAJO",
@@ -99,7 +182,6 @@ export function useExecuteImport() {
 
       const errorDetails = [...(input.errorDetails ?? []), ...erroresInsert];
 
-      // Registrar en tabla imports
       await supabase.from("imports").insert({
         archivo: input.fileName,
         registros_importados: importados,

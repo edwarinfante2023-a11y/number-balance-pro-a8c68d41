@@ -2,24 +2,59 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-export type Draw = Database["public"]["Tables"]["draws"]["Row"];
+type DrawRow = Database["public"]["Tables"]["draws"]["Row"];
 export type DrawInsert = Database["public"]["Tables"]["draws"]["Insert"];
 
-export function useDraws(opts?: { limit?: number; loteria?: string; fecha?: string }) {
+/** Draw enriquecido: incluye hora + nombre de la lotería madre via join. */
+export type Draw = DrawRow & {
+  hora: string;
+  loteria: string;
+  loteria_id: string;
+  sorteo_nombre: string;
+};
+
+interface RawDrawJoined extends DrawRow {
+  lottery_draws: {
+    id: string;
+    hora: string;
+    nombre: string;
+    loteria_id: string;
+    lotteries: { id: string; nombre: string };
+  };
+}
+
+function mapDraw(row: RawDrawJoined): Draw {
+  return {
+    ...row,
+    hora: row.lottery_draws.hora,
+    loteria: row.lottery_draws.lotteries.nombre,
+    loteria_id: row.lottery_draws.loteria_id,
+    sorteo_nombre: row.lottery_draws.nombre,
+  };
+}
+
+export function useDraws(opts?: {
+  limit?: number;
+  loteriaId?: string;
+  sorteoId?: string;
+  fecha?: string;
+}) {
   return useQuery({
     queryKey: ["draws", opts],
-    queryFn: async () => {
+    queryFn: async (): Promise<Draw[]> => {
       let q = supabase
         .from("draws")
-        .select("*")
-        .order("fecha", { ascending: false })
-        .order("hora", { ascending: false });
-      if (opts?.loteria) q = q.eq("loteria", opts.loteria);
+        .select(
+          "*, lottery_draws!inner(id, hora, nombre, loteria_id, lotteries!inner(id, nombre))",
+        )
+        .order("fecha", { ascending: false });
+      if (opts?.sorteoId) q = q.eq("sorteo_id", opts.sorteoId);
+      if (opts?.loteriaId) q = q.eq("lottery_draws.loteria_id", opts.loteriaId);
       if (opts?.fecha) q = q.eq("fecha", opts.fecha);
       if (opts?.limit) q = q.limit(opts.limit);
       const { data, error } = await q;
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((r) => mapDraw(r as unknown as RawDrawJoined));
     },
   });
 }
@@ -27,17 +62,17 @@ export function useDraws(opts?: { limit?: number; loteria?: string; fecha?: stri
 export function useCreateDraw() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (
-      input: Pick<DrawInsert, "fecha" | "hora" | "loteria" | "numero"> & {
-        observacion?: string | null;
-        movimiento?: string | null;
-      },
-    ) => {
+    mutationFn: async (input: {
+      sorteo_id: string;
+      fecha: string;
+      numero: number;
+      observacion?: string | null;
+      movimiento?: string | null;
+    }) => {
       // alto_bajo, par_impar y cuadrante los calcula el trigger; pasamos placeholders
       const payload: DrawInsert = {
+        sorteo_id: input.sorteo_id,
         fecha: input.fecha,
-        hora: input.hora,
-        loteria: input.loteria,
         numero: input.numero,
         alto_bajo: "BAJO",
         par_impar: "PAR",
