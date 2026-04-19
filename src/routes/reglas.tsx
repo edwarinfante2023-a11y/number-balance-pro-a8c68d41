@@ -3,6 +3,9 @@ import { useState } from "react";
 import { Plus, Power, Pencil, DatabaseZap, X, Loader2, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRules, type Rule } from "@/hooks/useRules";
+import type { Database } from "@/integrations/supabase/types";
+
+type RuleTipo = Database["public"]["Enums"]["rule_tipo"];
 
 export const Route = createFileRoute("/reglas")({
   head: () => ({
@@ -22,9 +25,16 @@ function Reglas() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    nombre: string;
+    tipo: RuleTipo;
+    campo: string;
+    operador: string;
+    valor: string;
+    resultado_esperado: string;
+  }>({
     nombre: "",
-    tipo: "Racha",
+    tipo: "racha",
     campo: "alto_bajo",
     operador: "===",
     valor: "",
@@ -34,20 +44,20 @@ function Reglas() {
   const openForm = (rule?: Rule) => {
     if (rule) {
       setEditingId(rule.id);
-      const cond = (rule.condicion as Record<string, any>) || {};
+      const cond = (rule.condiciones as Record<string, unknown>) || {};
       setFormData({
         nombre: rule.nombre,
         tipo: rule.tipo,
-        campo: cond?.campo || "alto_bajo",
-        operador: cond?.operador || "===",
-        valor: cond?.valor || "",
-        resultado_esperado: rule.resultado_esperado,
+        campo: (cond?.campo as string) || "alto_bajo",
+        operador: (cond?.operador as string) || "===",
+        valor: (cond?.valor as string) || "",
+        resultado_esperado: rule.resultado_esperado ?? "",
       });
     } else {
       setEditingId(null);
       setFormData({
         nombre: "",
-        tipo: "Racha",
+        tipo: "racha",
         campo: "alto_bajo",
         operador: "===",
         valor: "",
@@ -75,7 +85,7 @@ function Reglas() {
           updates: {
             nombre: formData.nombre,
             tipo: formData.tipo,
-            condicion: condicionObj,
+            condiciones: condicionObj,
             resultado_esperado: formData.resultado_esperado,
           },
         },
@@ -86,9 +96,9 @@ function Reglas() {
         {
           nombre: formData.nombre,
           tipo: formData.tipo,
-          condicion: condicionObj,
+          condiciones: condicionObj,
           resultado_esperado: formData.resultado_esperado,
-          activa: true,
+          activo: true,
           efectividad: 0,
           aciertos: 0,
           ocurrencias: 0,
@@ -107,7 +117,7 @@ function Reglas() {
   const toggleStatus = (rule: Rule) => {
     updateRule.mutate({
       id: rule.id,
-      updates: { activa: !rule.activa },
+      updates: { activo: !rule.activo },
     });
   };
 
@@ -157,8 +167,8 @@ function Reglas() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {rules.map((r) => {
-            const cond = (r.condicion as Record<string, any>) || {};
-            const condString = `${cond.campo} ${cond.operador} ${cond.valor}`;
+            const cond = (r.condiciones as Record<string, unknown>) || {};
+            const condString = `${cond.campo ?? ""} ${cond.operador ?? ""} ${cond.valor ?? ""}`;
             const pct = r.ocurrencias > 0 ? ((r.aciertos / r.ocurrencias) * 100).toFixed(0) : "0";
 
             return (
@@ -166,7 +176,7 @@ function Reglas() {
                 key={r.id}
                 className={cn(
                   "relative flex flex-col rounded-[24px] p-8 transition-all duration-300 overflow-hidden group border",
-                  r.activa
+                  r.activo
                     ? "bg-white shadow-sm border-border hover:shadow-md hover:border-primary/30"
                     : "bg-muted/40 shadow-none border-border/50 hover:bg-muted/60"
                 )}
@@ -176,7 +186,7 @@ function Reglas() {
                     <span
                       className={cn(
                         "inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest mb-3 border",
-                        r.activa
+                        r.activo
                           ? "bg-muted text-foreground border-border"
                           : "bg-transparent text-muted-foreground border-border/50"
                       )}
@@ -186,7 +196,7 @@ function Reglas() {
                     <h3
                       className={cn(
                         "text-[16px] font-bold tracking-tight leading-tight",
-                        r.activa ? "text-foreground" : "text-muted-foreground"
+                        r.activo ? "text-foreground" : "text-muted-foreground"
                       )}
                     >
                       {r.nombre}
@@ -197,23 +207,23 @@ function Reglas() {
                     disabled={updateRule.isPending}
                     className={cn(
                       "relative shrink-0 inline-flex size-12 items-center justify-center rounded-[14px] border transition-all duration-300 disabled:opacity-50",
-                      r.activa
+                      r.activo
                         ? "border-emerald-200 bg-emerald-50 text-emerald-600 shadow-sm hover:bg-emerald-100 hover:scale-105"
                         : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm"
                     )}
-                    title={r.activa ? "Desactivar" : "Activar"}
+                    title={r.activo ? "Desactivar" : "Activar"}
                   >
                     {updateRule.isPending ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
-                      <Power className={cn("size-5", r.activa && "text-emerald-500")} />
+                      <Power className={cn("size-5", r.activo && "text-emerald-500")} />
                     )}
                   </button>
                 </div>
 
                 <div className="relative z-10 space-y-4 mb-10 flex-1">
-                  <Row k="Trigger Condición" v={condString} active={r.activa} />
-                  <Row k="Resolución / Expec." v={r.resultado_esperado} active={r.activa} />
+                  <Row k="Trigger Condición" v={condString} active={r.activo} />
+                  <Row k="Resolución / Expec." v={r.resultado_esperado ?? ""} active={r.activo} />
                 </div>
 
                 {/* Progress System */}
@@ -225,7 +235,7 @@ function Reglas() {
                     <span
                       className={cn(
                         "font-mono text-[14px] font-extrabold tabular-nums",
-                        r.activa ? "text-primary" : "text-muted-foreground"
+                        r.activo ? "text-primary" : "text-muted-foreground"
                       )}
                     >
                       {pct}%
@@ -234,13 +244,13 @@ function Reglas() {
                   <div
                     className={cn(
                       "h-2 rounded-full overflow-hidden border",
-                      r.activa ? "bg-muted border-border shadow-inner" : "bg-muted border-border/50"
+                      r.activo ? "bg-muted border-border shadow-inner" : "bg-muted border-border/50"
                     )}
                   >
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-1000",
-                        r.activa ? "bg-primary" : "bg-muted-foreground/30"
+                        r.activo ? "bg-primary" : "bg-muted-foreground/30"
                       )}
                       style={{ width: `${pct}%` }}
                     />
@@ -257,23 +267,23 @@ function Reglas() {
                     <span
                       className={cn(
                         "size-2 rounded-full",
-                        r.activa ? "bg-emerald-500 animate-pulse-subtle" : "bg-muted-foreground/30"
+                        r.activo ? "bg-emerald-500 animate-pulse-subtle" : "bg-muted-foreground/30"
                       )}
                     />
                     <span
                       className={cn(
                         "text-[11px] font-bold uppercase tracking-widest",
-                        r.activa ? "text-emerald-700" : "text-muted-foreground"
+                        r.activo ? "text-emerald-700" : "text-muted-foreground"
                       )}
                     >
-                      {r.activa ? "Online" : "Bypass"}
+                      {r.activo ? "Online" : "Bypass"}
                     </span>
                   </div>
                   <button
                     onClick={() => openForm(r)}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-bold uppercase tracking-widest transition-colors",
-                      r.activa
+                      r.activo
                         ? "text-muted-foreground hover:bg-muted hover:text-foreground"
                         : "text-muted-foreground/60 hover:bg-white hover:text-foreground border border-border shadow-sm"
                     )}
@@ -321,14 +331,14 @@ function Reglas() {
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Tipo</label>
                   <select
                     value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as RuleTipo })}
                     className="w-full h-11 rounded-xl border border-border px-4 text-[14px] font-medium focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all bg-white"
                   >
-                    <option value="Racha">Racha Limitante</option>
-                    <option value="Compensacion">Compensación Pura</option>
-                    <option value="Cuadrante">Agrupación Cuadrante</option>
-                    <option value="Patron">Patrón Complejo</option>
-                    <option value="Otro">Otro</option>
+                    <option value="racha">Racha Limitante</option>
+                    <option value="compensacion">Compensación Pura</option>
+                    <option value="bloqueo">Agrupación / Bloqueo</option>
+                    <option value="patron">Patrón Complejo</option>
+                    <option value="otro">Otro</option>
                   </select>
                 </div>
               </div>
