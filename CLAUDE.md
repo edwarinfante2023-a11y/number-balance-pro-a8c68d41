@@ -95,7 +95,36 @@ await supabase.from("rules").insert({
 
 Para hacer queries con join completo (lottery_draws → lotteries) usa `useDraws()` en `src/hooks/useDraws.ts` — ya está mapeado a un tipo `Draw` enriquecido.
 
-### `imports`, `alerts`, `patterns`, `settings`
+### `patterns` — patrones minados automáticamente
+
+Tabla **ampliada** vía `ALTER TABLE` el 2026-04-19 para soportar el motor de minería por hora. **16 columnas finales:**
+
+```ts
+{
+  id: uuid
+  nombre: text                 // NOT NULL — generado por el minero (ej. "Auto: 3x ALTO -> BAJO [14:00]")
+  descripcion: text            // NOT NULL — explicación humana
+  tipo: enum 'rule_tipo'       // default 'patron' — mismo enum que rules
+  condiciones: jsonb           // NOT NULL — { campo, operador, valor, min_veces }
+  resultado_esperado: text | null
+  hora: text | null            // bloque horario "HH:mm" o null si es global
+  activa: boolean              // default true ⚠️ FEMENINO (a diferencia de rules.activo)
+  source: text                 // default 'auto' — 'auto' | 'manual'
+  estado: text                 // default 'observacion' — 'observacion' | 'activo' | 'descartado'
+  ocurrencias: integer         // default 0
+  aciertos: integer            // default 0
+  efectividad: numeric         // default 0
+  score_confianza: integer | null
+  ultima_deteccion: timestamptz | null
+  created_at, updated_at: timestamptz
+}
+```
+
+**Índice único parcial:** `patterns_descripcion_hora_unique` sobre `(descripcion, COALESCE(hora, ''))` — garantiza que el minero no inserte duplicados del mismo patrón para el mismo bloque horario.
+
+**⚠️ Trampa:** `patterns.activa` es **femenino** (igual que `lotteries.activa` y `lottery_draws.activa`), pero `rules.activo` es **masculino**. No los confundas.
+
+### `imports`, `alerts`, `settings`
 
 - `imports.detalle_errores: jsonb` (default `[]`)
 - `alerts.nivel: enum alert_nivel` = `'info' | 'warning' | 'critical'`
