@@ -323,6 +323,7 @@ ALTER TABLE public.mi_tabla ENABLE ROW LEVEL SECURITY;
 
 ---
 
+## 10. Checklist antes de hacer push
 
 
 - [ ] `bunx tsc --noEmit` pasa sin errores
