@@ -16,6 +16,6 @@ export function drawToSorteo(d: Draw): Sorteo {
     origen: d.origen as Origen,
     patronDetectado: d.patron_detectado ?? undefined,
     // Pasar campo extra tipado para que manual_analysis sea accesible en UI
-    extra: (d.extra as DrawExtra) ?? undefined,
+    extra: (d.extra as unknown as DrawExtra) ?? undefined,
   };
 }
