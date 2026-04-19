@@ -210,34 +210,58 @@ export type Database = {
       patterns: {
         Row: {
           aciertos: number
+          activa: boolean
           condiciones: Json
           created_at: string
           descripcion: string
           efectividad: number
+          estado: string
+          hora: string | null
           id: string
+          nombre: string
           ocurrencias: number
+          resultado_esperado: string | null
+          score_confianza: number | null
+          source: string
+          tipo: Database["public"]["Enums"]["rule_tipo"]
           ultima_deteccion: string | null
           updated_at: string
         }
         Insert: {
           aciertos?: number
+          activa?: boolean
           condiciones?: Json
           created_at?: string
           descripcion: string
           efectividad?: number
+          estado?: string
+          hora?: string | null
           id?: string
+          nombre: string
           ocurrencias?: number
+          resultado_esperado?: string | null
+          score_confianza?: number | null
+          source?: string
+          tipo?: Database["public"]["Enums"]["rule_tipo"]
           ultima_deteccion?: string | null
           updated_at?: string
         }
         Update: {
           aciertos?: number
+          activa?: boolean
           condiciones?: Json
           created_at?: string
           descripcion?: string
           efectividad?: number
+          estado?: string
+          hora?: string | null
           id?: string
+          nombre?: string
           ocurrencias?: number
+          resultado_esperado?: string | null
+          score_confianza?: number | null
+          source?: string
+          tipo?: Database["public"]["Enums"]["rule_tipo"]
           ultima_deteccion?: string | null
           updated_at?: string
         }

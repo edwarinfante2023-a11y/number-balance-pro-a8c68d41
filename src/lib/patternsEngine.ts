@@ -1,5 +1,6 @@
 import type { Sorteo } from "./lottery";
 import type { InsertPattern } from "@/hooks/usePatterns";
+import type { Database } from "@/integrations/supabase/types";
 
 // Engine configuration
 const MIN_OCCURRENCES = 5;

@@ -27,7 +27,7 @@ export function evaluateRule(rule: Rule, draws: Sorteo[]): RuleEvaluationResult 
     return { ocurrencias: 0, aciertos: 0, efectividad: 0 };
   }
   
-  const campo = condiciones.campo as keyof Sorteo;
+  const campo = condiciones.campo as string;
   const valorObj = condiciones.valor;
   
   // draws usually comes sorted newest to oldest. We reverse it for historic forward traversal.
@@ -66,7 +66,7 @@ export function evaluateRule(rule: Rule, draws: Sorteo[]): RuleEvaluationResult 
      // Sliding window execution
      for (let i = windowSize; i < sortedDraws.length; i++) {
         const windowDraws = sortedDraws.slice(i - windowSize, i);
-        const mappedCampo = campo === "alto_bajo" ? "altoBajo" : campo === "par_impar" ? "parImpar" : campo;
+        const mappedCampo: string = campo === "alto_bajo" ? "altoBajo" : campo === "par_impar" ? "parImpar" : campo;
         const matches = windowDraws.filter(d => {
            const val = (d as Sorteo & Record<string, any>)[mappedCampo] || (d as Sorteo & Record<string, any>)[campo];
            return val === valorObj;
@@ -107,14 +107,14 @@ export function getActiveRulesForSubset(rules: Rule[], subset: Sorteo[]): Active
        const condiciones = rule.condiciones as Record<string, any>;
        if (!condiciones || !condiciones.campo || !condiciones.valor) continue;
 
-       const campo = condiciones.campo as keyof Sorteo;
+       const campo = condiciones.campo as string;
        const valorObj = condiciones.valor;
 
        if (rule.tipo === "racha") {
            const min_veces = parseInt(condiciones.min_veces as string, 10) || 3;
            let currentStreak = 0;
            // trace backwards from the most recent draw (the tip)
-           const mappedCampo = campo === "alto_bajo" ? "altoBajo" : campo === "par_impar" ? "parImpar" : campo;
+           const mappedCampo: string = campo === "alto_bajo" ? "altoBajo" : campo === "par_impar" ? "parImpar" : campo;
            for (let i = latestWindow.length - 1; i >= 0; i--) {
                const val = (latestWindow[i] as Sorteo & Record<string, any>)[mappedCampo] || (latestWindow[i] as Sorteo & Record<string, any>)[campo];
                if (val === valorObj) {
@@ -133,7 +133,7 @@ export function getActiveRulesForSubset(rules: Rule[], subset: Sorteo[]): Active
            // Threshold based
            const threshold = parseFloat(condiciones.threshold as string) || 0.6;
            const windowSize = parseInt(condiciones.window as string, 10) || 10;
-           const mappedCampo = campo === "alto_bajo" ? "altoBajo" : campo === "par_impar" ? "parImpar" : campo;
+           const mappedCampo: string = campo === "alto_bajo" ? "altoBajo" : campo === "par_impar" ? "parImpar" : campo;
            
            if (latestWindow.length >= windowSize) {
                const tipWindow = latestWindow.slice(-windowSize);
