@@ -26,7 +26,9 @@ import {
 import { BalanceBar } from "@/components/BalanceBar";
 import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
 import { useDraws } from "@/hooks/useDraws";
+import { useRules } from "@/hooks/useRules";
 import { drawToSorteo } from "@/lib/drawAdapter";
+import { getActiveRulesForSubset } from "@/lib/rulesEngine";
 
 const HORAS = [
   "09:00",
@@ -120,6 +122,12 @@ function AnalisisHora() {
   const escenarioProbable = useMemo(() => {
     return computeEscenarioProbablePorHora(subset, balance, rachas, distribucion, tendencia);
   }, [subset, balance, rachas, distribucion, tendencia]);
+
+  // ─── Alertas Tempranas (Level 4A) ──────────────────────────────────
+  const { rules } = useRules();
+  const activeAlerts = useMemo(() => {
+     return getActiveRulesForSubset(rules, subset);
+  }, [rules, subset]);
 
 
   if (isLoading) {
@@ -234,6 +242,54 @@ function AnalisisHora() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ Alertas Tempranas (Level 4A) ══ */}
+      {activeAlerts.length > 0 && (
+        <div className="bg-slate-900 text-white rounded-[32px] p-6 lg:p-8 shadow-md relative overflow-hidden group border border-slate-800">
+           <div className="absolute right-0 top-0 translate-x-1/4 -translate-y-1/4 size-48 bg-emerald-500/10 rounded-full blur-3xl" />
+           <div className="relative z-10">
+             <div className="flex items-center gap-3 mb-6">
+                <span className="relative flex size-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full size-3 bg-emerald-500"></span>
+                </span>
+                <span className="text-[13px] font-bold uppercase tracking-[0.2em] shadow-sm text-slate-200">
+                  Señales de Análisis — Oportunidades Detectadas
+                </span>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeAlerts.map((alert, i) => (
+                   <div key={i} className="bg-slate-800/50 backdrop-blur-sm p-5 rounded-[20px] border border-slate-700/50">
+                      <div className="flex justify-between items-start mb-3">
+                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 bg-slate-700/50 px-2 py-1 rounded-md">
+                           {alert.rule.tipo}
+                         </span>
+                         <span className="text-[12px] font-extrabold tabular-nums bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                           {alert.rule.ocurrencias > 0 ? ((alert.rule.aciertos / alert.rule.ocurrencias) * 100).toFixed(0) : "0"}% WINRATE
+                         </span>
+                      </div>
+                      <h4 className="text-[16px] font-bold leading-tight mb-2 text-white">
+                        {alert.rule.nombre}
+                      </h4>
+                      <p className="text-[13px] text-slate-300 font-medium leading-relaxed mb-4">
+                        {alert.mensaje}
+                      </p>
+                      
+                      <div className="border-t border-slate-700/50 pt-3">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 block mb-1">
+                          Escenario Sugerido
+                        </span>
+                        <span className="text-[14px] font-extrabold uppercase tracking-widest text-white">
+                          {alert.rule.resultado_esperado || "N/A"}
+                        </span>
+                      </div>
+                   </div>
+                ))}
+             </div>
+           </div>
         </div>
       )}
 

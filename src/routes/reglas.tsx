@@ -4,6 +4,9 @@ import { Plus, Power, Pencil, DatabaseZap, X, Loader2, Save, Trash2 } from "luci
 import { cn } from "@/lib/utils";
 import { useRules, type Rule } from "@/hooks/useRules";
 import type { Database } from "@/integrations/supabase/types";
+import { useDraws } from "@/hooks/useDraws";
+import { evaluateRule } from "@/lib/rulesEngine";
+import { RefreshCw } from "lucide-react";
 
 type RuleTipo = Database["public"]["Enums"]["rule_tipo"];
 
@@ -25,12 +28,25 @@ function Reglas() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const { data: rawDraws = [] } = useDraws({ limit: 5000 }); // We load global draws for calculation
+  const draws = rawDraws.map(d => ({
+    ...d,
+    fecha: d.fecha || "",
+    hora: d.hora || "",
+    alto_bajo: d.alto_bajo || "N/A",
+    par_impar: d.par_impar || "N/A",
+    subcuadrante: d.subcuadrante || "N/A",
+  }));
+
   const [formData, setFormData] = useState<{
     nombre: string;
     tipo: RuleTipo;
     campo: string;
     operador: string;
     valor: string;
+    min_veces: string;
+    window: string;
+    threshold: string;
     resultado_esperado: string;
   }>({
     nombre: "",
@@ -38,6 +54,9 @@ function Reglas() {
     campo: "alto_bajo",
     operador: "===",
     valor: "",
+    min_veces: "3",
+    window: "10",
+    threshold: "0.6",
     resultado_esperado: "",
   });
 
@@ -51,6 +70,9 @@ function Reglas() {
         campo: (cond?.campo as string) || "alto_bajo",
         operador: (cond?.operador as string) || "===",
         valor: (cond?.valor as string) || "",
+        min_veces: String(cond?.min_veces || "3"),
+        window: String(cond?.window || "10"),
+        threshold: String(cond?.threshold || "0.6"),
         resultado_esperado: rule.resultado_esperado ?? "",
       });
     } else {
@@ -61,6 +83,9 @@ function Reglas() {
         campo: "alto_bajo",
         operador: "===",
         valor: "",
+        min_veces: "3",
+        window: "10",
+        threshold: "0.6",
         resultado_esperado: "",
       });
     }
@@ -76,6 +101,9 @@ function Reglas() {
       campo: formData.campo,
       operador: formData.operador,
       valor: formData.valor,
+      min_veces: formData.min_veces,
+      window: formData.window,
+      threshold: formData.threshold,
     };
 
     if (editingId) {
@@ -119,6 +147,27 @@ function Reglas() {
       id: rule.id,
       updates: { activo: !rule.activo },
     });
+  };
+
+  const [recalculatingId, setRecalculatingId] = useState<string | null>(null);
+
+  const handleRecalulate = async (rule: Rule) => {
+    setRecalculatingId(rule.id);
+    try {
+       // @ts-ignore mapping draws to pure Sorteo interface
+       const metrics = evaluateRule(rule, draws); 
+       
+       updateRule.mutate({
+          id: rule.id,
+          updates: { 
+            ocurrencias: metrics.ocurrencias,
+            aciertos: metrics.aciertos,
+            efectividad: metrics.efectividad
+          }
+       });
+    } finally {
+       setRecalculatingId(null);
+    }
   };
 
   const isSaving = createRule.isPending || updateRule.isPending;
@@ -279,17 +328,31 @@ function Reglas() {
                       {r.activo ? "Online" : "Bypass"}
                     </span>
                   </div>
-                  <button
-                    onClick={() => openForm(r)}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-bold uppercase tracking-widest transition-colors",
-                      r.activo
-                        ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        : "text-muted-foreground/60 hover:bg-white hover:text-foreground border border-border shadow-sm"
-                    )}
-                  >
-                    <Pencil className="size-3.5" /> Editar
-                  </button>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleRecalulate(r)}
+                      disabled={recalculatingId === r.id}
+                      className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-bold uppercase tracking-widest transition-colors",
+                         "text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 shadow-sm"
+                      )}
+                      title="Recalcular sobre histórico completo"
+                    >
+                      <RefreshCw className={cn("size-3.5", recalculatingId === r.id && "animate-spin")} />
+                      Sync
+                    </button>
+                    <button
+                      onClick={() => openForm(r)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11px] font-bold uppercase tracking-widest transition-colors",
+                        r.activo
+                          ? "text-muted-foreground hover:bg-muted hover:text-foreground border border-border"
+                          : "text-muted-foreground/60 hover:bg-white hover:text-foreground border border-border shadow-sm"
+                      )}
+                    >
+                      <Pencil className="size-3.5" /> Editar
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -370,13 +433,47 @@ function Reglas() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Valor</label>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Valor Obj.</label>
                     <input
                       type="text"
                       className="w-full h-10 rounded-lg border border-border px-3 text-[13px] outline-none focus:border-primary font-mono"
                       value={formData.valor}
                       onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
-                      placeholder="'ALTO'"
+                      placeholder="ALTO"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Mín. Veces (Racha)</label>
+                    <input
+                      type="number"
+                      className="w-full h-10 rounded-lg border border-border px-3 text-[13px] outline-none focus:border-primary font-mono"
+                      value={formData.min_veces}
+                      onChange={(e) => setFormData({ ...formData, min_veces: e.target.value })}
+                      placeholder="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Ventana (Dom.)</label>
+                    <input
+                      type="number"
+                      className="w-full h-10 rounded-lg border border-border px-3 text-[13px] outline-none focus:border-primary font-mono"
+                      value={formData.window}
+                      onChange={(e) => setFormData({ ...formData, window: e.target.value })}
+                      placeholder="10"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Threshold (%)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="w-full h-10 rounded-lg border border-border px-3 text-[13px] outline-none focus:border-primary font-mono"
+                      value={formData.threshold}
+                      onChange={(e) => setFormData({ ...formData, threshold: e.target.value })}
+                      placeholder="0.6"
                     />
                   </div>
                 </div>
