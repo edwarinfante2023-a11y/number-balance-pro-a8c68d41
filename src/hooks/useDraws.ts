@@ -34,6 +34,7 @@ function mapDraw(row: RawDrawJoined): Draw {
     loteria: row.lottery_draws.lotteries.nombre,
     loteria_id: row.lottery_draws.loteria_id,
     sorteo_nombre: row.lottery_draws.nombre,
+    extra: (row.extra as unknown as DrawExtra | null) ?? null,
   };
 }
 
