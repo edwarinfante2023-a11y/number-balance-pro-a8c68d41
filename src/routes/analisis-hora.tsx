@@ -9,6 +9,7 @@ import {
   Target,
   TrendingUp,
   Hash,
+  DatabaseZap,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
@@ -27,8 +28,11 @@ import { BalanceBar } from "@/components/BalanceBar";
 import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
 import { useDraws } from "@/hooks/useDraws";
 import { useRules } from "@/hooks/useRules";
+import { usePatterns } from "@/hooks/usePatterns";
 import { drawToSorteo } from "@/lib/drawAdapter";
 import { getActiveRulesForSubset } from "@/lib/rulesEngine";
+import { minePatterns, getActivePatterns } from "@/lib/patternsEngine";
+import { toast } from "sonner";
 
 const HORAS = [
   "09:00",
@@ -129,6 +133,39 @@ function AnalisisHora() {
      return getActiveRulesForSubset(rules, subset);
   }, [rules, subset]);
 
+  // ─── Minería de Patrones (Level 4B) ──────────────────────────────────
+  const { patterns, insertPatternsBatch } = usePatterns();
+  
+  const allPatternsForHour = useMemo(() => {
+     return patterns.filter(p => !p.hora || p.hora === horaActiva);
+  }, [patterns, horaActiva]);
+
+  const activePatternAlerts = useMemo(() => {
+     return getActivePatterns(allPatternsForHour, subset);
+  }, [allPatternsForHour, subset]);
+
+  const [isMining, setIsMining] = useState(false);
+  const handleMinePatterns = async () => {
+    setIsMining(true);
+    try {
+       // Allow a very brief artificial timeout so UI loader can render
+       await new Promise(r => setTimeout(r, 500));
+       const newPatterns = minePatterns(subset, horaActiva);
+       const existingNames = new Set(patterns.map(p => p.nombre));
+       const toInsert = newPatterns.filter(p => !existingNames.has(p.nombre));
+       
+       if (toInsert.length > 0) {
+          await insertPatternsBatch.mutateAsync(toInsert);
+       } else {
+          toast.info("No se hallaron nuevos patrones inéditos de alta precisión.");
+       }
+    } catch (e) {
+       console.error(e);
+    } finally {
+       setIsMining(false);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -150,13 +187,23 @@ function AnalisisHora() {
             bloques temporales.
           </p>
         </div>
-        <Link
-          to="/comparativa"
-          className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-[16px] font-bold text-[13px] transition-colors shadow-sm"
-        >
-          <TrendingUp className="size-4" />
-          Ir a Comparativa Global
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleMinePatterns}
+            disabled={isMining}
+            className="inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-[16px] font-bold text-[13px] transition-colors shadow-sm"
+          >
+            {isMining ? <Loader2 className="size-4 animate-spin" /> : <DatabaseZap className="size-4" />}
+            Descubrir Patrones
+          </button>
+          <Link
+            to="/comparativa"
+            className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-[16px] font-bold text-[13px] transition-colors shadow-sm"
+          >
+            <TrendingUp className="size-4" />
+            Ir a Comparativa Global
+          </Link>
+        </div>
       </div>
 
       {/* Selector de hora — Hardware Pill Style */}
@@ -288,8 +335,88 @@ function AnalisisHora() {
                       </div>
                    </div>
                 ))}
+                
+                {/* Level 4B Automined Alerts */}
+                {activePatternAlerts.map((alert, i) => (
+                   <div key={`pat-${i}`} className="bg-indigo-900/40 backdrop-blur-sm p-5 rounded-[20px] border border-indigo-400/50 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <DatabaseZap className="size-24" />
+                      </div>
+                      <div className="flex justify-between items-start mb-3 relative z-10">
+                         <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-indigo-200 bg-indigo-900/50 px-2.5 py-1 rounded-md">
+                           <DatabaseZap className="size-3" /> Auto Patrón
+                         </span>
+                         <span className="text-[12px] font-extrabold tabular-nums bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-500/30">
+                           {alert.pattern.efectividad}% WINRATE
+                         </span>
+                      </div>
+                      <h4 className="text-[16px] font-bold leading-tight mb-2 text-white relative z-10">
+                        {alert.pattern.descripcion}
+                      </h4>
+                      <p className="text-[13px] text-slate-300 font-medium leading-relaxed mb-4 relative z-10">
+                        {alert.mensaje}
+                      </p>
+                      <div className="border-t border-indigo-700/50 pt-3 relative z-10">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-indigo-300 block mb-1">
+                          Escenario Sugerido
+                        </span>
+                        <span className="text-[14px] font-extrabold uppercase tracking-widest text-white">
+                          {alert.pattern.resultado_esperado || "N/A"}
+                        </span>
+                      </div>
+                   </div>
+                ))}
              </div>
            </div>
+        </div>
+      )}
+
+      {/* ══ Base de Patrones Detectados Históricamente (Level 4B) ══ */}
+      {allPatternsForHour.length > 0 && (
+        <div className="bg-white rounded-[32px] border border-border p-6 lg:p-8 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-[18px] font-bold tracking-tight text-foreground flex items-center gap-2">
+                <DatabaseZap className="size-5 text-indigo-500" />
+                Matriz de Patrones Descubiertos
+              </h3>
+              <p className="text-[13px] text-muted-foreground mt-1">
+                El algoritmo ha minado estos comportamientos recurrentes para este bloque temporal.
+              </p>
+            </div>
+            <div className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-3 py-1 rounded-full">
+              {allPatternsForHour.length} Guardados
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {allPatternsForHour.map((p, idx) => (
+               <div key={idx} className="p-4 rounded-[16px] border border-border bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider">
+                      Secuencia Local
+                    </span>
+                    <span className={cn(
+                      "text-[11px] font-extrabold tabular-nums px-2 py-0.5 rounded-full border",
+                      p.efectividad >= 75 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-blue-50 text-blue-700 border-blue-200"
+                    )}>
+                      {p.efectividad}% WIN
+                    </span>
+                  </div>
+                  <p className="text-[14px] font-bold text-foreground leading-snug mt-3">
+                    {p.nombre}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
+                    {p.descripcion}
+                  </p>
+                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      {p.ocurrencias} HITS HISTÓRICOS
+                    </span>
+                  </div>
+               </div>
+            ))}
+          </div>
         </div>
       )}
 

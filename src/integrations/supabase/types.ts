@@ -288,6 +288,66 @@ export type Database = {
         }
         Relationships: []
       }
+      patterns: {
+        Row: {
+          id: string
+          nombre: string
+          descripcion: string | null
+          tipo: Database["public"]["Enums"]["rule_tipo"]
+          condiciones: Json
+          resultado_esperado: string | null
+          ocurrencias: number
+          aciertos: number
+          efectividad: number
+          ultima_deteccion: string | null
+          hora: string | null
+          activa: boolean
+          source: string
+          estado: string
+          score_confianza: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nombre: string
+          descripcion?: string | null
+          tipo?: Database["public"]["Enums"]["rule_tipo"]
+          condiciones?: Json
+          resultado_esperado?: string | null
+          ocurrencias?: number
+          aciertos?: number
+          efectividad?: number
+          ultima_deteccion?: string | null
+          hora?: string | null
+          activa?: boolean
+          source?: string
+          estado?: string
+          score_confianza?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nombre?: string
+          descripcion?: string | null
+          tipo?: Database["public"]["Enums"]["rule_tipo"]
+          condiciones?: Json
+          resultado_esperado?: string | null
+          ocurrencias?: number
+          aciertos?: number
+          efectividad?: number
+          ultima_deteccion?: string | null
+          hora?: string | null
+          activa?: boolean
+          source?: string
+          estado?: string
+          score_confianza?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           clave: string
