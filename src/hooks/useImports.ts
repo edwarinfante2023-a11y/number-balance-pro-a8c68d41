@@ -178,9 +178,7 @@ export function useExecuteImport() {
             movimiento: r.movimiento,
             extra: r.extra as never,
           }));
-          const { error, count } = await supabase
-            .from("draws")
-            .insert(payload, { count: "exact" });
+          const { error, count } = await supabase.from("draws").insert(payload, { count: "exact" });
           if (error) {
             erroresInsert.push({ index: i, message: error.message });
           } else {

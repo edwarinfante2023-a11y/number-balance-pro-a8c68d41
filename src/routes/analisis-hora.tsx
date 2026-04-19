@@ -1,10 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Loader2, Activity, Zap, CheckCircle2, XCircle, AlertCircle, Clock as ClockIcon } from "lucide-react";
+import {
+  Loader2,
+  Activity,
+  Zap,
+  Clock as ClockIcon,
+  Repeat,
+  Target,
+  TrendingUp,
+  Hash,
+} from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import {
   computeBalance,
+  computeRachas,
+  computeEscenarioProbablePorHora,
   subcuadranteLabel,
   type Subcuadrante,
   type AltoBajo,
@@ -12,106 +24,27 @@ import {
   type Sorteo,
 } from "@/lib/lottery";
 import { BalanceBar } from "@/components/BalanceBar";
-import {
-  AltoBajoBadge,
-  ParImparBadge,
-} from "@/components/ClassificationBadge";
+import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
 import { useDraws } from "@/hooks/useDraws";
 import { drawToSorteo } from "@/lib/drawAdapter";
 
 const HORAS = [
-  "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
-  "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+  "19:00",
+  "20:00",
+  "21:00",
+  "22:00",
 ];
 
-// ─── Helpers para comparación manual vs real ─────────────────────────────────
-
-function normStr(v: unknown): string {
-  if (v == null) return "";
-  return String(v)
-    .trim()
-    .toUpperCase()
-    .replace(/[_\-+&·]/g, " ")
-    .replace(/\s+/g, " ");
-}
-
-function extractAB(s: string): AltoBajo | null {
-  if (s.includes("ALTO")) return "ALTO";
-  if (s.includes("BAJO")) return "BAJO";
-  return null;
-}
-
-function extractPI(s: string): ParImpar | null {
-  if (s.includes("IMPAR")) return "IMPAR";
-  if (s.includes("PAR")) return "PAR";
-  return null;
-}
-
-interface CompRow {
-  id: string;
-  fecha: string;
-  numero: number;
-  escenarioLabel: string;
-  predictedAB: AltoBajo | null;
-  predictedPI: ParImpar | null;
-  actualAB: AltoBajo;
-  actualPI: ParImpar;
-  abMatch: boolean;
-  piMatch: boolean | null;
-}
-
-function buildCompRow(s: Sorteo): CompRow | null {
-  const ma = s.extra?.manual_analysis;
-  if (!ma) return null;
-
-  const escNorm = normStr(ma.escenario_probable);
-  const rngNorm  = normStr(ma.rango);
-  const parNorm  = normStr(ma.paridad);
-  const cuadNorm = normStr(ma.cuadrante);
-
-  const predictedAB: AltoBajo | null =
-    extractAB(escNorm) ?? extractAB(rngNorm) ?? extractAB(cuadNorm);
-
-  const predictedPI: ParImpar | null =
-    extractPI(escNorm) ?? extractPI(parNorm) ?? extractPI(cuadNorm);
-
-  if (predictedAB === null) return null;
-
-  const rawEsc  = ma.escenario_probable;
-  const rawRng  = ma.rango;
-  const rawPar  = ma.paridad;
-  const rawCuad = ma.cuadrante;
-
-  let escenarioLabel: string;
-  if (rawEsc != null && String(rawEsc).trim() !== "") {
-    escenarioLabel = String(rawEsc);
-  } else if (rawRng != null || rawPar != null) {
-    escenarioLabel = [rawRng, rawPar]
-      .filter((x) => x != null && String(x).trim() !== "")
-      .map(String)
-      .join(" + ");
-  } else if (rawCuad != null && String(rawCuad).trim() !== "") {
-    escenarioLabel = String(rawCuad);
-  } else {
-    escenarioLabel = "—";
-  }
-
-  const abMatch = predictedAB === s.altoBajo;
-  const piMatch = predictedPI !== null ? predictedPI === s.parImpar : null;
-
-  return {
-    id: s.id,
-    fecha: s.fecha,
-    numero: s.numero,
-    escenarioLabel,
-    predictedAB,
-    predictedPI,
-    actualAB: s.altoBajo,
-    actualPI: s.parImpar,
-    abMatch,
-    piMatch,
-  };
-}
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -138,14 +71,9 @@ function AnalisisHora() {
   }, [all]);
 
   const [hora, setHora] = useState<string>(() => "13:00");
-  const horaActiva = horasDisponibles.includes(hora)
-    ? hora
-    : (horasDisponibles[0] ?? "13:00");
+  const horaActiva = horasDisponibles.includes(hora) ? hora : (horasDisponibles[0] ?? "13:00");
 
-  const subset = useMemo(
-    () => all.filter((s) => s.hora === horaActiva),
-    [all, horaActiva],
-  );
+  const subset = useMemo(() => all.filter((s) => s.hora === horaActiva), [all, horaActiva]);
 
   const balance = useMemo(() => computeBalance(subset), [subset]);
 
@@ -160,46 +88,67 @@ function AnalisisHora() {
     return map;
   }, [subset]);
 
-  // ─── Datos de comparación manual vs real ─────────────────────────────────
-  const compData = useMemo(() => {
-    const rows: CompRow[] = [];
-    for (const s of subset) {
-      const row = buildCompRow(s);
-      if (row) rows.push(row);
-    }
 
-    rows.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  // ─── Rachas activas para la hora seleccionada ────────────────────────────
+  const rachas = useMemo(() => computeRachas(subset), [subset]);
 
-    const total    = rows.length;
-    const aciertos = rows.filter((r) => r.abMatch).length;
-    const fallos   = total - aciertos;
-    const pct      = total > 0 ? (aciertos / total) * 100 : 0;
-
+  // ─── Tendencia dominante ───────────────────────────────────────────
+  const tendencia = useMemo(() => {
+    const rangoDom: AltoBajo = balance.pctAltos >= balance.pctBajos ? "ALTO" : "BAJO";
+    const paridadDom: ParImpar = balance.pctPares >= balance.pctImpares ? "PAR" : "IMPAR";
+    const cuadEntries = Object.entries(distribucion) as [Subcuadrante, number][];
+    const cuadDom = cuadEntries.reduce((a, b) => (b[1] > a[1] ? b : a), cuadEntries[0]);
     return {
-      rows: rows.slice(0, 100),
-      total,
-      aciertos,
-      fallos,
-      pct,
-      hasData: total > 0,
+      rango: rangoDom,
+      rangoPct: Math.max(balance.pctAltos, balance.pctBajos),
+      paridad: paridadDom,
+      paridadPct: Math.max(balance.pctPares, balance.pctImpares),
+      cuadrante: cuadDom[0],
+      cuadranteCount: cuadDom[1],
+      cuadrantePct: subset.length > 0 ? (cuadDom[1] / subset.length) * 100 : 0,
     };
+  }, [balance, distribucion, subset.length]);
+
+  // ─── Historial reciente (últimos 30) ───────────────────────────────
+  const recientes = useMemo(() => {
+    return [...subset]
+      .sort((a, b) => `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`))
+      .slice(0, 30);
   }, [subset]);
+
+  // ─── Escenario Probable (Level 3) ──────────────────────────────────
+  const escenarioProbable = useMemo(() => {
+    return computeEscenarioProbablePorHora(subset, balance, rachas, distribucion, tendencia);
+  }, [subset, balance, rachas, distribucion, tendencia]);
+
 
   if (isLoading) {
     return (
       <div className="grid place-items-center py-32 text-muted-foreground animate-pulse-subtle">
         <div className="size-14 rounded-[16px] bg-white border border-border grid place-items-center shadow-sm">
-           <Loader2 className="size-6 animate-spin text-primary" />
+          <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pt-2">
-      <div className="mb-8">
-         <h1 className="text-[32px] font-bold tracking-tight text-foreground">Análisis por hora</h1>
-         <p className="text-[15px] text-muted-foreground mt-1 max-w-2xl">Rueda horizontal de comportamiento: análisis de varianza y proyecciones divididas por bloques temporales.</p>
+    <div className="space-y-6 pt-2 pb-10">
+      <div className="mb-8 flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[32px] font-bold tracking-tight text-foreground">Análisis por hora</h1>
+          <p className="text-[15px] text-muted-foreground mt-1 max-w-2xl">
+            Rueda horizontal de comportamiento: análisis de varianza y proyecciones divididas por
+            bloques temporales.
+          </p>
+        </div>
+        <Link
+          to="/comparativa"
+          className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-[16px] font-bold text-[13px] transition-colors shadow-sm"
+        >
+          <TrendingUp className="size-4" />
+          Ir a Comparativa Global
+        </Link>
       </div>
 
       {/* Selector de hora — Hardware Pill Style */}
@@ -207,13 +156,13 @@ function AnalisisHora() {
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-[12px] bg-muted/50 border border-border shadow-sm grid place-items-center shrink-0">
-               <ClockIcon className="size-5 text-muted-foreground" />
+              <ClockIcon className="size-5 text-muted-foreground" />
             </div>
             <div className="text-[12px] font-bold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">
               Seleccionar Bloque Temporal
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-2.5 md:flex-1">
             {horasDisponibles.map((h) => {
               const active = h === horaActiva;
@@ -235,15 +184,98 @@ function AnalisisHora() {
         </div>
       </div>
 
-      {/* Balance histórico + Distribución subcuadrante */}
+      {/* ══ Escenario Probable Hero (Level 3) ══ */}
+      {subset.length > 0 && (
+        <div className="bg-primary text-primary-foreground rounded-[32px] p-6 lg:p-10 shadow-lg relative overflow-hidden group">
+          {/* Background decoration */}
+          <div className="absolute right-0 top-0 translate-x-1/3 -translate-y-1/3 size-64 bg-primary-foreground/10 rounded-full blur-3xl group-hover:bg-primary-foreground/20 transition-colors duration-700" />
+          
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-5 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-primary-foreground/20 pb-6 lg:pb-0 lg:pr-8">
+              <div className="flex items-center gap-3 text-primary-foreground/80 mb-4">
+                <Target className="size-5" />
+                <span className="text-[12px] font-bold uppercase tracking-[0.2em] shadow-sm">
+                  Escenario Probable
+                </span>
+              </div>
+              <div className="text-4xl lg:text-5xl font-extrabold tracking-tight">
+                {escenarioProbable.escenario}
+              </div>
+              
+              <div className="mt-8">
+                <div className="flex items-center justify-between text-[13px] font-bold uppercase tracking-widest mb-3">
+                  <span>Confianza del Modelo</span>
+                  <span className="text-2xl">{escenarioProbable.confianza}%</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-primary-foreground/20 overflow-hidden relative shadow-inner">
+                  <div 
+                    className="h-full bg-white rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                    style={{ width: `${escenarioProbable.confianza}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-7 flex flex-col justify-center">
+              <h4 className="text-[12px] font-bold uppercase tracking-[0.2em] text-primary-foreground/80 mb-4">
+                Factores de Soporte
+              </h4>
+              <div className="space-y-3">
+                {escenarioProbable.razones.map((razon, idx) => (
+                  <div key={idx} className="flex items-start gap-4 bg-primary-foreground/5 bg-opacity-50 p-4 rounded-xl border border-primary-foreground/10 hover:bg-primary-foreground/10 transition-colors">
+                     <span className="mt-0.5 size-5 rounded-full bg-primary-foreground/20 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                       {idx + 1}
+                     </span>
+                     <p className="text-[14px] leading-relaxed font-medium">
+                       {razon}
+                     </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ 4 Summary Cards ══ */}
+      {subset.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-6">
+          <div className="relative rounded-[20px] lg:rounded-[24px] p-5 lg:p-6 shadow-sm overflow-hidden border bg-white border-border">
+            <div className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3 text-muted-foreground">Total Sorteos</div>
+            <div className="text-3xl lg:text-4xl font-extrabold tabular-nums text-foreground">{subset.length}</div>
+            <div className="mt-3 text-[10px] font-bold tracking-widest uppercase text-muted-foreground/60">Bloque {horaActiva}</div>
+          </div>
+          <div className="relative rounded-[20px] lg:rounded-[24px] p-5 lg:p-6 shadow-sm overflow-hidden border bg-white border-border">
+            <div className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3 text-muted-foreground">Rango Dominante</div>
+            <div className={`text-3xl lg:text-4xl font-extrabold tabular-nums ${tendencia.rango === "ALTO" ? "text-blue-600" : "text-amber-600"}`}>{tendencia.rango}</div>
+            <div className="mt-3 text-[10px] font-bold tracking-widest uppercase text-muted-foreground/60">{tendencia.rangoPct.toFixed(0)}% del historial</div>
+          </div>
+          <div className="relative rounded-[20px] lg:rounded-[24px] p-5 lg:p-6 shadow-sm overflow-hidden border bg-white border-border">
+            <div className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3 text-muted-foreground">Paridad Dominante</div>
+            <div className={`text-3xl lg:text-4xl font-extrabold tabular-nums ${tendencia.paridad === "PAR" ? "text-emerald-600" : "text-violet-600"}`}>{tendencia.paridad}</div>
+            <div className="mt-3 text-[10px] font-bold tracking-widest uppercase text-muted-foreground/60">{tendencia.paridadPct.toFixed(0)}% del historial</div>
+          </div>
+          <div className="relative rounded-[20px] lg:rounded-[24px] p-5 lg:p-6 shadow-sm overflow-hidden border bg-emerald-50 border-emerald-100">
+            <div className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3 text-emerald-800">Cuadrante Top</div>
+            <div className="text-2xl lg:text-3xl font-extrabold tabular-nums text-emerald-600">{subcuadranteLabel[tendencia.cuadrante]}</div>
+            <div className="mt-3 text-[10px] font-bold tracking-widest uppercase text-emerald-700/60">{tendencia.cuadrantePct.toFixed(0)}% — {tendencia.cuadranteCount} veces</div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ Balance Histórico + Rachas ══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-[32px] border border-border p-8 shadow-sm relative overflow-hidden">
-          <h3 className="text-[14px] font-bold uppercase tracking-[0.1em] text-foreground mb-8 flex items-center gap-3">
-             <Activity className="size-5 text-muted-foreground/60" /> Balance histórico — {horaActiva}
+        {/* Balance */}
+        <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-border p-5 lg:p-8 shadow-sm relative overflow-hidden">
+          <h3 className="text-[14px] font-bold uppercase tracking-[0.1em] text-foreground mb-6 lg:mb-8 flex items-center gap-3">
+            <Activity className="size-5 text-muted-foreground/60" /> Balance histórico —{" "}
+            {horaActiva}
           </h3>
           {subset.length === 0 ? (
             <div className="py-16 text-center bg-muted/10 rounded-[20px] border border-dashed border-border/50">
-              <p className="text-[13px] font-bold text-muted-foreground tracking-widest uppercase">SIN DATOS PARA RENDERIZAR</p>
+              <p className="text-[13px] font-bold text-muted-foreground tracking-widest uppercase">
+                SIN DATOS PARA RENDERIZAR
+              </p>
             </div>
           ) : (
             <>
@@ -266,31 +298,88 @@ function AnalisisHora() {
                 />
               </div>
               <div className="mt-10 pt-5 border-t border-border flex items-center gap-3">
-                 <span className="size-2 rounded-full bg-border" />
-                 <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                   Muestra: <span className="text-foreground">{subset.length}</span> eventos históricos
-                 </span>
+                <span className="size-2 rounded-full bg-border" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                  Muestra: <span className="text-foreground">{subset.length}</span> eventos
+                  históricos
+                </span>
               </div>
             </>
           )}
         </div>
 
-        <div className="bg-white rounded-[32px] border border-border p-8 shadow-sm relative overflow-hidden flex flex-col">
-          <h3 className="text-[14px] font-bold uppercase tracking-[0.1em] text-foreground mb-8 flex items-center gap-3">
-             Densidad Sectorial
+        {/* Rachas Activas */}
+        <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-border p-5 lg:p-8 shadow-sm relative overflow-hidden flex flex-col">
+          <h3 className="text-[14px] font-bold uppercase tracking-[0.1em] text-foreground mb-6 lg:mb-8 flex items-center gap-3">
+            <Repeat className="size-5 text-primary" /> Rachas Activas
           </h3>
-          <div className="grid grid-cols-2 gap-4 flex-1">
+          {rachas.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center bg-muted/10 rounded-[20px] border border-dashed border-border/50 p-8">
+              <p className="text-[13px] font-bold text-muted-foreground tracking-widest uppercase text-center">
+                Sin rachas detectadas (≥2 consecutivos)
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 flex-1">
+              {rachas.map((r, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-[16px] bg-muted/20 border border-border px-5 py-4 hover:bg-muted/40 transition-colors group"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{r.tipo}</span>
+                    <span className="text-[16px] font-extrabold text-foreground mt-1">{r.valor}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[28px] font-extrabold tabular-nums text-primary group-hover:scale-110 transition-transform">{r.longitud}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">seguidos</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ══ Distribución Sectorial + Tendencia Dominante ══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Distribución por cuadrantes */}
+        <div className="lg:col-span-7 bg-white rounded-[24px] lg:rounded-[32px] border border-border p-5 lg:p-8 shadow-sm relative overflow-hidden">
+          <h3 className="text-[14px] font-bold uppercase tracking-[0.1em] text-foreground mb-6 lg:mb-8 flex items-center gap-3">
+            <Target className="size-5 text-muted-foreground/60" /> Densidad Sectorial
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
             {(Object.keys(distribucion) as Subcuadrante[]).map((k) => {
               const total = subset.length || 1;
               const pct = (distribucion[k] / total) * 100;
+              const isDominant = k === tendencia.cuadrante;
               return (
-                <div key={k} className="relative rounded-[20px] bg-muted/20 border border-border p-5 overflow-hidden group hover:bg-muted/40 hover:border-primary/20 transition-colors">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">{subcuadranteLabel[k]}</div>
+                <div
+                  key={k}
+                  className={cn(
+                    "relative rounded-[20px] border p-5 overflow-hidden group hover:border-primary/20 transition-colors",
+                    isDominant ? "bg-primary/5 border-primary/20" : "bg-muted/20 border-border",
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                      {subcuadranteLabel[k]}
+                    </div>
+                    {isDominant && (
+                      <span className="text-[9px] font-bold uppercase tracking-widest bg-primary text-white px-1.5 py-0.5 rounded-md">TOP</span>
+                    )}
+                  </div>
                   <div className="mt-2 text-4xl font-extrabold tabular-nums text-foreground group-hover:scale-105 transition-transform duration-300 origin-left">
                     {distribucion[k]}
                   </div>
                   <div className="mt-5 h-[6px] rounded-full bg-border shadow-inner overflow-hidden relative">
-                    <div className="h-full bg-muted-foreground/30 rounded-full group-hover:bg-primary transition-colors duration-500" style={{ width: `${pct}%` }} />
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-colors duration-500",
+                        isDominant ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-primary",
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                   <div className="mt-2 text-[11px] font-bold tracking-widest text-muted-foreground tabular-nums text-right">
                     {pct.toFixed(1)}%
@@ -300,193 +389,129 @@ function AnalisisHora() {
             })}
           </div>
         </div>
-      </div>
 
-      {/* Patrones más comunes */}
-      {subset.length > 0 && (
-        <div className="bg-white rounded-[32px] border border-border p-8 shadow-sm relative overflow-hidden">
-          <h3 className="text-[14px] font-bold uppercase tracking-[0.1em] text-foreground mb-6 flex items-center gap-3">
-             <Zap className="size-5 text-primary" /> Fricción Constante
+        {/* Tendencia Dominante */}
+        <div className="lg:col-span-5 bg-white rounded-[24px] lg:rounded-[32px] border border-border p-5 lg:p-8 shadow-sm relative overflow-hidden flex flex-col">
+          <h3 className="text-[14px] font-bold uppercase tracking-[0.1em] text-foreground mb-6 lg:mb-8 flex items-center gap-3">
+            <TrendingUp className="size-5 text-primary" /> Tendencia Dominante
           </h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex items-center justify-between rounded-[20px] bg-muted/40 border border-border px-6 py-4 transition-colors">
-              <span className="text-[13px] font-bold text-muted-foreground">
-                Vector dominante:{" "}
-                <span className="font-extrabold text-foreground ml-1">{balance.pctAltos > balance.pctBajos ? "ALTO" : "BAJO"}</span>
-              </span>
-              <span className="text-[18px] font-extrabold tabular-nums text-primary">
-                {Math.max(balance.pctAltos, balance.pctBajos).toFixed(0)}%
-              </span>
+          {subset.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center bg-muted/10 rounded-[20px] border border-dashed border-border/50 p-8">
+              <p className="text-[13px] font-bold text-muted-foreground tracking-widest uppercase text-center">
+                Sin datos
+              </p>
             </div>
-            <div className="flex items-center justify-between rounded-[20px] bg-muted/40 border border-border px-6 py-4 transition-colors">
-              <span className="text-[13px] font-bold text-muted-foreground">
-                Polaridad:{" "}
-                <span className="font-extrabold text-foreground ml-1">{balance.pctPares > balance.pctImpares ? "PAR" : "IMPAR"}</span>
-              </span>
-              <span className="text-[18px] font-extrabold tabular-nums text-primary">
-                {Math.max(balance.pctPares, balance.pctImpares).toFixed(0)}%
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  SECCIÓN: Análisis manual vs resultado real                       */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-
-      {compData.hasData ? (
-        <div className="mt-16 space-y-6">
-          {/* Encabezado de sección */}
-          <div className="border-t border-border pt-10 mb-8">
-            <h3 className="text-[20px] font-bold tracking-tight text-foreground flex items-center gap-3">
-               Auditoría Humana vs IA
-               <div className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-muted text-muted-foreground border border-border">BETA</div>
-            </h3>
-            <p className="text-[14px] text-muted-foreground mt-2 max-w-3xl leading-relaxed">
-              Validación cruzada entre predicciones del operador (batch manual) y los eventos resolutivos registrados en la ventana [ <span className="font-bold text-foreground">{horaActiva}</span> ].
-            </p>
-          </div>
-
-          {/* Tarjetas resumen */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            <CompStat
-              label="Muestra Evaluada"
-              value={compData.total.toString()}
-              hint="Eventos traceados"
-            />
-            <CompStat
-              label="Hits (Aciertos)"
-              value={compData.aciertos.toString()}
-              tone="success"
-              hint="Rango convergente"
-            />
-            <CompStat
-              label="Miss (Fallos)"
-              value={compData.fallos.toString()}
-              tone="error"
-              hint="Rango divergente"
-            />
-            <CompStat
-              label="Ratio (Winrate)"
-              value={`${compData.pct.toFixed(0)}%`}
-              tone={
-                compData.pct >= 60
-                  ? "success"
-                  : compData.pct >= 40
-                    ? "warning"
-                    : "error"
-              }
-              hint="Efectividad total"
-            />
-          </div>
-
-          {/* Barra de efectividad */}
-          <div className="bg-white rounded-[32px] border border-border shadow-sm p-8 relative overflow-hidden">
-            
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4 relative z-10">
-              <div>
-                 <span className="text-[15px] font-bold uppercase tracking-[0.1em] text-foreground">
-                   Desempeño de Vector Principal (A/B)
-                 </span>
-                 <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed max-w-2xl font-medium">
-                   El sistema de scoring principal valora la aserción de rango. Si existe paridad, se documenta como hiper-convergencia paralela ("Acierto completo").
-                 </p>
+          ) : (
+            <div className="space-y-4 flex-1">
+              <div className="rounded-[16px] bg-muted/20 border border-border px-5 py-4">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Rango</span>
+                <div className="flex items-center justify-between mt-2">
+                  <span className={`text-[20px] font-extrabold ${tendencia.rango === "ALTO" ? "text-blue-600" : "text-amber-600"}`}>{tendencia.rango}</span>
+                  <span className="text-[18px] font-extrabold tabular-nums text-primary">{tendencia.rangoPct.toFixed(0)}%</span>
+                </div>
               </div>
-              <div className="flex items-baseline gap-2 shrink-0 bg-muted/50 px-4 py-2 rounded-xl border border-border">
-                <span className="text-[11px] font-bold text-muted-foreground uppercase">Score</span>
-                <span className="text-2xl font-extrabold tabular-nums text-foreground">
-                  {compData.aciertos}
-                </span>
-                <span className="text-[13px] text-muted-foreground font-bold">/ {compData.total}</span>
+              <div className="rounded-[16px] bg-muted/20 border border-border px-5 py-4">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Paridad</span>
+                <div className="flex items-center justify-between mt-2">
+                  <span className={`text-[20px] font-extrabold ${tendencia.paridad === "PAR" ? "text-emerald-600" : "text-violet-600"}`}>{tendencia.paridad}</span>
+                  <span className="text-[18px] font-extrabold tabular-nums text-primary">{tendencia.paridadPct.toFixed(0)}%</span>
+                </div>
               </div>
-            </div>
-            <div className="h-4 rounded-full bg-muted border border-border overflow-hidden relative z-10">
-              <div
-                className={`h-full relative transition-all duration-1000 ${
-                  compData.pct >= 60
-                    ? "bg-emerald-500"
-                    : compData.pct >= 40
-                      ? "bg-orange-500"
-                      : "bg-red-500"
-                }`}
-                style={{ width: `${compData.pct}%` }}
-              >
+              <div className="rounded-[16px] bg-primary/5 border border-primary/20 px-5 py-4">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-primary">Cuadrante Dominante</span>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[20px] font-extrabold text-foreground">{subcuadranteLabel[tendencia.cuadrante]}</span>
+                  <span className="text-[18px] font-extrabold tabular-nums text-primary">{tendencia.cuadrantePct.toFixed(0)}%</span>
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Tabla detallada - Terminal UI */}
-          <div className="bg-white rounded-[32px] border border-border shadow-sm overflow-hidden">
-            <div className="px-8 py-6 border-b border-border bg-muted/10 flex items-center justify-between">
-              <div>
-                <h4 className="text-[15px] font-bold uppercase tracking-[0.1em] text-foreground">Trace Log</h4>
-                <p className="text-[12px] text-muted-foreground mt-1 font-bold">
-                  {compData.rows.length < compData.total
-                    ? `[ LIMIT ${compData.rows.length} / ${compData.total} ] DESC`
-                    : `[ FULL DUMP ${compData.total} ] DESC`}
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-[12px] text-muted-foreground font-medium leading-relaxed">
+                  Basado en <span className="font-bold text-foreground">{subset.length}</span> sorteos históricos del bloque <span className="font-bold text-foreground">{horaActiva}</span>.
+                  El escenario estadísticamente más probable es: <span className="font-bold text-primary">{subcuadranteLabel[tendencia.cuadrante]}</span>.
                 </p>
               </div>
             </div>
+          )}
+        </div>
+      </div>
 
-            <div className="overflow-x-auto">
+      {/* ══ Historial Reciente de la Hora ══ */}
+      {recientes.length > 0 && (
+        <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-border shadow-sm overflow-hidden">
+          <div className="px-5 lg:px-8 py-5 lg:py-6 border-b border-border bg-muted/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Hash className="size-5 text-muted-foreground" />
+              <div>
+                <h4 className="text-[15px] font-bold uppercase tracking-[0.1em] text-foreground">
+                  Historial Reciente — {horaActiva}
+                </h4>
+                <p className="text-[12px] text-muted-foreground mt-1 font-bold">
+                  [ Últimos {recientes.length} sorteos ] DESC
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full">
+            {/* Mobile Card List */}
+            <div className="lg:hidden flex flex-col divide-y divide-border bg-white w-full">
+              {recientes.map((s) => (
+                <div key={s.id} className="p-5 flex flex-col gap-3 bg-white hover:bg-muted/20 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-mono font-bold text-muted-foreground uppercase tracking-widest">{s.fecha}</span>
+                      <span className="font-bold text-foreground text-[14px] mt-1">{s.loteria}</span>
+                    </div>
+                    <div className="size-12 rounded-xl bg-muted/40 border border-border flex items-center justify-center shadow-sm shrink-0">
+                      <span className="font-mono text-[22px] font-extrabold text-foreground">
+                        {s.numero.toString().padStart(2, "0")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <AltoBajoBadge value={s.altoBajo} soft={false} />
+                    <ParImparBadge value={s.parImpar} soft={false} />
+                    <SubcuadranteBadge value={s.subcuadrante} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-muted/5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground border-b border-border">
                   <tr>
-                    <th className="px-8 py-4 whitespace-nowrap">Timestamp</th>
-                    <th className="px-8 py-4 whitespace-nowrap">Matriz</th>
-                    <th className="px-8 py-4 whitespace-nowrap">Input Manual</th>
-                    <th className="px-8 py-4 whitespace-nowrap">Event Output</th>
-                    <th className="px-8 py-4 whitespace-nowrap">State</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Fecha</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Matriz</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Número</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Alto/Bajo</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Par/Impar</th>
+                    <th className="px-6 py-4 whitespace-nowrap">Cuadrante</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {compData.rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="group hover:bg-muted/20 transition-colors"
-                    >
-                      <td className="px-8 py-4 tabular-nums text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
-                        {row.fecha}
+                  {recientes.map((s) => (
+                    <tr key={s.id} className="group hover:bg-muted/20 transition-colors">
+                      <td className="px-6 py-4 tabular-nums text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
+                        {s.fecha}
                       </td>
-                      <td className="px-8 py-4 font-mono text-[16px] font-extrabold text-foreground tabular-nums">
-                        {row.numero.toString().padStart(2, "0")}
+                      <td className="px-6 py-4 text-[13px] font-bold text-foreground">
+                        {s.loteria}
                       </td>
-                      <td className="px-8 py-4">
-                        <div className="flex flex-col gap-2">
-                          <span
-                            className="text-[13px] font-bold text-muted-foreground truncate max-w-[200px]"
-                            title={row.escenarioLabel}
-                          >
-                            {row.escenarioLabel}
-                          </span>
-                          {/* Predicción parseada*/}
-                          {row.predictedAB && (
-                            <div className="flex gap-2 flex-wrap">
-                              <span className="inline-block rounded-md border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest tabular-nums text-foreground shadow-sm">
-                                {row.predictedAB}
-                              </span>
-                              {row.predictedPI && (
-                                <span className="inline-block rounded-md border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest tabular-nums text-foreground shadow-sm">
-                                  {row.predictedPI}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-[18px] font-extrabold text-foreground bg-muted px-3 py-1 rounded-[8px] border border-border shadow-sm">
+                          {s.numero.toString().padStart(2, "0")}
+                        </span>
                       </td>
-                      <td className="px-8 py-4">
-                        <div className="flex gap-2 flex-wrap">
-                          <AltoBajoBadge value={row.actualAB} soft={false} />
-                          <ParImparBadge value={row.actualPI} soft={false} />
-                        </div>
+                      <td className="px-6 py-4">
+                        <AltoBajoBadge value={s.altoBajo} soft={false} />
                       </td>
-                      <td className="px-8 py-4">
-                        <EvaluacionBadge
-                          abMatch={row.abMatch}
-                          piMatch={row.piMatch}
-                          hasPi={row.predictedPI !== null}
-                        />
+                      <td className="px-6 py-4">
+                        <ParImparBadge value={s.parImpar} soft={false} />
+                      </td>
+                      <td className="px-6 py-4">
+                        <SubcuadranteBadge value={s.subcuadrante} />
                       </td>
                     </tr>
                   ))}
@@ -495,110 +520,10 @@ function AnalisisHora() {
             </div>
           </div>
         </div>
-      ) : (
-        /* Estado vacío */
-        subset.length > 0 && (
-          <div className="mt-10 rounded-[32px] border border-dashed border-border/70 bg-white p-12 text-center relative overflow-hidden group">
-            
-            <div className="mx-auto flex size-16 items-center justify-center rounded-[20px] bg-muted border border-border mb-6 shadow-sm">
-               <AlertCircle className="size-6 text-muted-foreground group-hover:text-primary transition-colors duration-500" />
-            </div>
-            <p className="text-[16px] font-bold text-foreground tracking-tight">
-              Sin auditoría operaria en <span className="font-extrabold ml-1">{horaActiva}</span>
-            </p>
-            <p className="text-[14px] text-muted-foreground mt-3 max-w-xl mx-auto leading-relaxed">
-              El subsistema de validación cruzada requiere que el batch de datos inyectados vía Excel posea las columnas 'Escenario probable', 'Rango' o 'Paridad'.
-            </p>
-          </div>
-        )
       )}
+
+
     </div>
   );
 }
 
-// ─── Sub-componentes de UI ────────────────────────────────────────────────────
-
-function CompStat({
-  label,
-  value,
-  tone,
-  hint,
-}: {
-  label: string;
-  value: string;
-  tone?: "success" | "error" | "warning";
-  hint?: string;
-}) {
-  const isSuccess = tone === "success";
-  const isError = tone === "error";
-  const isWarning = tone === "warning";
-
-  return (
-    <div className={cn(
-      "relative rounded-[24px] p-6 shadow-sm overflow-hidden border",
-      isSuccess ? "bg-emerald-50 border-emerald-100" :
-      isError ? "bg-red-50 border-red-100" :
-      isWarning ? "bg-orange-50 border-orange-100" :
-      "bg-white border-border"
-    )}>
-      <div className={cn(
-        "text-[11px] font-bold uppercase tracking-[0.1em] mb-3 relative z-10",
-        isSuccess ? "text-emerald-800" :
-        isError ? "text-red-800" :
-        isWarning ? "text-orange-800" :
-        "text-muted-foreground"
-      )}>{label}</div>
-      <div className={`text-4xl font-extrabold tabular-nums relative z-10 ${
-        isSuccess ? "text-emerald-600" : isError ? "text-red-600" : isWarning ? "text-orange-600" : "text-foreground"
-      }`}>
-        {value}
-      </div>
-      {hint && (
-        <div className={cn(
-           "mt-3 text-[10px] font-bold tracking-widest uppercase relative z-10",
-           isSuccess ? "text-emerald-700/60" :
-           isError ? "text-red-700/60" :
-           isWarning ? "text-orange-700/60" :
-           "text-muted-foreground/60"
-        )}>{hint}</div>
-      )}
-    </div>
-  );
-}
-
-function EvaluacionBadge({
-  abMatch,
-  piMatch,
-  hasPi,
-}: {
-  abMatch: boolean;
-  piMatch: boolean | null;
-  hasPi: boolean;
-}) {
-  if (abMatch && hasPi && piMatch === true) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-[8px] bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-bold text-emerald-700 whitespace-nowrap shadow-sm">
-        <CheckCircle2 className="size-3.5" /> Acierto Comp.
-      </span>
-    );
-  }
-  if (abMatch) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-[8px] bg-emerald-50/50 border border-emerald-200/50 px-2.5 py-1 text-[11px] font-bold text-emerald-600 whitespace-nowrap">
-        <CheckCircle2 className="size-3.5 opacity-70" /> Acierto
-      </span>
-    );
-  }
-  if (!abMatch && piMatch === true) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-[8px] bg-orange-50 border border-orange-200 px-2.5 py-1 text-[11px] font-bold text-orange-700 whitespace-nowrap">
-        <Activity className="size-3.5 opacity-70" /> Parcial
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-[8px] bg-red-50 border border-red-200 px-2.5 py-1 text-[11px] font-bold text-red-700 whitespace-nowrap">
-      <XCircle className="size-3.5" /> Fallo
-    </span>
-  );
-}

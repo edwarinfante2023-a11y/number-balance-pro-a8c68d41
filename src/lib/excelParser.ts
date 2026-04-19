@@ -183,7 +183,9 @@ export function detectBlocks(matrix: Cell[][], sheetName: string): DetectedBlock
 
       if (rows.length > 0) {
         blocks.push({
-          label: contextoFecha ? `${sheetName} · ${contextoFecha}` : `${sheetName} · bloque ${blockIdx + 1}`,
+          label: contextoFecha
+            ? `${sheetName} · ${contextoFecha}`
+            : `${sheetName} · bloque ${blockIdx + 1}`,
           sheetName,
           headerRowIndex,
           dataStartIndex: dataStart,
@@ -469,18 +471,31 @@ export function normalizeFecha(v: unknown): string | null {
   }
   // dd-mes-yy (español: 19-feb-26)
   const monthNames: Record<string, number> = {
-    ene: 1, enero: 1,
-    feb: 2, febrero: 2,
-    mar: 3, marzo: 3,
-    abr: 4, abril: 4,
-    may: 5, mayo: 5,
-    jun: 6, junio: 6,
-    jul: 7, julio: 7,
-    ago: 8, agosto: 8,
-    sep: 9, sept: 9, septiembre: 9,
-    oct: 10, octubre: 10,
-    nov: 11, noviembre: 11,
-    dic: 12, diciembre: 12,
+    ene: 1,
+    enero: 1,
+    feb: 2,
+    febrero: 2,
+    mar: 3,
+    marzo: 3,
+    abr: 4,
+    abril: 4,
+    may: 5,
+    mayo: 5,
+    jun: 6,
+    junio: 6,
+    jul: 7,
+    julio: 7,
+    ago: 8,
+    agosto: 8,
+    sep: 9,
+    sept: 9,
+    septiembre: 9,
+    oct: 10,
+    octubre: 10,
+    nov: 11,
+    noviembre: 11,
+    dic: 12,
+    diciembre: 12,
   };
   const dmes = /^(\d{1,2})[-/\s]([a-záéíóú]+)[-/\s]?(\d{2,4})?$/i.exec(s);
   if (dmes) {
@@ -595,8 +610,7 @@ export function buildRows(rows: RawRow[], opts: BuildOptions): BuildResult {
     const lotRaw = mapping.loteria ? row[mapping.loteria] : null;
 
     // Si no hay fecha en la fila, usar la fecha contextual del bloque
-    const fecha =
-      normalizeFecha(fechaRaw) ?? normalizeFecha(row["__fechaCtx"]) ?? null;
+    const fecha = normalizeFecha(fechaRaw) ?? normalizeFecha(row["__fechaCtx"]) ?? null;
     const hora = normalizeHora(horaRaw);
     const numero = normalizeNumero(numRaw, opts.rangeMin, opts.rangeMax);
     const loteria = (lotRaw ? String(lotRaw).trim() : "") || opts.loteriaFallback || "";
@@ -678,4 +692,3 @@ export function buildRows(rows: RawRow[], opts: BuildOptions): BuildResult {
 
   return { valid, errors };
 }
-

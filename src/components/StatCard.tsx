@@ -57,14 +57,14 @@ export function StatCard({
         "group relative flex flex-col justify-between overflow-hidden rounded-[24px] p-6 lg:p-7",
         "bg-white border border-border shadow-sm transition-all duration-300",
         styles.borderHover,
-        "hover:-translate-y-1 hover:shadow-md cursor-default"
+        "hover:-translate-y-1 hover:shadow-md cursor-default",
       )}
     >
       {/* Soft gradient background decoration */}
       <div
         className={cn(
           "absolute -top-10 -right-10 h-32 w-32 rounded-full blur-[40px] opacity-10 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none",
-          styles.dot // Reuse dot color for the blur
+          styles.dot, // Reuse dot color for the blur
         )}
       />
 
@@ -83,7 +83,7 @@ export function StatCard({
             className={cn(
               "flex size-10 items-center justify-center rounded-xl",
               styles.iconBg,
-              "group-hover:scale-110 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+              "group-hover:scale-110 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
             )}
           >
             <div className="size-5 shrink-0">{icon}</div>
@@ -94,9 +94,9 @@ export function StatCard({
       {/* Bottom section: Value and Hint */}
       <div className="relative z-10">
         <div className="flex items-baseline gap-2">
-           <div className="text-[40px] font-extrabold tracking-tight text-foreground leading-none transition-transform duration-300 group-hover:translate-x-1">
-             {value}
-           </div>
+          <div className="text-[40px] font-extrabold tracking-tight text-foreground leading-none transition-transform duration-300 group-hover:translate-x-1">
+            {value}
+          </div>
         </div>
         {hint && (
           <div className="mt-3 flex items-center gap-2 text-[12px] font-medium text-muted-foreground leading-relaxed border-t border-border pt-3">

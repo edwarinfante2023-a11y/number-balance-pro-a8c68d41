@@ -74,14 +74,14 @@ supabase/
 
 El archivo **`.env`** lo gestiona Lovable automáticamente y **no se sube a GitHub** (está en `.gitignore`). Si trabajas fuera de Lovable, copia `.env.example` a `.env` y rellena los valores reales.
 
-| Variable | Dónde se usa | Cómo obtenerla |
-|---|---|---|
-| `VITE_SUPABASE_URL` | Cliente browser | Lovable Cloud → Backend → Connect |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Cliente browser (anon key, pública) | Lovable Cloud → Backend → Connect |
-| `VITE_SUPABASE_PROJECT_ID` | Referencia interna | Lovable Cloud → Backend → Connect |
-| `SUPABASE_URL` | Server / SSR | Igual que `VITE_SUPABASE_URL` |
-| `SUPABASE_PUBLISHABLE_KEY` | Server / SSR | Igual que `VITE_SUPABASE_PUBLISHABLE_KEY` |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Solo server**, bypass de RLS | Lovable Cloud → Backend → Connect |
+| Variable                        | Dónde se usa                        | Cómo obtenerla                            |
+| ------------------------------- | ----------------------------------- | ----------------------------------------- |
+| `VITE_SUPABASE_URL`             | Cliente browser                     | Lovable Cloud → Backend → Connect         |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Cliente browser (anon key, pública) | Lovable Cloud → Backend → Connect         |
+| `VITE_SUPABASE_PROJECT_ID`      | Referencia interna                  | Lovable Cloud → Backend → Connect         |
+| `SUPABASE_URL`                  | Server / SSR                        | Igual que `VITE_SUPABASE_URL`             |
+| `SUPABASE_PUBLISHABLE_KEY`      | Server / SSR                        | Igual que `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| `SUPABASE_SERVICE_ROLE_KEY`     | **Solo server**, bypass de RLS      | Lovable Cloud → Backend → Connect         |
 
 > ⚠️ **Nunca** expongas `SUPABASE_SERVICE_ROLE_KEY` al cliente. Solo úsala en `client.server.ts` o edge functions.
 
@@ -157,4 +157,3 @@ Instala/elimina con `bun add <pkg>` / `bun remove <pkg>`. Si trabajas desde Lova
 - **Docs TanStack Start:** https://tanstack.com/start
 
 <!-- sync-check: GitHub ↔ Lovable verificado -->
-

@@ -48,9 +48,7 @@ export function useDraws(opts?: {
     queryFn: async (): Promise<Draw[]> => {
       let q = supabase
         .from("draws")
-        .select(
-          "*, lottery_draws!inner(id, hora, nombre, loteria_id, lotteries!inner(id, nombre))",
-        )
+        .select("*, lottery_draws!inner(id, hora, nombre, loteria_id, lotteries!inner(id, nombre))")
         .order("fecha", { ascending: false });
       if (opts?.sorteoId) q = q.eq("sorteo_id", opts.sorteoId);
       if (opts?.loteriaId) q = q.eq("lottery_draws.loteria_id", opts.loteriaId);
@@ -85,11 +83,7 @@ export function useCreateDraw() {
         observacion: input.observacion ?? null,
         movimiento: input.movimiento ?? null,
       };
-      const { data, error } = await supabase
-        .from("draws")
-        .insert(payload)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("draws").insert(payload).select().single();
       if (error) throw error;
       return data;
     },

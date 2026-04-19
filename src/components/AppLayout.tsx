@@ -16,6 +16,7 @@ import {
   X,
   Search,
   Bell,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +36,7 @@ const NAV: NavItem[] = [
   { to: "/", label: "Panel Principal", icon: LayoutDashboard, exact: true, section: "MENU", badge: 12 },
   { to: "/historial", label: "Registro Histórico", icon: History, section: "MENU" },
   { to: "/analisis-hora", label: "Análisis por hora", icon: Clock, section: "MENU" },
+  { to: "/comparativa", label: "Manual vs Real", icon: TrendingUp, section: "MENU" },
   { to: "/reglas", label: "Reglas Lógicas", icon: ScrollText, section: "MENU" },
   { to: "/importar", label: "Ingestión de Datos", icon: FileSpreadsheet, section: "DATA" },
   { to: "/captura", label: "Captura Manual", icon: PencilLine, section: "DATA" },
@@ -107,8 +109,8 @@ export function AppLayout() {
       {/* ─── Sidebar (Donezo Style) ───────────────────────────────────────────── */}
       <aside
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-40 w-[260px] m-4 lg:my-6 lg:ml-6 flex flex-col shrink-0 bg-white rounded-[32px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:translate-x-0 shadow-sm border border-border border-b-2 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
-          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          "fixed lg:static inset-y-0 left-0 z-[60] w-[280px] m-4 lg:my-6 lg:ml-6 flex flex-col shrink-0 bg-white rounded-[32px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:translate-x-0 shadow-[0_20px_40px_rgba(0,0,0,0.1)] lg:shadow-sm border border-border border-b-2 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+          open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
         )}
       >
         {/* Brand */}
@@ -124,7 +126,7 @@ export function AppLayout() {
           {/* Close on mobile */}
           <button
             onClick={() => setOpen(false)}
-            className="lg:hidden ml-auto p-2 rounded-full bg-muted text-muted-foreground"
+            className="lg:hidden ml-auto size-8 flex items-center justify-center rounded-full bg-muted text-muted-foreground outline-none cursor-pointer"
           >
             <X className="size-4" />
           </button>
@@ -208,7 +210,7 @@ export function AppLayout() {
       {open && (
         <div
           onClick={() => setOpen(false)}
-          className="lg:hidden fixed inset-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity"
+          className="lg:hidden fixed inset-0 z-50 bg-black/20 backdrop-blur-sm transition-opacity"
         />
       )}
 
@@ -216,13 +218,7 @@ export function AppLayout() {
       <div className="relative flex-1 flex flex-col min-w-0 z-10 lg:my-6 lg:mr-6">
         
         {/* Top Header (SearchBar + Profile) like Donezo */}
-        <header className="flex items-center gap-4 px-4 lg:px-8 h-[88px] shrink-0">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="lg:hidden p-2 rounded-xl bg-white border border-border text-foreground hover:shadow-sm"
-          >
-            <Menu className="size-5" />
-          </button>
+        <header className="hidden lg:flex items-center gap-4 px-5 lg:px-8 h-[88px] shrink-0">
 
           {/* Search bar mock */}
           <div className="hidden md:flex items-center h-12 bg-white border border-border rounded-full px-4 w-full max-w-[400px] shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-primary/20">
@@ -253,15 +249,103 @@ export function AppLayout() {
                </div>
              </div>
           </div>
+         </header>
+
+        {/* ─── MOBILE NATIVE TOP HEADER ─── */}
+        <header className="flex lg:hidden sticky top-0 z-40 h-[64px] items-center justify-between px-5 bg-white/80 backdrop-blur-xl border-b border-border/50">
+           <div className="flex items-center gap-2.5">
+             <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 border-2 border-primary/20">
+               <div className="size-2 rounded-full bg-primary" />
+             </div>
+             <span className="text-[17px] font-bold text-foreground tracking-tight">Cuadrante</span>
+           </div>
+           <div className="flex items-center gap-3">
+             <button className="relative size-9 flex items-center justify-center rounded-full bg-muted/50 border border-border text-foreground hover:bg-muted transition-colors outline-none cursor-pointer">
+               <Bell className="size-[17px]" />
+               <span className="absolute top-1 right-1.5 size-2.5 rounded-full bg-primary border-2 border-white" />
+             </button>
+             <div className="size-9 rounded-full bg-emerald-100 flex items-center justify-center border border-emerald-200">
+               <span className="text-[12px] font-bold text-emerald-800">
+                 {(session.user.email ?? "A")[0].toUpperCase()}
+               </span>
+             </div>
+           </div>
         </header>
 
         {/* Page content */}
         <main className="flex-1 min-w-0 relative">
-          <div className="mx-auto h-full px-4 lg:px-8 pb-10 animate-fade-in relative z-10">
+          <div className="mx-auto h-full px-4 lg:px-8 pb-32 lg:pb-10 animate-fade-in relative z-10">
             <Outlet />
           </div>
         </main>
       </div>
+
+      {/* ─── NATIVE FLOATING BOTTOM NAVIGATION (Mobile Only) ─── */}
+      <nav className="fixed lg:hidden bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4 right-4 z-50">
+        <div className="flex items-center justify-around h-[70px] px-2 bg-white/95 backdrop-blur-2xl border border-white/40 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] rounded-[24px]">
+          {[
+            { to: "/", icon: LayoutDashboard, label: "Home" },
+            { to: "/captura", icon: PencilLine, label: "Captura" },
+            { to: "/analisis-hora", icon: Clock, label: "Análisis" },
+            { to: "/historial", icon: History, label: "Historial" },
+            { isMenuTrigger: true, icon: Menu, label: "Menú" },
+          ].map((item, idx) => {
+            const active = item.to ? (item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to)) : open;
+            const Icon = item.icon;
+            
+            const content = (
+              <>
+                {/* Floating Icon Base */}
+                <div className={cn(
+                   "relative flex items-center justify-center rounded-[18px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                   active 
+                     ? "size-[44px] bg-primary text-white shadow-[0_8px_20px_oklch(0.42_0.09_155/0.4)] -translate-y-[10px]" 
+                     : "size-[40px] bg-transparent text-muted-foreground group-hover:bg-muted/50 group-hover:text-foreground"
+                )}>
+                   <Icon className={cn("size-[22px]", active ? "stroke-[2.5px] drop-shadow-sm" : "stroke-[1.75px]")} />
+                </div>
+                
+                {/* Label that slides up when active */}
+                <span className={cn(
+                   "absolute bottom-[2px] text-[9.5px] font-extrabold uppercase tracking-widest transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                   active 
+                     ? "opacity-100 translate-y-0 text-primary" 
+                     : "opacity-0 translate-y-2 pointer-events-none"
+                )}>
+                  {item.label}
+                </span>
+
+                {/* Subtle bottom indicator dot */}
+                {active && (
+                   <span className="absolute -bottom-2 size-[4px] rounded-full bg-primary/30" />
+                )}
+              </>
+            );
+
+            if (item.isMenuTrigger) {
+              return (
+                <button
+                  key={`btn-${idx}`}
+                  onClick={() => setOpen(true)}
+                  className="relative flex flex-col items-center justify-center w-full h-[60px] outline-none select-none group cursor-pointer"
+                >
+                  {content}
+                </button>
+              );
+            }
+
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="relative flex flex-col items-center justify-center w-full h-[60px] outline-none select-none group"
+              >
+                {content}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

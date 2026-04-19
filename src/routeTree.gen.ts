@@ -14,6 +14,7 @@ import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ImportarRouteImport } from './routes/importar'
 import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
+import { Route as ComparativaRouteImport } from './routes/comparativa'
 import { Route as CapturaRouteImport } from './routes/captura'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
@@ -44,6 +45,11 @@ const ConfiguracionRoute = ConfiguracionRouteImport.update({
   path: '/configuracion',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComparativaRoute = ComparativaRouteImport.update({
+  id: '/comparativa',
+  path: '/comparativa',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CapturaRoute = CapturaRouteImport.update({
   id: '/captura',
   path: '/captura',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
+  '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
+  '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
+  '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/analisis-hora'
     | '/auth'
     | '/captura'
+    | '/comparativa'
     | '/configuracion'
     | '/historial'
     | '/importar'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/analisis-hora'
     | '/auth'
     | '/captura'
+    | '/comparativa'
     | '/configuracion'
     | '/historial'
     | '/importar'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/analisis-hora'
     | '/auth'
     | '/captura'
+    | '/comparativa'
     | '/configuracion'
     | '/historial'
     | '/importar'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   AnalisisHoraRoute: typeof AnalisisHoraRoute
   AuthRoute: typeof AuthRoute
   CapturaRoute: typeof CapturaRoute
+  ComparativaRoute: typeof ComparativaRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   HistorialRoute: typeof HistorialRoute
   ImportarRoute: typeof ImportarRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfiguracionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/comparativa': {
+      id: '/comparativa'
+      path: '/comparativa'
+      fullPath: '/comparativa'
+      preLoaderRoute: typeof ComparativaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/captura': {
       id: '/captura'
       path: '/captura'
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalisisHoraRoute: AnalisisHoraRoute,
   AuthRoute: AuthRoute,
   CapturaRoute: CapturaRoute,
+  ComparativaRoute: ComparativaRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   HistorialRoute: HistorialRoute,
   ImportarRoute: ImportarRoute,

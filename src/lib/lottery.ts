@@ -94,9 +94,26 @@ function pad(n: number) {
   return n.toString().padStart(2, "0");
 }
 
-export function generateDemoHistory(days = 30, cfg: ClassificationConfig = defaultConfig): Sorteo[] {
+export function generateDemoHistory(
+  days = 30,
+  cfg: ClassificationConfig = defaultConfig,
+): Sorteo[] {
   const rand = seededRandom(42);
-  const horas = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"];
+  const horas = [
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
+    "21:00",
+  ];
   const out: Sorteo[] = [];
   const today = new Date();
 
@@ -198,7 +215,8 @@ export function computeRachas(sorteos: Sorteo[]): Racha[] {
     if (ordered[i].subcuadrante === last.subcuadrante) k++;
     else break;
   }
-  if (k >= 2) out.push({ tipo: "Cuadrante", valor: subcuadranteLabel[last.subcuadrante], longitud: k });
+  if (k >= 2)
+    out.push({ tipo: "Cuadrante", valor: subcuadranteLabel[last.subcuadrante], longitud: k });
 
   return out;
 }
@@ -242,11 +260,15 @@ export function computeEscenarioProbable(sorteos: Sorteo[]): EscenarioProbable {
   if (balance.pctAltos > 60) {
     lean.ab = "BAJO";
     score += 12;
-    razones.push(`Exceso de ALTOS detectado (${balance.pctAltos.toFixed(0)}%) en últimos 20 sorteos`);
+    razones.push(
+      `Exceso de ALTOS detectado (${balance.pctAltos.toFixed(0)}%) en últimos 20 sorteos`,
+    );
   } else if (balance.pctBajos > 60) {
     lean.ab = "ALTO";
     score += 12;
-    razones.push(`Exceso de BAJOS detectado (${balance.pctBajos.toFixed(0)}%) en últimos 20 sorteos`);
+    razones.push(
+      `Exceso de BAJOS detectado (${balance.pctBajos.toFixed(0)}%) en últimos 20 sorteos`,
+    );
   }
   if (balance.pctPares > 60) {
     lean.pi = "IMPAR";
@@ -261,7 +283,9 @@ export function computeEscenarioProbable(sorteos: Sorteo[]): EscenarioProbable {
   const rachas = computeRachas(sorteos);
   for (const r of rachas) {
     if (r.longitud >= 3) {
-      razones.push(`Racha activa de ${r.longitud} ${r.valor} consecutivos — patrón histórico 7/10 sugiere ruptura`);
+      razones.push(
+        `Racha activa de ${r.longitud} ${r.valor} consecutivos — patrón histórico 7/10 sugiere ruptura`,
+      );
       score = Math.min(score + 6, 88);
     }
   }
@@ -273,5 +297,89 @@ export function computeEscenarioProbable(sorteos: Sorteo[]): EscenarioProbable {
     escenario: `${lean.ab === "BAJO" ? "Bajo" : "Alto"} + ${lean.pi === "PAR" ? "Par" : "Impar"}`,
     porcentaje: Math.min(score, 88),
     razones,
+  };
+}
+
+export interface EscenarioPorHora {
+  escenario: string;
+  confianza: number;
+  razones: string[];
+  soporte: {
+    rangoDominante?: string;
+    paridadDominante?: string;
+    cuadranteDominante?: string;
+    rachasActivas?: string[];
+  };
+}
+
+export function computeEscenarioProbablePorHora(
+  subset: Sorteo[],
+  balance: BalanceStats,
+  rachas: Racha[],
+  distribucion: Record<Subcuadrante, number>,
+  tendencia: { rango: AltoBajo; paridad: ParImpar; cuadrante: Subcuadrante }
+): EscenarioPorHora {
+  const razones: string[] = [];
+  let score = 50; 
+
+  const isRangoDominant = Math.max(balance.pctAltos, balance.pctBajos) > 55;
+  if (isRangoDominant) {
+    score += 10;
+    razones.push(
+      `Rango ${tendencia.rango} domina históricamente en esta ventana (${Math.max(
+        balance.pctAltos,
+        balance.pctBajos
+      ).toFixed(0)}%)`
+    );
+  }
+
+  const isParidadDominant = Math.max(balance.pctPares, balance.pctImpares) > 55;
+  if (isParidadDominant) {
+    score += 10;
+    razones.push(
+      `Polaridad orientada a ${tendencia.paridad} de manera constante (${Math.max(
+        balance.pctPares,
+        balance.pctImpares
+      ).toFixed(0)}%)`
+    );
+  }
+
+  const cuadranteVal = distribucion[tendencia.cuadrante];
+  const cuadrantePct = subset.length ? (cuadranteVal / subset.length) * 100 : 0;
+  if (cuadrantePct > 30) {
+    score += 15;
+    razones.push(
+      `Concentración principal en el cuadrante ${subcuadranteLabel[tendencia.cuadrante]} (${cuadrantePct.toFixed(0)}%)`
+    );
+  }
+
+  const rachasActivas = rachas.map((r) => `${r.longitud}x ${r.valor}`);
+  if (rachas.length > 0) {
+    const rachaCritica = rachas.find(r => r.longitud >= 3);
+    if (rachaCritica) {
+        score -= 8; 
+        razones.push(`Advertencia: Racha activa de ${rachaCritica.longitud}x ${rachaCritica.valor} implica alta probabilidad de reversión inminente`);
+    } else {
+        score += 5;
+        razones.push(`Micro-tendencias actuales no muestran fricción atípica`);
+    }
+  }
+
+  score = Math.min(Math.max(score, 30), 92);
+
+  if (razones.length === 0) {
+    razones.push("Mercado neutral para este bloque; la estadística muestra varianza uniforme");
+  }
+
+  return {
+    escenario: subcuadranteLabel[tendencia.cuadrante],
+    confianza: score,
+    razones,
+    soporte: {
+      rangoDominante: tendencia.rango,
+      paridadDominante: tendencia.paridad,
+      cuadranteDominante: subcuadranteLabel[tendencia.cuadrante],
+      rachasActivas
+    }
   };
 }

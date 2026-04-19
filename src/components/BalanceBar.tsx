@@ -26,20 +26,20 @@ export function BalanceBar({
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-2">
           <span className="text-[13px] font-bold text-foreground">{leftLabel}</span>
-          <span className="text-2xl font-extrabold tabular-nums text-foreground">
-            {leftValue}
-          </span>
-          <span className={`text-[12px] tabular-nums font-bold ml-1 ${leftDominant ? "text-foreground" : "text-muted-foreground"}`}>
+          <span className="text-2xl font-extrabold tabular-nums text-foreground">{leftValue}</span>
+          <span
+            className={`text-[12px] tabular-nums font-bold ml-1 ${leftDominant ? "text-foreground" : "text-muted-foreground"}`}
+          >
             {leftPct.toFixed(0)}%
           </span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className={`text-[12px] tabular-nums font-bold mr-1 ${!leftDominant ? "text-foreground" : "text-muted-foreground"}`}>
+          <span
+            className={`text-[12px] tabular-nums font-bold mr-1 ${!leftDominant ? "text-foreground" : "text-muted-foreground"}`}
+          >
             {rightPct.toFixed(0)}%
           </span>
-          <span className="text-2xl font-extrabold tabular-nums text-foreground">
-            {rightValue}
-          </span>
+          <span className="text-2xl font-extrabold tabular-nums text-foreground">{rightValue}</span>
           <span className="text-[13px] font-bold text-foreground">{rightLabel}</span>
         </div>
       </div>
@@ -51,7 +51,7 @@ export function BalanceBar({
           className={`${leftClass} h-full transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] relative shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]`}
           style={{ width: `${leftPct}%` }}
         />
-        
+
         {/* Divider */}
         <div className="h-full w-1 bg-white relative z-10 opacity-80" />
 

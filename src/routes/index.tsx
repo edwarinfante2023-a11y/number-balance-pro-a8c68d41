@@ -16,11 +16,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { StatCard } from "@/components/StatCard";
 import { BalanceBar } from "@/components/BalanceBar";
-import {
-  AltoBajoBadge,
-  ParImparBadge,
-  SubcuadranteBadge,
-} from "@/components/ClassificationBadge";
+import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
 import {
   computeBalance,
   computeRachas,
@@ -35,9 +31,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
-      { title: "Dashboard — Cuadrante" },
-    ],
+    meta: [{ title: "Dashboard — Cuadrante" }],
   }),
   component: Dashboard,
 });
@@ -70,8 +64,10 @@ function EmptyState() {
   return (
     <div className="pt-2">
       <div className="mb-8">
-         <h1 className="text-[32px] font-bold tracking-tight text-foreground">Dashboard</h1>
-         <p className="text-[15px] text-muted-foreground">Analizador predictivo de matrices numéricas.</p>
+        <h1 className="text-[32px] font-bold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-[15px] text-muted-foreground">
+          Analizador predictivo de matrices numéricas.
+        </p>
       </div>
 
       <div className="bg-white rounded-[32px] p-16 text-center max-w-2xl mx-auto mt-12 relative overflow-hidden shadow-sm border border-border">
@@ -80,7 +76,8 @@ function EmptyState() {
         </div>
         <h3 className="text-2xl font-bold tracking-tight text-foreground mb-3">Workspace Vacío</h3>
         <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mx-auto mb-10">
-          Inyecta datos históricos o inicia capturas manuales para que el motor algorítmico evalúe el balance.
+          Inyecta datos históricos o inicia capturas manuales para que el motor algorítmico evalúe
+          el balance.
         </p>
         <div className="flex justify-center gap-4">
           <Link
@@ -115,7 +112,11 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
 
   const frecuencias = useMemo(() => computeFrecuencias(sorteos), [sorteos]);
   const calientes = useMemo(
-    () => [...frecuencias].filter((f) => f.count > 0).sort((a, b) => b.count - a.count).slice(0, 6),
+    () =>
+      [...frecuencias]
+        .filter((f) => f.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6),
     [frecuencias],
   );
   const frios = useMemo(
@@ -130,30 +131,30 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
 
   return (
     <div className="space-y-6 pt-2">
-      
       {/* Header Match Donezo */}
       <div className="mb-8">
-         <h1 className="text-[32px] font-bold tracking-tight text-foreground">Dashboard</h1>
-         <p className="text-[15px] text-muted-foreground mt-1">Plan, prioritize, and analyze network patterns with precision.</p>
+        <h1 className="text-[32px] font-bold tracking-tight text-foreground">Panel Principal</h1>
+        <p className="text-[15px] text-muted-foreground mt-1">
+          Motor algorítmico de clasificación, balances estocásticos y escenarios.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
         {/* HERO GREEN CARD - Escenario Probable (Replaces Top Left Dark Card) */}
         <div className="col-span-1 lg:col-span-5 relative group transform transition-all duration-300 hover:-translate-y-1 stagger-1 animate-fade-up">
-          <div className="surface-hero-green h-full rounded-[32px] p-8 overflow-hidden flex flex-col justify-between shadow-[0_12px_30px_oklch(0.42_0.09_155/0.25)] border-none">
+          <div className="surface-hero-green h-full rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 overflow-hidden flex flex-col justify-between shadow-[0_12px_30px_oklch(0.42_0.09_155/0.25)] border-none">
             {/* Decoration Circles */}
             <div className="absolute -top-20 -right-20 size-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
             <div className="absolute -bottom-10 -left-10 size-40 bg-white/5 rounded-full blur-xl pointer-events-none" />
-            
+
             <div className="relative z-10 flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between mb-8">
                 <div className="flex flex-col">
-                  <span className="text-[15px] font-medium text-white/90">
-                    Escenario Probable
+                  <span className="text-[15px] font-medium text-white/90">Escenario Probable</span>
+                  <span className="text-[12px] font-semibold text-white/60 uppercase tracking-widest mt-1">
+                    MOTOR DE PREDICCIÓN
                   </span>
-                  <span className="text-[12px] font-semibold text-white/60 uppercase tracking-widest mt-1">PREDICTION ENGINE</span>
                 </div>
                 <div className="size-10 rounded-full bg-white/20 backdrop-blur-md grid place-items-center shadow-inner border border-white/20 group-hover:bg-white/30 transition-colors cursor-pointer">
                   <ArrowUpRight className="size-5 text-white" />
@@ -173,7 +174,7 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
                         Confianza {escenario.porcentaje}%
                       </span>
                     </div>
-                    <span className="text-[12px] text-white/80 font-medium ml-2">Alto bias.</span>
+                    <span className="text-[12px] text-white/80 font-medium ml-2">Tendencia alta.</span>
                   </div>
                 </div>
               </div>
@@ -181,7 +182,10 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
               {/* Reasons */}
               <div className="mt-4 pt-4 border-t border-white/20 space-y-2">
                 {escenario.razones.slice(0, 2).map((r, i) => (
-                  <div key={i} className="flex gap-2 text-[12px] font-medium text-white/90 items-center">
+                  <div
+                    key={i}
+                    className="flex gap-2 text-[12px] font-medium text-white/90 items-center"
+                  >
                     <div className="size-1 rounded-full bg-white/60" />
                     <span className="truncate">{r}</span>
                   </div>
@@ -193,82 +197,78 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
 
         {/* TOP STATS CLUSTER (Remaining 7 columns) */}
         <div className="col-span-1 lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-6">
-           <div className="stagger-2 animate-fade-up">
-             <StatCard
-               label="Última lectura"
-               value={ultimo?.numero.toString().padStart(2, "0") ?? "—"}
-               hint={ultimo ? `Varianza actual` : "Sin datos"}
-               accent={ultimo?.altoBajo === "ALTO" ? "alto" : "bajo"}
-               icon={<Activity className="size-5 text-foreground" />}
-             />
-           </div>
-           <div className="stagger-3 animate-fade-up">
-             <StatCard
-               label="Vector dominante"
-               value={
-                 rachas.length > 0
-                   ? rachas[0].valor
-                   : "—"
-               }
-               hint={rachas.length > 0 ? `Se repitió ${rachas[0].longitud} veces` : "Vector neutro"}
-               accent={
-                 rachas[0]?.valor === "ALTO"
-                   ? "alto"
-                   : rachas[0]?.valor === "BAJO"
-                     ? "bajo"
-                     : rachas[0]?.valor === "PAR"
-                       ? "par"
-                       : "impar"
-               }
-               icon={<TrendingUp className="size-5 text-foreground" />}
-             />
-           </div>
-           <div className="stagger-4 animate-fade-up">
-             <StatCard
-               label="Volumen total"
-               value={sorteos.length.toLocaleString("es")}
-               hint={`${todaySorteos.length} deltas hoy`}
-               icon={<ClockIcon className="size-5 text-foreground" />}
-             />
-           </div>
+          <div className="stagger-2 animate-fade-up">
+            <StatCard
+              label="Última lectura"
+              value={ultimo?.numero.toString().padStart(2, "0") ?? "—"}
+              hint={ultimo ? `Varianza actual` : "Sin datos"}
+              accent={ultimo?.altoBajo === "ALTO" ? "alto" : "bajo"}
+              icon={<Activity className="size-5 text-foreground" />}
+            />
+          </div>
+          <div className="stagger-3 animate-fade-up">
+            <StatCard
+              label="Vector dominante"
+              value={rachas.length > 0 ? rachas[0].valor : "—"}
+              hint={rachas.length > 0 ? `Se repitió ${rachas[0].longitud} veces` : "Vector neutro"}
+              accent={
+                rachas[0]?.valor === "ALTO"
+                  ? "alto"
+                  : rachas[0]?.valor === "BAJO"
+                    ? "bajo"
+                    : rachas[0]?.valor === "PAR"
+                      ? "par"
+                      : "impar"
+              }
+              icon={<TrendingUp className="size-5 text-foreground" />}
+            />
+          </div>
+          <div className="stagger-4 animate-fade-up">
+            <StatCard
+              label="Volumen total"
+              value={sorteos.length.toLocaleString("es")}
+              hint={`${todaySorteos.length} deltas hoy`}
+              icon={<ClockIcon className="size-5 text-foreground" />}
+            />
+          </div>
 
-           {/* Second row of stats inside the cluster */}
-           <div className="col-span-1 sm:col-span-3 surface-elevated rounded-[24px] p-6 lg:p-8 flex flex-col justify-between stagger-5 animate-fade-up">
-              <div className="flex items-center justify-between mb-6">
-                 <div>
-                    <h2 className="text-[16px] font-bold text-foreground">Balance Analítico</h2>
-                    <p className="text-[13px] text-muted-foreground mt-1">Oscilación de cuadrantes (Últimos {balance.total} impactos)</p>
-                 </div>
+          {/* Second row of stats inside the cluster */}
+          <div className="col-span-1 sm:col-span-3 surface-elevated rounded-[24px] p-6 lg:p-8 flex flex-col justify-between stagger-5 animate-fade-up">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-[16px] font-bold text-foreground">Balance Analítico</h2>
+                <p className="text-[13px] text-muted-foreground mt-1">
+                  Oscilación de cuadrantes (Últimos {balance.total} impactos)
+                </p>
               </div>
-              <div className="space-y-6">
-                <BalanceBar
-                  leftLabel="ALTO"
-                  rightLabel="BAJO"
-                  leftValue={balance.altos}
-                  rightValue={balance.bajos}
-                  leftClass="bg-alto"
-                  rightClass="bg-bajo"
-                />
-                <BalanceBar
-                  leftLabel="PAR"
-                  rightLabel="IMPAR"
-                  leftValue={balance.pares}
-                  rightValue={balance.impares}
-                  leftClass="bg-par"
-                  rightClass="bg-impar"
-                />
-              </div>
-           </div>
+            </div>
+            <div className="space-y-6">
+              <BalanceBar
+                leftLabel="ALTO"
+                rightLabel="BAJO"
+                leftValue={balance.altos}
+                rightValue={balance.bajos}
+                leftClass="bg-alto"
+                rightClass="bg-bajo"
+              />
+              <BalanceBar
+                leftLabel="PAR"
+                rightLabel="IMPAR"
+                leftValue={balance.pares}
+                rightValue={balance.impares}
+                leftClass="bg-par"
+                rightClass="bg-impar"
+              />
+            </div>
+          </div>
         </div>
-
       </div>
 
       {/* ─── Línea del día + Sidebar: Rachas + Alertas ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        
         {/* Stream */}
-        <div className="col-span-1 lg:col-span-2 surface-elevated rounded-[32px] p-8 overflow-hidden stagger-5 animate-fade-up">
-          <div className="flex items-center justify-between mb-8">
+        <div className="col-span-1 lg:col-span-2 surface-elevated rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 overflow-hidden stagger-5 animate-fade-up">
+          <div className="flex items-center justify-between mb-6 lg:mb-8">
             <div>
               <h2 className="text-[18px] font-bold text-foreground">Timeline en vivo</h2>
               <p className="text-[13px] text-muted-foreground mt-1 font-medium">{today}</p>
@@ -276,7 +276,9 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
             {ruedaDia.length > 0 && (
               <div className="flex items-center gap-2 bg-muted/50 border border-border px-4 py-1.5 rounded-full">
                 <span className="size-2 rounded-full bg-primary" />
-                <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">{ruedaDia.length} Eventos</span>
+                <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                  {ruedaDia.length} Eventos
+                </span>
               </div>
             )}
           </div>
@@ -296,7 +298,7 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
 
         {/* Anomalies */}
         <div className="col-span-1 space-y-6">
-          <div className="surface-elevated rounded-[32px] p-8 stagger-6 animate-fade-up h-full relative overflow-hidden">
+          <div className="surface-elevated rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 stagger-6 animate-fade-up h-full relative overflow-hidden">
             <h2 className="text-[16px] font-bold text-foreground mb-6">Anomalías Activas</h2>
             {rachas.length === 0 ? (
               <div className="text-[13px] text-muted-foreground text-center py-6 bg-primary/5 rounded-[16px] font-medium text-primary">
@@ -319,20 +321,28 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
                       key={i}
                       className={cn(
                         "flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 border transition-all cursor-default",
-                        isPrimary ? "bg-white border-border shadow-sm" : "bg-muted/30 border-transparent"
+                        isPrimary
+                          ? "bg-white border-border shadow-sm"
+                          : "bg-muted/30 border-transparent",
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <span className={`size-3 rounded-full ${color} shadow-sm`} />
                         <div>
                           <div className="text-[14px] font-bold text-foreground">{r.valor}</div>
-                          <div className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">{r.tipo}</div>
+                          <div className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">
+                            {r.tipo}
+                          </div>
                         </div>
                       </div>
-                      <div className={cn(
-                        "text-[12px] font-bold tabular-nums px-2.5 py-1 rounded-lg",
-                        isPrimary ? "bg-primary/10 text-primary" : "bg-foreground/5 text-foreground"
-                      )}>
+                      <div
+                        className={cn(
+                          "text-[12px] font-bold tabular-nums px-2.5 py-1 rounded-lg",
+                          isPrimary
+                            ? "bg-primary/10 text-primary"
+                            : "bg-foreground/5 text-foreground",
+                        )}
+                      >
                         ×{r.longitud}
                       </div>
                     </div>
@@ -340,16 +350,15 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
                 })}
               </div>
             )}
-            
+
             <div className="absolute inset-x-0 bottom-0 p-8 pt-0 mt-8">
-               <button className="w-full py-3 rounded-[12px] bg-foreground text-white text-[13px] font-bold shadow-md hover:bg-foreground/90 transition-colors">
-                  Purge Cache
-               </button>
+              <button className="w-full py-3 rounded-[12px] bg-foreground text-white text-[13px] font-bold shadow-md hover:bg-foreground/90 transition-colors">
+                Purge Cache
+              </button>
             </div>
           </div>
         </div>
       </div>
-
     </div>
   );
 }
@@ -358,24 +367,22 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
 
 function RowDia({ s }: { s: Sorteo }) {
   return (
-    <div
-      className="flex items-center gap-4 py-3 px-4 surface-interactive rounded-[16px] group border-b border-border mb-0 hover:bg-muted/30"
-    >
+    <div className="flex items-center gap-4 py-3 px-4 surface-interactive rounded-[16px] group border-b border-border mb-0 hover:bg-muted/30">
       <div className="flex items-center gap-3 w-32 shrink-0">
-          <div className="size-6 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground/50 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-            {">"}
-          </div>
-          <span className="text-[13px] font-semibold text-foreground tabular-nums">{s.hora}</span>
+        <div className="size-6 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground/50 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+          {">"}
+        </div>
+        <span className="text-[13px] font-semibold text-foreground tabular-nums">{s.hora}</span>
       </div>
-      
+
       <span className="font-mono text-xl font-bold tabular-nums w-12 shrink-0 text-foreground text-center">
         {s.numero.toString().padStart(2, "0")}
       </span>
-      
+
       <span className="text-[13px] font-semibold text-muted-foreground uppercase tracking-widest hidden sm:block w-32">
         {s.loteria}
       </span>
-      
+
       <div className="flex gap-2 flex-1 justify-end">
         <AltoBajoBadge value={s.altoBajo} />
         <ParImparBadge value={s.parImpar} />
@@ -390,16 +397,14 @@ function RowDia({ s }: { s: Sorteo }) {
 function AlertRow({ level, text }: { level: "warning" | "info"; text: string }) {
   const isWarning = level === "warning";
   return (
-    <div className={`flex gap-3 items-center text-[13px] font-bold leading-relaxed rounded-xl p-3 border ${
-      isWarning 
-        ? "bg-warning/10 border-warning/20 text-warning" 
-        : "bg-info/10 border-info/20 text-info"
-    }`}>
-      <span
-        className={`size-2 shrink-0 rounded-full ${
-          isWarning ? "bg-warning" : "bg-info"
-        }`}
-      />
+    <div
+      className={`flex gap-3 items-center text-[13px] font-bold leading-relaxed rounded-xl p-3 border ${
+        isWarning
+          ? "bg-warning/10 border-warning/20 text-warning"
+          : "bg-info/10 border-info/20 text-info"
+      }`}
+    >
+      <span className={`size-2 shrink-0 rounded-full ${isWarning ? "bg-warning" : "bg-info"}`} />
       <span>{text}</span>
     </div>
   );

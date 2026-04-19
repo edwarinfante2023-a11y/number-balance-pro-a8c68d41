@@ -1,490 +1,524 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
       alerts: {
         Row: {
-          activa: boolean
-          contexto: Json | null
-          created_at: string
-          descripcion: string
-          id: string
-          nivel: Database["public"]["Enums"]["alert_nivel"]
-          tipo: string
-        }
+          activa: boolean;
+          contexto: Json | null;
+          created_at: string;
+          descripcion: string;
+          id: string;
+          nivel: Database["public"]["Enums"]["alert_nivel"];
+          tipo: string;
+        };
         Insert: {
-          activa?: boolean
-          contexto?: Json | null
-          created_at?: string
-          descripcion: string
-          id?: string
-          nivel?: Database["public"]["Enums"]["alert_nivel"]
-          tipo: string
-        }
+          activa?: boolean;
+          contexto?: Json | null;
+          created_at?: string;
+          descripcion: string;
+          id?: string;
+          nivel?: Database["public"]["Enums"]["alert_nivel"];
+          tipo: string;
+        };
         Update: {
-          activa?: boolean
-          contexto?: Json | null
-          created_at?: string
-          descripcion?: string
-          id?: string
-          nivel?: Database["public"]["Enums"]["alert_nivel"]
-          tipo?: string
-        }
-        Relationships: []
-      }
-      draws: {
-        Row: {
-          alto_bajo: string
-          created_at: string
-          cuadrante: string
-          extra: Json | null
-          fecha: string
-          id: string
-          movimiento: string | null
-          numero: number
-          observacion: string | null
-          origen: Database["public"]["Enums"]["draw_origen"]
-          par_impar: string
-          patron_detectado: string | null
-          sorteo_id: string
-          subcuadrante: string | null
-          updated_at: string
-        }
-        Insert: {
-          alto_bajo: string
-          created_at?: string
-          cuadrante: string
-          extra?: Json | null
-          fecha: string
-          id?: string
-          movimiento?: string | null
-          numero: number
-          observacion?: string | null
-          origen?: Database["public"]["Enums"]["draw_origen"]
-          par_impar: string
-          patron_detectado?: string | null
-          sorteo_id: string
-          subcuadrante?: string | null
-          updated_at?: string
-        }
-        Update: {
-          alto_bajo?: string
-          created_at?: string
-          cuadrante?: string
-          extra?: Json | null
-          fecha?: string
-          id?: string
-          movimiento?: string | null
-          numero?: number
-          observacion?: string | null
-          origen?: Database["public"]["Enums"]["draw_origen"]
-          par_impar?: string
-          patron_detectado?: string | null
-          sorteo_id?: string
-          subcuadrante?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "draws_sorteo_id_fkey"
-            columns: ["sorteo_id"]
-            isOneToOne: false
-            referencedRelation: "lottery_draws"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      imports: {
-        Row: {
-          archivo: string
-          created_at: string
-          detalle_errores: Json | null
-          errores: number
-          estado: string
-          id: string
-          registros_duplicados: number
-          registros_importados: number
-        }
-        Insert: {
-          archivo: string
-          created_at?: string
-          detalle_errores?: Json | null
-          errores?: number
-          estado?: string
-          id?: string
-          registros_duplicados?: number
-          registros_importados?: number
-        }
-        Update: {
-          archivo?: string
-          created_at?: string
-          detalle_errores?: Json | null
-          errores?: number
-          estado?: string
-          id?: string
-          registros_duplicados?: number
-          registros_importados?: number
-        }
-        Relationships: []
-      }
-      lotteries: {
-        Row: {
-          activa: boolean
-          created_at: string
-          descripcion: string | null
-          horarios: Json | null
-          id: string
-          nombre: string
-          updated_at: string
-        }
-        Insert: {
-          activa?: boolean
-          created_at?: string
-          descripcion?: string | null
-          horarios?: Json | null
-          id?: string
-          nombre: string
-          updated_at?: string
-        }
-        Update: {
-          activa?: boolean
-          created_at?: string
-          descripcion?: string | null
-          horarios?: Json | null
-          id?: string
-          nombre?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      lottery_draws: {
-        Row: {
-          activa: boolean
-          created_at: string
-          hora: string
-          id: string
-          loteria_id: string
-          nombre: string
-          updated_at: string
-        }
-        Insert: {
-          activa?: boolean
-          created_at?: string
-          hora: string
-          id?: string
-          loteria_id: string
-          nombre: string
-          updated_at?: string
-        }
-        Update: {
-          activa?: boolean
-          created_at?: string
-          hora?: string
-          id?: string
-          loteria_id?: string
-          nombre?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lottery_draws_loteria_id_fkey"
-            columns: ["loteria_id"]
-            isOneToOne: false
-            referencedRelation: "lotteries"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      patterns: {
-        Row: {
-          aciertos: number
-          condiciones: Json
-          created_at: string
-          descripcion: string
-          efectividad: number
-          id: string
-          ocurrencias: number
-          ultima_deteccion: string | null
-          updated_at: string
-        }
-        Insert: {
-          aciertos?: number
-          condiciones?: Json
-          created_at?: string
-          descripcion: string
-          efectividad?: number
-          id?: string
-          ocurrencias?: number
-          ultima_deteccion?: string | null
-          updated_at?: string
-        }
-        Update: {
-          aciertos?: number
-          condiciones?: Json
-          created_at?: string
-          descripcion?: string
-          efectividad?: number
-          id?: string
-          ocurrencias?: number
-          ultima_deteccion?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          activa?: boolean;
+          contexto?: Json | null;
+          created_at?: string;
+          descripcion?: string;
+          id?: string;
+          nivel?: Database["public"]["Enums"]["alert_nivel"];
+          tipo?: string;
+        };
+        Relationships: [];
+      };
       rules: {
         Row: {
-          aciertos: number
-          activo: boolean
-          condiciones: Json
-          created_at: string
-          descripcion: string | null
-          efectividad: number
-          id: string
-          nombre: string
-          ocurrencias: number
-          resultado_esperado: string | null
-          tipo: Database["public"]["Enums"]["rule_tipo"]
-          updated_at: string
-        }
+          id: string;
+          nombre: string;
+          tipo: string;
+          condicion: Json;
+          resultado_esperado: string;
+          efectividad: number;
+          aciertos: number;
+          ocurrencias: number;
+          activa: boolean;
+          created_at: string;
+          updated_at: string;
+        };
         Insert: {
-          aciertos?: number
-          activo?: boolean
-          condiciones?: Json
-          created_at?: string
-          descripcion?: string | null
-          efectividad?: number
-          id?: string
-          nombre: string
-          ocurrencias?: number
-          resultado_esperado?: string | null
-          tipo?: Database["public"]["Enums"]["rule_tipo"]
-          updated_at?: string
-        }
+          id?: string;
+          nombre: string;
+          tipo: string;
+          condicion?: Json;
+          resultado_esperado: string;
+          efectividad?: number;
+          aciertos?: number;
+          ocurrencias?: number;
+          activa?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          aciertos?: number
-          activo?: boolean
-          condiciones?: Json
-          created_at?: string
-          descripcion?: string | null
-          efectividad?: number
-          id?: string
-          nombre?: string
-          ocurrencias?: number
-          resultado_esperado?: string | null
-          tipo?: Database["public"]["Enums"]["rule_tipo"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          id?: string;
+          nombre?: string;
+          tipo?: string;
+          condicion?: Json;
+          resultado_esperado?: string;
+          efectividad?: number;
+          aciertos?: number;
+          ocurrencias?: number;
+          activa?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      draws: {
+        Row: {
+          alto_bajo: string;
+          created_at: string;
+          cuadrante: string;
+          extra: Json | null;
+          fecha: string;
+          id: string;
+          movimiento: string | null;
+          numero: number;
+          observacion: string | null;
+          origen: Database["public"]["Enums"]["draw_origen"];
+          par_impar: string;
+          patron_detectado: string | null;
+          sorteo_id: string;
+          subcuadrante: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          alto_bajo: string;
+          created_at?: string;
+          cuadrante: string;
+          extra?: Json | null;
+          fecha: string;
+          id?: string;
+          movimiento?: string | null;
+          numero: number;
+          observacion?: string | null;
+          origen?: Database["public"]["Enums"]["draw_origen"];
+          par_impar: string;
+          patron_detectado?: string | null;
+          sorteo_id: string;
+          subcuadrante?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          alto_bajo?: string;
+          created_at?: string;
+          cuadrante?: string;
+          extra?: Json | null;
+          fecha?: string;
+          id?: string;
+          movimiento?: string | null;
+          numero?: number;
+          observacion?: string | null;
+          origen?: Database["public"]["Enums"]["draw_origen"];
+          par_impar?: string;
+          patron_detectado?: string | null;
+          sorteo_id?: string;
+          subcuadrante?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "draws_sorteo_id_fkey";
+            columns: ["sorteo_id"];
+            isOneToOne: false;
+            referencedRelation: "lottery_draws";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      imports: {
+        Row: {
+          archivo: string;
+          created_at: string;
+          detalle_errores: Json | null;
+          errores: number;
+          estado: string;
+          id: string;
+          registros_duplicados: number;
+          registros_importados: number;
+        };
+        Insert: {
+          archivo: string;
+          created_at?: string;
+          detalle_errores?: Json | null;
+          errores?: number;
+          estado?: string;
+          id?: string;
+          registros_duplicados?: number;
+          registros_importados?: number;
+        };
+        Update: {
+          archivo?: string;
+          created_at?: string;
+          detalle_errores?: Json | null;
+          errores?: number;
+          estado?: string;
+          id?: string;
+          registros_duplicados?: number;
+          registros_importados?: number;
+        };
+        Relationships: [];
+      };
+      lotteries: {
+        Row: {
+          activa: boolean;
+          created_at: string;
+          descripcion: string | null;
+          horarios: Json | null;
+          id: string;
+          nombre: string;
+          updated_at: string;
+        };
+        Insert: {
+          activa?: boolean;
+          created_at?: string;
+          descripcion?: string | null;
+          horarios?: Json | null;
+          id?: string;
+          nombre: string;
+          updated_at?: string;
+        };
+        Update: {
+          activa?: boolean;
+          created_at?: string;
+          descripcion?: string | null;
+          horarios?: Json | null;
+          id?: string;
+          nombre?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      lottery_draws: {
+        Row: {
+          activa: boolean;
+          created_at: string;
+          hora: string;
+          id: string;
+          loteria_id: string;
+          nombre: string;
+          updated_at: string;
+        };
+        Insert: {
+          activa?: boolean;
+          created_at?: string;
+          hora: string;
+          id?: string;
+          loteria_id: string;
+          nombre: string;
+          updated_at?: string;
+        };
+        Update: {
+          activa?: boolean;
+          created_at?: string;
+          hora?: string;
+          id?: string;
+          loteria_id?: string;
+          nombre?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lottery_draws_loteria_id_fkey";
+            columns: ["loteria_id"];
+            isOneToOne: false;
+            referencedRelation: "lotteries";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      patterns: {
+        Row: {
+          aciertos: number;
+          condiciones: Json;
+          created_at: string;
+          descripcion: string;
+          efectividad: number;
+          id: string;
+          ocurrencias: number;
+          ultima_deteccion: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          aciertos?: number;
+          condiciones?: Json;
+          created_at?: string;
+          descripcion: string;
+          efectividad?: number;
+          id?: string;
+          ocurrencias?: number;
+          ultima_deteccion?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          aciertos?: number;
+          condiciones?: Json;
+          created_at?: string;
+          descripcion?: string;
+          efectividad?: number;
+          id?: string;
+          ocurrencias?: number;
+          ultima_deteccion?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      rules: {
+        Row: {
+          aciertos: number;
+          activo: boolean;
+          condiciones: Json;
+          created_at: string;
+          descripcion: string | null;
+          efectividad: number;
+          id: string;
+          nombre: string;
+          ocurrencias: number;
+          resultado_esperado: string | null;
+          tipo: Database["public"]["Enums"]["rule_tipo"];
+          updated_at: string;
+        };
+        Insert: {
+          aciertos?: number;
+          activo?: boolean;
+          condiciones?: Json;
+          created_at?: string;
+          descripcion?: string | null;
+          efectividad?: number;
+          id?: string;
+          nombre: string;
+          ocurrencias?: number;
+          resultado_esperado?: string | null;
+          tipo?: Database["public"]["Enums"]["rule_tipo"];
+          updated_at?: string;
+        };
+        Update: {
+          aciertos?: number;
+          activo?: boolean;
+          condiciones?: Json;
+          created_at?: string;
+          descripcion?: string | null;
+          efectividad?: number;
+          id?: string;
+          nombre?: string;
+          ocurrencias?: number;
+          resultado_esperado?: string | null;
+          tipo?: Database["public"]["Enums"]["rule_tipo"];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       settings: {
         Row: {
-          clave: string
-          created_at: string
-          descripcion: string | null
-          id: string
-          updated_at: string
-          valor: Json
-        }
+          clave: string;
+          created_at: string;
+          descripcion: string | null;
+          id: string;
+          updated_at: string;
+          valor: Json;
+        };
         Insert: {
-          clave: string
-          created_at?: string
-          descripcion?: string | null
-          id?: string
-          updated_at?: string
-          valor: Json
-        }
+          clave: string;
+          created_at?: string;
+          descripcion?: string | null;
+          id?: string;
+          updated_at?: string;
+          valor: Json;
+        };
         Update: {
-          clave?: string
-          created_at?: string
-          descripcion?: string | null
-          id?: string
-          updated_at?: string
-          valor?: Json
-        }
-        Relationships: []
-      }
+          clave?: string;
+          created_at?: string;
+          descripcion?: string | null;
+          id?: string;
+          updated_at?: string;
+          valor?: Json;
+        };
+        Relationships: [];
+      };
       user_roles: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-    }
+          created_at?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
       classify_number: {
-        Args: { _numero: number }
+        Args: { _numero: number };
         Returns: {
-          alto_bajo: string
-          cuadrante: string
-          par_impar: string
-        }[]
-      }
+          alto_bajo: string;
+          cuadrante: string;
+          par_impar: string;
+        }[];
+      };
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-    }
+          _role: Database["public"]["Enums"]["app_role"];
+          _user_id: string;
+        };
+        Returns: boolean;
+      };
+    };
     Enums: {
-      alert_nivel: "info" | "warning" | "critical"
-      app_role: "admin" | "user"
-      draw_origen: "manual" | "scraper" | "excel"
-      rule_tipo: "racha" | "compensacion" | "patron" | "bloqueo" | "otro"
-    }
+      alert_nivel: "info" | "warning" | "critical";
+      app_role: "admin" | "user";
+      draw_origen: "manual" | "scraper" | "excel";
+      rule_tipo: "racha" | "compensacion" | "patron" | "bloqueo" | "otro";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
@@ -495,4 +529,4 @@ export const Constants = {
       rule_tipo: ["racha", "compensacion", "patron", "bloqueo", "otro"],
     },
   },
-} as const
+} as const;

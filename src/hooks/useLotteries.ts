@@ -41,9 +41,7 @@ export function useLotteryDraws() {
         .eq("activa", true)
         .order("hora");
       if (error) throw error;
-      return (data ?? []).filter(
-        (d) => (d as { lotteries: { activa: boolean } }).lotteries.activa,
-      );
+      return (data ?? []).filter((d) => (d as { lotteries: { activa: boolean } }).lotteries.activa);
     },
   });
 }
@@ -110,10 +108,7 @@ export function useDeleteLotteryDraw() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("lottery_draws")
-        .update({ activa: false })
-        .eq("id", id);
+      const { error } = await supabase.from("lottery_draws").update({ activa: false }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

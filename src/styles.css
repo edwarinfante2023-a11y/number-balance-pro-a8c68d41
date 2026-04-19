@@ -1,6 +1,6 @@
 /* ─── Google Fonts ───────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 
 @import "tailwindcss" source(none);
 @source "../src";
@@ -72,12 +72,12 @@
   --radius: 1.5rem; /* 24px */
 
   /* Pure minimalist light surfaces */
-  --background: oklch(0.975 0.005 240);    /* Slight pearl gray for the main canvas */
-  --foreground: oklch(0.20 0.02 240);       /* Deep slate for text, softer than black */
-  --card: oklch(1 0 0);                     /* Pure white for cards */
-  --card-foreground: oklch(0.20 0.02 240);
+  --background: oklch(0.975 0.005 240); /* Slight pearl gray for the main canvas */
+  --foreground: oklch(0.2 0.02 240); /* Deep slate for text, softer than black */
+  --card: oklch(1 0 0); /* Pure white for cards */
+  --card-foreground: oklch(0.2 0.02 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.20 0.02 240);
+  --popover-foreground: oklch(0.2 0.02 240);
 
   /* The Forest Green Signature */
   /* #1A5336 -> ~oklch(0.42 0.09 155) */
@@ -88,23 +88,23 @@
   --secondary: oklch(0.95 0.01 240);
   --secondary-foreground: oklch(0.25 0.02 240);
   --muted: oklch(0.96 0.01 240);
-  --muted-foreground: oklch(0.60 0.01 240);
-  --accent: oklch(0.94 0.02 155);           /* Very soft green highlight */
+  --muted-foreground: oklch(0.6 0.01 240);
+  --accent: oklch(0.94 0.02 155); /* Very soft green highlight */
   --accent-foreground: oklch(0.35 0.09 155);
-  
-  --destructive: oklch(0.60 0.20 25);
+
+  --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(1 0 0);
-  
-  --border: oklch(0 0 0 / 0.06);           /* Almost invisible borders */
+
+  --border: oklch(0 0 0 / 0.06); /* Almost invisible borders */
   --input: oklch(0 0 0 / 0.08);
   --ring: oklch(0.42 0.09 155);
 
   /* Semantic Data Colors (Refined for light mode) */
   /* ALTO = Red/Orange */
-  --alto: oklch(0.60 0.20 25);
+  --alto: oklch(0.6 0.2 25);
   --alto-foreground: oklch(1 0 0);
   --alto-soft: oklch(0.95 0.05 25);
-  --alto-soft-foreground: oklch(0.50 0.15 25);
+  --alto-soft-foreground: oklch(0.5 0.15 25);
 
   /* BAJO = Blue */
   --bajo: oklch(0.55 0.15 250);
@@ -122,9 +122,9 @@
   --impar: oklch(0.75 0.16 70);
   --impar-foreground: oklch(1 0 0);
   --impar-soft: oklch(0.96 0.06 70);
-  --impar-soft-foreground: oklch(0.60 0.14 70);
+  --impar-soft-foreground: oklch(0.6 0.14 70);
 
-  --success: oklch(0.60 0.15 150);
+  --success: oklch(0.6 0.15 150);
   --warning: oklch(0.75 0.16 70);
   --info: oklch(0.55 0.15 250);
 
@@ -141,10 +141,17 @@
   }
 
   html {
-    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      "Plus Jakarta Sans",
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -152,18 +159,36 @@
     color: var(--color-foreground);
     line-height: 1.5;
     letter-spacing: -0.01em;
+    user-select: none;
+    -webkit-user-select: none;
+    overscroll-behavior-y: none;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable="true"],
+  .tabular-nums,
+  .selectable {
+    user-select: auto;
+    -webkit-user-select: auto;
   }
 
   /* Monospace explicitly styled for Data inside SaaS */
   .tabular-nums,
   .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
     font-feature-settings: "tnum";
     letter-spacing: -0.02em; /* Tighter for modern look */
   }
 
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
   ::-webkit-scrollbar-thumb {
     background: oklch(0 0 0 / 0.1);
     border-radius: 99px;
@@ -174,7 +199,7 @@
 
   ::selection {
     background: oklch(0.42 0.09 155 / 0.2);
-    color: oklch(0.30 0.10 155);
+    color: oklch(0.3 0.1 155);
   }
 }
 
@@ -212,28 +237,54 @@
 
 /* Forest Green Hero Card */
 .surface-hero-green {
-  background: linear-gradient(145deg, oklch(0.45 0.10 155), oklch(0.35 0.08 155));
+  background: linear-gradient(145deg, oklch(0.45 0.1 155), oklch(0.35 0.08 155));
   color: oklch(1 0 0);
   box-shadow: var(--shadow-glow-emerald);
 }
 
 /* ── Animations ── */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.animate-fade-up { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-fade-in { animation: fade-in 0.4s ease both; }
+.animate-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease both;
+}
 
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
-.stagger-5 { animation-delay: 0.25s; }
-.stagger-6 { animation-delay: 0.3s; }
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+.stagger-5 {
+  animation-delay: 0.25s;
+}
+.stagger-6 {
+  animation-delay: 0.3s;
+}

@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, Trash2, Loader2, Database, SlidersHorizontal, ArrowDownToLine } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
 import {
-  AltoBajoBadge,
-  ParImparBadge,
-  SubcuadranteBadge,
-} from "@/components/ClassificationBadge";
+  Search,
+  Trash2,
+  Loader2,
+  Database,
+  SlidersHorizontal,
+  ArrowDownToLine,
+} from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
 import { useDraws, useDeleteDraw } from "@/hooks/useDraws";
 import { useLotteries } from "@/hooks/useLotteries";
 import { drawToSorteo } from "@/lib/drawAdapter";
@@ -17,7 +20,10 @@ export const Route = createFileRoute("/historial")({
   head: () => ({
     meta: [
       { title: "Historial — Cuadrante" },
-      { name: "description", content: "Tabla histórica de sorteos clasificados con búsqueda y filtros." },
+      {
+        name: "description",
+        content: "Tabla histórica de sorteos clasificados con búsqueda y filtros.",
+      },
     ],
   }),
   component: Historial,
@@ -39,9 +45,7 @@ function Historial() {
       .filter((s) => (origen === "Todos" ? true : s.origen === origen))
       .filter((s) =>
         q
-          ? `${s.numero} ${s.fecha} ${s.hora} ${s.loteria}`
-              .toLowerCase()
-              .includes(q.toLowerCase())
+          ? `${s.numero} ${s.fecha} ${s.hora} ${s.loteria}`.toLowerCase().includes(q.toLowerCase())
           : true,
       )
       .slice(0, 200);
@@ -60,11 +64,14 @@ function Historial() {
   return (
     <div className="space-y-6 pt-2">
       <div className="mb-8">
-         <h1 className="text-[32px] font-bold tracking-tight text-foreground">Registro Histórico</h1>
-         <p className="text-[15px] text-muted-foreground mt-1 max-w-2xl">Explorador profundo del historial de secuencias. Motor de filtrado indexado por dimensiones.</p>
+        <h1 className="text-[32px] font-bold tracking-tight text-foreground">Registro Histórico</h1>
+        <p className="text-[15px] text-muted-foreground mt-1 max-w-2xl">
+          Explorador profundo del historial de secuencias. Motor de filtrado indexado por
+          dimensiones.
+        </p>
       </div>
 
-      <div className="bg-white rounded-[32px] border border-border shadow-sm overflow-hidden relative">
+      <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-border shadow-sm overflow-hidden relative">
         {/* Toolbar */}
         <div className="relative z-10 flex flex-col md:flex-row gap-3 p-6 border-b border-border bg-muted/10">
           <div className="relative flex-1 group">
@@ -86,11 +93,13 @@ function Historial() {
               >
                 <option value="Todas">Network: Todas</option>
                 {lotteries.map((l) => (
-                  <option key={l.id} value={l.nombre}>{l.nombre}</option>
+                  <option key={l.id} value={l.nombre}>
+                    {l.nombre}
+                  </option>
                 ))}
               </select>
             </div>
-            
+
             <div className="relative group hidden sm:block">
               <ArrowDownToLine className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
               <select
@@ -125,65 +134,137 @@ function Historial() {
               </div>
               <p className="text-[18px] font-bold text-foreground tracking-tight">Buffer vacío</p>
               <p className="text-[14px] text-muted-foreground mt-2 max-w-md mx-auto leading-relaxed">
-                El sistema requiere inyección de datos para procesar la historia. Navega a Captura Manual o Ingestión de Datos.
+                El sistema requiere inyección de datos para procesar la historia. Navega a Captura
+                Manual o Ingestión de Datos.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-border bg-muted/20">
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Timestamp</th>
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Hora</th>
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Matriz</th>
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Valor</th>
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap hidden sm:table-cell">A/B</th>
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap hidden sm:table-cell">P/I</th>
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">Sector</th>
-                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap hidden md:table-cell">I/O</th>
-                    <th className="px-8 py-5 w-12"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border bg-white">
-                  {rows.map((s, index) => (
-                    <tr 
-                      key={s.id} 
-                      className="group hover:bg-muted/30 transition-colors duration-200"
-                      style={{ animationDelay: `${index * 0.02}s` }}
-                    >
-                      <td className="px-8 py-4 text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
-                        {s.fecha}
-                      </td>
-                      <td className="px-8 py-4 text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
-                        {s.hora}
-                      </td>
-                      <td className="px-8 py-4 text-[14px] font-bold text-foreground">
-                        {s.loteria}
-                      </td>
-                      <td className="px-8 py-4">
-                        <span className="font-mono text-[18px] lg:text-[20px] font-extrabold text-foreground bg-muted px-3 py-1 rounded-[8px] border border-border shadow-sm">
-                          {s.numero.toString().padStart(2, "0")}
-                        </span>
-                      </td>
-                      <td className="px-8 py-4 hidden sm:table-cell"><AltoBajoBadge value={s.altoBajo} soft={false} /></td>
-                      <td className="px-8 py-4 hidden sm:table-cell"><ParImparBadge value={s.parImpar} soft={false} /></td>
-                      <td className="px-8 py-4"><SubcuadranteBadge value={s.subcuadrante} /></td>
-                      <td className="px-8 py-4 text-[12px] font-mono text-muted-foreground capitalize hidden md:table-cell">
-                        {s.origen}
-                      </td>
-                      <td className="px-8 py-4 text-right">
+            <div className="w-full">
+              {/* Mobile Card List View */}
+              <div className="lg:hidden flex flex-col divide-y divide-border bg-white w-full">
+                {rows.map((s, index) => (
+                  <div 
+                    key={s.id} 
+                    className="p-5 flex flex-col gap-4 animate-fade-up bg-white hover:bg-muted/20 transition-colors"
+                    style={{ animationDelay: `${index * 0.02}s` }}
+                  >
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                           <div className="flex flex-col">
+                             <span className="font-bold text-foreground text-[16px] tracking-tight">{s.loteria}</span>
+                             <span className="text-[12px] font-mono font-bold text-muted-foreground uppercase tracking-widest">{s.hora}</span>
+                           </div>
+                        </div>
+                        <div className="size-12 rounded-xl bg-muted/40 border border-border flex items-center justify-center shadow-sm">
+                           <span className="font-mono text-[22px] font-extrabold text-foreground">
+                             {s.numero.toString().padStart(2, "0")}
+                           </span>
+                        </div>
+                     </div>
+                     
+                     <div className="flex items-center gap-3 flex-wrap">
+                        <div className="scale-90 origin-left"><SubcuadranteBadge value={s.subcuadrante} /></div>
+                        <div className="scale-90 origin-left"><AltoBajoBadge value={s.altoBajo} soft={false} /></div>
+                        <div className="scale-90 origin-left"><ParImparBadge value={s.parImpar} soft={false} /></div>
+                     </div>
+                     
+                     <div className="flex items-center justify-between pt-4 border-t border-border/40">
+                        <div className="flex items-center gap-2">
+                           <span className="text-[11px] font-mono text-muted-foreground/80">{s.fecha}</span>
+                           <span className="size-1 rounded-full bg-border" />
+                           <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/60">{s.origen}</span>
+                        </div>
                         <button
-                          onClick={() => handleDelete(s.id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 rounded-[8px] hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all duration-200"
-                          aria-label="Purgar"
+                           onClick={() => handleDelete(s.id)}
+                           className="p-2 rounded-[10px] bg-red-500/5 hover:bg-red-500/10 text-red-500 transition-all duration-200"
+                           aria-label="Purgar"
                         >
-                          <Trash2 className="size-4" />
+                           <Trash2 className="size-4" />
                         </button>
-                      </td>
+                     </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/20">
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        Timestamp
+                      </th>
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        Hora
+                      </th>
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        Matriz
+                      </th>
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        Valor
+                      </th>
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        A/B
+                      </th>
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        P/I
+                      </th>
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        Sector
+                      </th>
+                      <th className="px-6 py-5 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                        I/O
+                      </th>
+                      <th className="px-6 py-5 w-12"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border bg-white">
+                    {rows.map((s, index) => (
+                      <tr
+                        key={s.id}
+                        className="group hover:bg-muted/30 transition-colors duration-200"
+                        style={{ animationDelay: `${index * 0.02}s` }}
+                      >
+                        <td className="px-6 py-4 text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
+                          {s.fecha}
+                        </td>
+                        <td className="px-6 py-4 text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
+                          {s.hora}
+                        </td>
+                        <td className="px-6 py-4 text-[14px] font-bold text-foreground">
+                          {s.loteria}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-[18px] lg:text-[20px] font-extrabold text-foreground bg-muted px-3 py-1 rounded-[8px] border border-border shadow-sm">
+                            {s.numero.toString().padStart(2, "0")}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <AltoBajoBadge value={s.altoBajo} soft={false} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <ParImparBadge value={s.parImpar} soft={false} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <SubcuadranteBadge value={s.subcuadrante} />
+                        </td>
+                        <td className="px-6 py-4 text-[12px] font-mono text-muted-foreground capitalize">
+                          {s.origen}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDelete(s.id)}
+                            className="opacity-0 group-hover:opacity-100 p-2 rounded-[8px] hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all duration-200"
+                            aria-label="Purgar"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -192,8 +273,10 @@ function Historial() {
         {all.length > 0 && (
           <div className="relative z-10 px-8 py-5 border-t border-border bg-muted/10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-               <span className="size-2 rounded-full bg-primary animate-pulse" />
-               <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Rows rendered</span>
+              <span className="size-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                Rows rendered
+              </span>
             </div>
             <div className="text-[12px] font-bold text-muted-foreground">
               <span className="text-foreground">{rows.length}</span> / {all.length}
