@@ -23,6 +23,10 @@ export type Database = {
           id: string
           nivel: Database["public"]["Enums"]["alert_nivel"]
           tipo: string
+          estado: string
+          score: number
+          hora: string | null
+          fecha: string | null
         }
         Insert: {
           activa?: boolean
@@ -32,6 +36,10 @@ export type Database = {
           id?: string
           nivel?: Database["public"]["Enums"]["alert_nivel"]
           tipo: string
+          estado?: string
+          score?: number
+          hora?: string | null
+          fecha?: string | null
         }
         Update: {
           activa?: boolean
@@ -41,6 +49,10 @@ export type Database = {
           id?: string
           nivel?: Database["public"]["Enums"]["alert_nivel"]
           tipo?: string
+          estado?: string
+          score?: number
+          hora?: string | null
+          fecha?: string | null
         }
         Relationships: []
       }

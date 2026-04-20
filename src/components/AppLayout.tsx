@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useAlerts } from "@/hooks/useAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SyncStatusBadge } from "@/components/SyncStatusBadge";
@@ -35,6 +36,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { to: "/", label: "Panel Principal", icon: LayoutDashboard, exact: true, section: "MENU", badge: 12 },
+  { to: "/alertas", label: "Centro de Alertas", icon: Bell, section: "MENU" },
   { to: "/historial", label: "Registro Histórico", icon: History, section: "MENU" },
   { to: "/analisis-hora", label: "Análisis por hora", icon: Clock, section: "MENU" },
   { to: "/oportunidades", label: "Oportunidades", icon: TrendingUp, section: "MENU" },
@@ -53,6 +55,7 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { session, isAdmin, loading } = useAuth();
+  const { unreadCount } = useAlerts();
 
   const isAuthRoute = location.pathname === "/auth";
 
@@ -61,6 +64,11 @@ export function AppLayout() {
       navigate({ to: "/auth" });
     }
   }, [loading, session, isAuthRoute, navigate]);
+
+  // Modificamos el badge de NAV dynamically
+  const dynamicNav = NAV.map(n => 
+    n.to === "/alertas" && unreadCount > 0 ? { ...n, badge: unreadCount } : n
+  );
 
   if (isAuthRoute) return <Outlet />;
 
@@ -137,7 +145,7 @@ export function AppLayout() {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-5 py-2 space-y-8 custom-scrollbar">
           {SECTIONS.map((section) => {
-            const items = NAV.filter((n) => n.section === section);
+            const items = dynamicNav.filter((n) => n.section === section);
             if (!items.length) return null;
             return (
               <div key={section} className="space-y-4">
@@ -233,12 +241,17 @@ export function AppLayout() {
 
           <div className="flex-1" />
 
-          {/* Profile Cluster */}
+           {/* Profile Cluster */}
            <div className="flex items-center gap-3">
              <SyncStatusBadge />
-             <button className="hidden sm:flex size-12 items-center justify-center rounded-full bg-white border border-border text-muted-foreground hover:text-foreground hover:shadow-sm transition-all">
+             <Link to="/alertas" className="relative hidden sm:flex size-12 items-center justify-center rounded-full bg-white border border-border text-muted-foreground hover:text-foreground hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <Bell className="size-5" />
-             </button>
+                {unreadCount > 0 && (
+                  <span className="absolute top-2.5 right-2.5 flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold text-white bg-primary rounded-full border-2 border-white">
+                    {unreadCount}
+                  </span>
+                )}
+             </Link>
              
              <div className="flex items-center gap-3 h-12 bg-white border border-border rounded-full pl-2 pr-5 cursor-pointer shadow-sm hover:shadow-md transition-shadow">
                <div className="size-8 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden border border-emerald-200">
@@ -264,10 +277,10 @@ export function AppLayout() {
            </div>
            <div className="flex items-center gap-2">
              <SyncStatusBadge compact />
-             <button className="relative size-9 flex items-center justify-center rounded-full bg-muted/50 border border-border text-foreground hover:bg-muted transition-colors outline-none cursor-pointer">
+             <Link to="/alertas" className="relative size-9 flex items-center justify-center rounded-full bg-muted/50 border border-border text-foreground hover:bg-muted transition-colors outline-none cursor-pointer">
                <Bell className="size-[17px]" />
-               <span className="absolute top-1 right-1.5 size-2.5 rounded-full bg-primary border-2 border-white" />
-             </button>
+               {unreadCount > 0 && <span className="absolute top-1 right-1.5 size-2.5 rounded-full bg-primary border-2 border-white" />}
+             </Link>
              <div className="size-9 rounded-full bg-emerald-100 flex items-center justify-center border border-emerald-200">
                <span className="text-[12px] font-bold text-emerald-800">
                  {(session.user.email ?? "A")[0].toUpperCase()}

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   Loader2,
   Trophy,
@@ -25,6 +25,8 @@ import {
   type HourOpportunity,
   type OpportunityLevel,
 } from "@/lib/opportunityEngine";
+import { useAlerts } from "@/hooks/useAlerts";
+import { generateAlertsFromRanking, dedupeAlerts } from "@/lib/alertsEngine";
 
 export const Route = createFileRoute("/oportunidades")({
   head: () => ({
@@ -84,6 +86,7 @@ function OportunidadesPage() {
   const { data: draws = [], isLoading: drawsLoading } = useDraws({ limit: 5000 });
   const { rules, isLoading: rulesLoading } = useRules();
   const { patterns, isLoading: patternsLoading } = usePatterns();
+  const { alerts, insertBatchAlerts } = useAlerts();
 
   const isLoading = drawsLoading || rulesLoading || patternsLoading;
 
@@ -93,6 +96,18 @@ function OportunidadesPage() {
     if (sorteos.length === 0) return null;
     return buildOpportunityRanking(sorteos, rules, patterns);
   }, [sorteos, rules, patterns]);
+
+  // Nivel 6A: Auto-generar e insertar alertas silentes cuando el ranking cambia
+  useEffect(() => {
+    if (ranking && alerts && !insertBatchAlerts.isPending) {
+       const newAlerts = generateAlertsFromRanking(ranking);
+       const deduped = dedupeAlerts(newAlerts, alerts);
+       if (deduped.length > 0) {
+          insertBatchAlerts.mutate(deduped);
+       }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ranking]); // We only trigger when 'ranking' regenerates
 
   if (isLoading) {
     return (

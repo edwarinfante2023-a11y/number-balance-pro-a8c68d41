@@ -19,6 +19,7 @@ import { Route as ComparativaRouteImport } from './routes/comparativa'
 import { Route as CapturaRouteImport } from './routes/captura'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
+import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ReportesRoute = ReportesRouteImport.update({
@@ -71,6 +72,11 @@ const AnalisisHoraRoute = AnalisisHoraRouteImport.update({
   path: '/analisis-hora',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlertasRoute = AlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -79,6 +85,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
@@ -106,6 +114,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/alertas'
     | '/analisis-hora'
     | '/auth'
     | '/captura'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/alertas'
     | '/analisis-hora'
     | '/auth'
     | '/captura'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/alertas'
     | '/analisis-hora'
     | '/auth'
     | '/captura'
@@ -161,6 +173,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlertasRoute: typeof AlertasRoute
   AnalisisHoraRoute: typeof AnalisisHoraRoute
   AuthRoute: typeof AuthRoute
   CapturaRoute: typeof CapturaRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalisisHoraRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alertas': {
+      id: '/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -257,6 +277,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlertasRoute: AlertasRoute,
   AnalisisHoraRoute: AnalisisHoraRoute,
   AuthRoute: AuthRoute,
   CapturaRoute: CapturaRoute,
