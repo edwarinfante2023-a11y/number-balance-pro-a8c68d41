@@ -20,8 +20,12 @@ export type Database = {
           contexto: Json | null
           created_at: string
           descripcion: string
+          estado: string
+          fecha: string
+          hora: string | null
           id: string
           nivel: Database["public"]["Enums"]["alert_nivel"]
+          score: number
           tipo: string
         }
         Insert: {
@@ -29,8 +33,12 @@ export type Database = {
           contexto?: Json | null
           created_at?: string
           descripcion: string
+          estado?: string
+          fecha?: string
+          hora?: string | null
           id?: string
           nivel?: Database["public"]["Enums"]["alert_nivel"]
+          score?: number
           tipo: string
         }
         Update: {
@@ -38,8 +46,12 @@ export type Database = {
           contexto?: Json | null
           created_at?: string
           descripcion?: string
+          estado?: string
+          fecha?: string
+          hora?: string | null
           id?: string
           nivel?: Database["public"]["Enums"]["alert_nivel"]
+          score?: number
           tipo?: string
         }
         Relationships: []
