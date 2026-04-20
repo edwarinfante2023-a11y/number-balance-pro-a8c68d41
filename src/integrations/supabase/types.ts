@@ -339,6 +339,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_logs: {
+        Row: {
+          created_at: string
+          detalle: Json
+          duplicadas: number
+          errores: number
+          id: string
+          nuevas: number
+          ok: boolean
+          total_procesadas: number
+        }
+        Insert: {
+          created_at?: string
+          detalle?: Json
+          duplicadas?: number
+          errores?: number
+          id?: string
+          nuevas?: number
+          ok?: boolean
+          total_procesadas?: number
+        }
+        Update: {
+          created_at?: string
+          detalle?: Json
+          duplicadas?: number
+          errores?: number
+          id?: string
+          nuevas?: number
+          ok?: boolean
+          total_procesadas?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
