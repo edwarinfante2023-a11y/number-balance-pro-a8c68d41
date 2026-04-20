@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useRules, type Rule } from "@/hooks/useRules";
 import type { Database } from "@/integrations/supabase/types";
 import { useDraws } from "@/hooks/useDraws";
-import { evaluateRule } from "@/lib/rulesEngine";
+import { evaluateRule } from "@shared/rulesEngine";
 import { RefreshCw } from "lucide-react";
 
 type RuleTipo = Database["public"]["Enums"]["rule_tipo"];

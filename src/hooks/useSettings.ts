@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { defaultConfig, type ClassificationConfig } from "@/lib/lottery";
+import { defaultConfig, type ClassificationConfig } from "@shared/lottery";
 
 export function useClassificationConfig() {
   return useQuery({

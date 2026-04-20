@@ -1,4 +1,4 @@
-import type { AltoBajo, ParImpar, Subcuadrante } from "@/lib/lottery";
+import type { AltoBajo, ParImpar, Subcuadrante } from "@shared/lottery";
 import { cn } from "@/lib/utils";
 
 export function AltoBajoBadge({ value, soft = true }: { value: AltoBajo; soft?: boolean }) {

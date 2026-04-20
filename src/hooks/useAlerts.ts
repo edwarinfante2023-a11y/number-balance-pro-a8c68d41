@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { AlertRow, AlertInsert } from "@/lib/alertsEngine";
+import type { AlertRow, AlertInsert } from "@shared/alertsEngine";
 import { subDays, format } from "date-fns";
 
 export function useAlerts() {

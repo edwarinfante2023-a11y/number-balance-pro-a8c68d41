@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import type { DrawExtra } from "@/lib/lottery";
+import type { DrawExtra } from "@shared/lottery";
 
 type DrawRow = Database["public"]["Tables"]["draws"]["Row"];
 export type DrawInsert = Database["public"]["Tables"]["draws"]["Insert"];

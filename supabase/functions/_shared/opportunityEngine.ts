@@ -33,12 +33,11 @@ import {
   type ParImpar,
   type BalanceStats,
   type Racha,
-} from "./lottery";
-import { getActiveRulesForSubset, type ActiveRuleDetection, type Rule } from "./rulesEngine";
-import { getActivePatterns } from "./patternsEngine";
-import type { Database } from "@/integrations/supabase/types";
+} from "./lottery.ts";
+import { getActiveRulesForSubset, type ActiveRuleDetection, type Rule } from "./rulesEngine.ts";
+import { getActivePatterns } from "./patternsEngine.ts";
 
-type PatternRow = Database["public"]["Tables"]["patterns"]["Row"];
+type PatternRow = any;
 
 // ─── Tipos públicos ──────────────────────────────────────────────────────────
 

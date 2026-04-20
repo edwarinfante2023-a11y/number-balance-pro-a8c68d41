@@ -1,9 +1,8 @@
-import type { HourOpportunity, OpportunityRanking } from "./opportunityEngine";
-import type { Database } from "@/integrations/supabase/types";
+import type { HourOpportunity, OpportunityRanking } from "./opportunityEngine.ts";
 import { format } from "date-fns";
+import type { AlertInsertExterno as AlertInsert, AlertRowExterno as AlertRow } from "./types.ts";
 
-export type AlertInsert = Database["public"]["Tables"]["alerts"]["Insert"];
-export type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
+export type { AlertInsert, AlertRow };
 
 /**
  * Escanea el ranking actual de Nivel 5 y empaqueta alertas potenciales.

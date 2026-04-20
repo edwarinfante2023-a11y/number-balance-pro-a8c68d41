@@ -24,7 +24,7 @@ import {
   computeEscenarioProbable,
   subcuadranteLabel,
   type Sorteo,
-} from "@/lib/lottery";
+} from "@shared/lottery";
 import { useDraws } from "@/hooks/useDraws";
 import { drawToSorteo } from "@/lib/drawAdapter";
 import { cn } from "@/lib/utils";

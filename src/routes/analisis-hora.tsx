@@ -23,15 +23,15 @@ import {
   type AltoBajo,
   type ParImpar,
   type Sorteo,
-} from "@/lib/lottery";
+} from "@shared/lottery";
 import { BalanceBar } from "@/components/BalanceBar";
 import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
 import { useDraws } from "@/hooks/useDraws";
 import { useRules } from "@/hooks/useRules";
 import { usePatterns } from "@/hooks/usePatterns";
 import { drawToSorteo } from "@/lib/drawAdapter";
-import { getActiveRulesForSubset } from "@/lib/rulesEngine";
-import { minePatterns, getActivePatterns } from "@/lib/patternsEngine";
+import { getActiveRulesForSubset } from "@shared/rulesEngine";
+import { minePatterns, getActivePatterns } from "@shared/patternsEngine";
 import { toast } from "sonner";
 
 const HORAS = [

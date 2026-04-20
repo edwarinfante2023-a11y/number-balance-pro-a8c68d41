@@ -14,7 +14,7 @@ import {
   type AltoBajo,
   type ParImpar,
   type Sorteo,
-} from "@/lib/lottery";
+} from "@shared/lottery";
 import { AltoBajoBadge, ParImparBadge } from "@/components/ClassificationBadge";
 import { useDraws } from "@/hooks/useDraws";
 import { drawToSorteo } from "@/lib/drawAdapter";

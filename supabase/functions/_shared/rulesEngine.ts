@@ -1,7 +1,7 @@
-import type { Sorteo } from "./lottery";
-import type { Database } from "@/integrations/supabase/types";
+import type { Sorteo } from "./lottery.ts";
+import type { RuleExterno as Rule } from "./types.ts";
 
-export type Rule = Database["public"]["Tables"]["rules"]["Row"];
+export type { Rule };
 
 export interface RuleEvaluationResult {
   ocurrencias: number;

@@ -1,6 +1,5 @@
-import type { Sorteo } from "./lottery";
-import type { InsertPattern } from "@/hooks/usePatterns";
-import type { Database } from "@/integrations/supabase/types";
+import type { Sorteo } from "./lottery.ts";
+import type { PatternExterno as InsertPattern } from "./types.ts";
 
 // Engine configuration
 const MIN_OCCURRENCES = 5;
@@ -137,7 +136,7 @@ export function minePatterns(draws: Sorteo[], activeHour: string | null = null):
 }
 
 // Active pattern detection
-export function getActivePatterns(patterns: Database["public"]["Tables"]["patterns"]["Row"][], subset: Sorteo[]): Array<{pattern: Database["public"]["Tables"]["patterns"]["Row"], mensaje: string}> {
+export function getActivePatterns(patterns: any[], subset: Sorteo[]): Array<{pattern: any, mensaje: string}> {
     const active = [];
     const latestWindow = [...subset].sort((a, b) => 
        `${a.fecha} ${a.hora}`.localeCompare(`${b.fecha} ${b.hora}`)

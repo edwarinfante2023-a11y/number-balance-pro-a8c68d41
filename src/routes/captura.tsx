@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, TerminalSquare, Settings2, ShieldCheck, DatabaseZap } from "lucide-react";
 import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
-import { classify } from "@/lib/lottery";
+import { classify } from "@shared/lottery";
 import { useCreateDraw } from "@/hooks/useDraws";
 import { useClassificationConfig } from "@/hooks/useSettings";
 import { useLotteries } from "@/hooks/useLotteries";

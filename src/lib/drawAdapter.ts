@@ -1,4 +1,4 @@
-import type { Sorteo, AltoBajo, ParImpar, Subcuadrante, Origen, DrawExtra } from "@/lib/lottery";
+import type { Sorteo, AltoBajo, ParImpar, Subcuadrante, Origen, DrawExtra } from "@shared/lottery";
 import type { Draw } from "@/hooks/useDraws";
 
 export function drawToSorteo(d: Draw): Sorteo {
