@@ -15,6 +15,7 @@ import {
   FolderTree,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { SyncLogsWidget } from "@/components/SyncLogsWidget";
 import { useClassificationConfig, useUpdateClassificationConfig } from "@/hooks/useSettings";
 import {
   useLotteries,
@@ -263,6 +264,11 @@ function Configuracion() {
               />
             ))}
           </ul>
+        </div>
+
+        {/* Sync Logs Widget */}
+        <div className="lg:col-span-12">
+          <SyncLogsWidget />
         </div>
 
         {/* AI Upcoming Banner */}
