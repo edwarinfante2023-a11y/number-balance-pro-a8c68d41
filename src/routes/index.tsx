@@ -103,8 +103,18 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
     () => [...sorteos].sort((a, b) => `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`)),
     [sorteos],
   );
+  
   const ultimo = ordered[0];
-  const today = ultimo?.fecha;
+  
+  // Forzamos "today" a ser el día actual en la vida real, no de la DB.
+  const today = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }, []);
+
   const todaySorteos = useMemo(() => sorteos.filter((s) => s.fecha === today), [sorteos, today]);
   const balance = useMemo(() => computeBalance(sorteos.slice(-20)), [sorteos]);
   const rachas = useMemo(() => computeRachas(sorteos), [sorteos]);
