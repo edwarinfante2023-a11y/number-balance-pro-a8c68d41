@@ -144,6 +144,48 @@ function AnalisisHora() {
      return getActivePatterns(allPatternsForHour, subset);
   }, [allPatternsForHour, subset]);
 
+  const compoundSignal = useMemo(() => {
+    const rulesCount = activeAlerts.length;
+    const patternsCount = activePatternAlerts.length;
+    const totalTriggers = rulesCount + patternsCount;
+    
+    let nivel = "ESTABLE";
+    let nivelColor = "text-slate-400";
+    let nivelBg = "bg-slate-800";
+    let nivelBorder = "border-slate-700";
+    
+    if (totalTriggers > 0) {
+       nivel = "ALTO 🔥";
+       nivelColor = "text-emerald-400";
+       nivelBg = "bg-emerald-400/10";
+       nivelBorder = "border-emerald-400/20";
+    } else if (escenarioProbable.confianza > 65) {
+       nivel = "MODERADO ⚡";
+       nivelColor = "text-amber-400";
+       nivelBg = "bg-amber-400/10";
+       nivelBorder = "border-amber-400/20";
+    }
+
+    const summaryText = `${rulesCount > 0 ? `${rulesCount} reglas activas | ` : ""}${patternsCount > 0 ? `${patternsCount} patrón activo | ` : ""}tendencia ${tendencia.rango} | ${tendencia.paridad} dominante`;
+
+    // Las razones ahora incluyen los triggers también
+    const supportReasons = [...escenarioProbable.razones];
+    activeAlerts.forEach(a => supportReasons.push(`Regla activa detectada: ${a.rule.nombre} (${a.rule.efectividad}% winrate)`));
+    activePatternAlerts.forEach(p => supportReasons.push(`Patrón minado detectado: ${p.pattern.descripcion} (${p.pattern.efectividad}% winrate)`));
+
+    return {
+      escenario: escenarioProbable.escenario,
+      confianza: escenarioProbable.confianza,
+      nivelOportunidad: { label: nivel, color: nivelColor, bg: nivelBg, border: nivelBorder },
+      rulesCount,
+      patternsCount,
+      summaryText,
+      supportReasons,
+      activeRules: activeAlerts,
+      activePatterns: activePatternAlerts
+    };
+  }, [activeAlerts, activePatternAlerts, escenarioProbable, tendencia]);
+
   const [isMining, setIsMining] = useState(false);
   const handleMinePatterns = async () => {
     setIsMining(true);
@@ -239,135 +281,114 @@ function AnalisisHora() {
         </div>
       </div>
 
-      {/* ══ Escenario Probable Hero (Level 3) ══ */}
+      {/* ══ Señal Compuesta Hero (Nivel 4C) ══ */}
       {subset.length > 0 && (
-        <div className="bg-primary text-primary-foreground rounded-[32px] p-6 lg:p-10 shadow-lg relative overflow-hidden group">
+        <div className="bg-slate-950 text-slate-50 rounded-[32px] p-6 lg:p-10 shadow-2xl relative overflow-hidden group border border-slate-800">
           {/* Background decoration */}
-          <div className="absolute right-0 top-0 translate-x-1/3 -translate-y-1/3 size-64 bg-primary-foreground/10 rounded-full blur-3xl group-hover:bg-primary-foreground/20 transition-colors duration-700" />
+          <div className="absolute right-0 top-0 translate-x-1/3 -translate-y-1/3 size-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-colors duration-700 pointer-events-none" />
+          <div className="absolute left-0 bottom-0 -translate-x-1/3 translate-y-1/3 size-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
           
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-5 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-primary-foreground/20 pb-6 lg:pb-0 lg:pr-8">
-              <div className="flex items-center gap-3 text-primary-foreground/80 mb-4">
-                <Target className="size-5" />
-                <span className="text-[12px] font-bold uppercase tracking-[0.2em] shadow-sm">
-                  Escenario Probable
-                </span>
-              </div>
-              <div className="text-4xl lg:text-5xl font-extrabold tracking-tight">
-                {escenarioProbable.escenario}
+          <div className="relative z-10 flex items-center justify-between xl:border-b border-slate-800 pb-6 mb-8 flex-wrap gap-4">
+             <div>
+                <h2 className="text-[20px] font-extrabold text-white flex items-center gap-3">
+                   <Target className="size-5 text-indigo-400" />
+                   SEÑAL COMPUESTA
+                </h2>
+                <p className="text-[12px] text-slate-400 uppercase tracking-widest mt-1">Análisis consolidado de la hora seleccionada</p>
+             </div>
+             <div className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-[12px] font-mono tracking-widest text-slate-300">
+                {compoundSignal.summaryText}
+             </div>
+          </div>
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            
+            {/* Core Signal (Lado Izquierdo) */}
+            <div className="lg:col-span-12 xl:col-span-5 flex flex-col justify-center border-b xl:border-b-0 xl:border-r border-slate-800 pb-8 xl:pb-0 xl:pr-8">
+              
+              <div className="flex flex-col gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Escenario Sugerido</span>
+                <div className="text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-6">
+                  {compoundSignal.escenario}
+                </div>
               </div>
               
-              <div className="mt-8">
-                <div className="flex items-center justify-between text-[13px] font-bold uppercase tracking-widest mb-3">
-                  <span>Confianza del Modelo</span>
-                  <span className="text-2xl">{escenarioProbable.confianza}%</span>
+              <div className="mb-8">
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${compoundSignal.nivelOportunidad.border} ${compoundSignal.nivelOportunidad.bg} ${compoundSignal.nivelOportunidad.color} text-[13px] font-extrabold tracking-widest`}>
+                    <Zap className="size-4" /> Nivel de Oportunidad: {compoundSignal.nivelOportunidad.label}
                 </div>
-                <div className="h-2.5 rounded-full bg-primary-foreground/20 overflow-hidden relative shadow-inner">
+              </div>
+              
+              <div>
+                <div className="flex items-center justify-between text-[13px] font-bold uppercase tracking-widest mb-3 text-slate-300">
+                  <span>Confianza del Modelo</span>
+                  <span className="text-2xl text-white">{compoundSignal.confianza}%</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden relative shadow-inner">
                   <div 
-                    className="h-full bg-white rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                    style={{ width: `${escenarioProbable.confianza}%` }}
+                    className="h-full bg-indigo-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                    style={{ width: `${compoundSignal.confianza}%` }}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-7 flex flex-col justify-center">
-              <h4 className="text-[12px] font-bold uppercase tracking-[0.2em] text-primary-foreground/80 mb-4">
-                Factores de Soporte
-              </h4>
-              <div className="space-y-3">
-                {escenarioProbable.razones.map((razon, idx) => (
-                  <div key={idx} className="flex items-start gap-4 bg-primary-foreground/5 bg-opacity-50 p-4 rounded-xl border border-primary-foreground/10 hover:bg-primary-foreground/10 transition-colors">
-                     <span className="mt-0.5 size-5 rounded-full bg-primary-foreground/20 flex items-center justify-center shrink-0 text-[10px] font-bold">
-                       {idx + 1}
-                     </span>
-                     <p className="text-[14px] leading-relaxed font-medium">
-                       {razon}
-                     </p>
-                  </div>
-                ))}
+            {/* Razones de Soporte (Lado Derecho) */}
+            <div className="lg:col-span-12 xl:col-span-7 flex flex-col justify-center">
+              <div>
+                <h4 className="text-[12px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-4 flex items-center gap-2">
+                  <Activity className="size-4" /> Principales Razones / Soporte
+                </h4>
+                <div className="space-y-3">
+                  {compoundSignal.supportReasons.slice(0, 5).map((razon, idx) => (
+                    <div key={idx} className="flex items-start gap-4 p-3 rounded-lg hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-800">
+                       <span className="mt-0.5 size-5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                         {idx + 1}
+                       </span>
+                       <p className="text-[13px] leading-relaxed font-medium text-slate-300">
+                         {razon}
+                       </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ══ Alertas Tempranas (Level 4A) ══ */}
-      {activeAlerts.length > 0 && (
-        <div className="bg-slate-900 text-white rounded-[32px] p-6 lg:p-8 shadow-md relative overflow-hidden group border border-slate-800">
-           <div className="absolute right-0 top-0 translate-x-1/4 -translate-y-1/4 size-48 bg-emerald-500/10 rounded-full blur-3xl" />
-           <div className="relative z-10">
-             <div className="flex items-center gap-3 mb-6">
-                <span className="relative flex size-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full size-3 bg-emerald-500"></span>
-                </span>
-                <span className="text-[13px] font-bold uppercase tracking-[0.2em] shadow-sm text-slate-200">
-                  Señales de Análisis — Oportunidades Detectadas
-                </span>
+          
+          {/* Triggers Activos (Sección Inferior) Solo si existen */}
+          {(compoundSignal.rulesCount > 0 || compoundSignal.patternsCount > 0) && (
+             <div className="relative z-10 mt-8 pt-8 border-t border-slate-800">
+                <h4 className="text-[12px] font-bold uppercase tracking-[0.2em] text-emerald-400 mb-4 flex items-center gap-2">
+                  <DatabaseZap className="size-4" /> Triggers Analíticos En Vivo
+                </h4>
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+                   {compoundSignal.activeRules.map((alert, i) => (
+                      <div key={`r-${i}`} className="snap-start min-w-[280px] max-w-[320px] bg-slate-900 border border-emerald-500/30 p-4 rounded-xl relative shrink-0">
+                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+                         <div className="flex justify-between items-start mb-2">
+                           <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">R. Manual</span>
+                           <span className="text-[10px] font-bold text-emerald-300">{alert.rule.efectividad}% WINRAT</span>
+                         </div>
+                         <div className="text-[13px] font-bold text-white mb-2 leading-snug truncate">{alert.rule.nombre}</div>
+                         <div className="text-[12px] font-mono text-slate-400 mb-2 truncate">{alert.mensaje}</div>
+                         <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Sugerencia: {alert.rule.resultado_esperado}</div>
+                      </div>
+                   ))}
+                   {compoundSignal.activePatterns.map((alert, i) => (
+                      <div key={`p-${i}`} className="snap-start min-w-[280px] max-w-[320px] bg-slate-900 border border-indigo-500/30 p-4 rounded-xl relative shrink-0">
+                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
+                         <div className="flex justify-between items-start mb-2">
+                           <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Auto Patrón</span>
+                           <span className="text-[10px] font-bold text-indigo-300">{alert.pattern.efectividad}% WINRAT</span>
+                         </div>
+                         <div className="text-[13px] font-bold text-white mb-2 leading-snug truncate">{alert.pattern.descripcion}</div>
+                         <div className="text-[12px] font-mono text-slate-400 mb-2 truncate">{alert.mensaje}</div>
+                         <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Sugerencia: {alert.pattern.resultado_esperado}</div>
+                      </div>
+                   ))}
+                </div>
              </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeAlerts.map((alert, i) => (
-                   <div key={i} className="bg-slate-800/50 backdrop-blur-sm p-5 rounded-[20px] border border-slate-700/50">
-                      <div className="flex justify-between items-start mb-3">
-                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300 bg-slate-700/50 px-2 py-1 rounded-md">
-                           {alert.rule.tipo}
-                         </span>
-                         <span className="text-[12px] font-extrabold tabular-nums bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                           {alert.rule.ocurrencias > 0 ? ((alert.rule.aciertos / alert.rule.ocurrencias) * 100).toFixed(0) : "0"}% WINRATE
-                         </span>
-                      </div>
-                      <h4 className="text-[16px] font-bold leading-tight mb-2 text-white">
-                        {alert.rule.nombre}
-                      </h4>
-                      <p className="text-[13px] text-slate-300 font-medium leading-relaxed mb-4">
-                        {alert.mensaje}
-                      </p>
-                      
-                      <div className="border-t border-slate-700/50 pt-3">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 block mb-1">
-                          Escenario Sugerido
-                        </span>
-                        <span className="text-[14px] font-extrabold uppercase tracking-widest text-white">
-                          {alert.rule.resultado_esperado || "N/A"}
-                        </span>
-                      </div>
-                   </div>
-                ))}
-                
-                {/* Level 4B Automined Alerts */}
-                {activePatternAlerts.map((alert, i) => (
-                   <div key={`pat-${i}`} className="bg-indigo-900/40 backdrop-blur-sm p-5 rounded-[20px] border border-indigo-400/50 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <DatabaseZap className="size-24" />
-                      </div>
-                      <div className="flex justify-between items-start mb-3 relative z-10">
-                         <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-indigo-200 bg-indigo-900/50 px-2.5 py-1 rounded-md">
-                           <DatabaseZap className="size-3" /> Auto Patrón
-                         </span>
-                         <span className="text-[12px] font-extrabold tabular-nums bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-500/30">
-                           {alert.pattern.efectividad}% WINRATE
-                         </span>
-                      </div>
-                      <h4 className="text-[16px] font-bold leading-tight mb-2 text-white relative z-10">
-                        {alert.pattern.descripcion}
-                      </h4>
-                      <p className="text-[13px] text-slate-300 font-medium leading-relaxed mb-4 relative z-10">
-                        {alert.mensaje}
-                      </p>
-                      <div className="border-t border-indigo-700/50 pt-3 relative z-10">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-indigo-300 block mb-1">
-                          Escenario Sugerido
-                        </span>
-                        <span className="text-[14px] font-extrabold uppercase tracking-widest text-white">
-                          {alert.pattern.resultado_esperado || "N/A"}
-                        </span>
-                      </div>
-                   </div>
-                ))}
-             </div>
-           </div>
+          )}
         </div>
       )}
 
