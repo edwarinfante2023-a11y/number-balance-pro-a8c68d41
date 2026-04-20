@@ -204,15 +204,45 @@ serve(async (req: Request) => {
       }
     }
 
+    // ─── Persistir log de la ejecución ───────────────────────────────────
+    try {
+      await supabase.from("sync_logs").insert({
+        ok: summary.errores === 0,
+        total_procesadas: summary.totalProcesadas,
+        nuevas: summary.nuevasInsertadas,
+        duplicadas: summary.duplicadasIgnoradas,
+        errores: summary.errores,
+        detalle: summary.detalle,
+      });
+    } catch (logErr) {
+      console.error("Failed to persist sync_logs:", (logErr as Error).message);
+    }
+
     return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ 
-      ok: false, 
-      error: (error as Error).message 
+    const msg = (error as Error).message;
+    // Intentar registrar el log de error fatal también
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      await supabase.from("sync_logs").insert({
+        ok: false,
+        total_procesadas: 0,
+        nuevas: 0,
+        duplicadas: 0,
+        errores: 1,
+        detalle: [`✗ FATAL: ${msg}`],
+      });
+    } catch { /* swallow */ }
+
+    return new Response(JSON.stringify({
+      ok: false,
+      error: msg
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
