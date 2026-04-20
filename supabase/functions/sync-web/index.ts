@@ -33,9 +33,47 @@ const SLOTS: SlotConfig[] = [
 ];
 
 // ─── Helpers de Parseo ───────────────────────────────────────────────────
-function parsePubDate(pubDate: string): string {
-  const d = new Date(pubDate);
-  if (isNaN(d.getTime())) return "";
+
+const MESES: Record<string, string> = {
+  "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
+  "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
+  "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
+};
+
+function getOffsetDate(daysOffset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseRealDateFromTitle(title: string, fallbackPubDate: string): string | null {
+  const lower = title.toLowerCase();
+  
+  if (lower.includes(" de hoy:")) {
+    return getOffsetDate(0);
+  }
+  if (lower.includes(" de ayer:")) {
+    return getOffsetDate(-1);
+  }
+  
+  // Buscar patrón "del [diaSemana] [dia] de [mes]:"
+  const dateMatch = lower.match(/del\s+[a-z]+\s+(\d{1,2})\s+de\s+([a-z]+):/);
+  if (dateMatch) {
+    const day = dateMatch[1].padStart(2, "0");
+    const monthStr = dateMatch[2];
+    const month = MESES[monthStr];
+    if (month) {
+      const year = new Date().getFullYear();
+      return `${year}-${month}-${day}`;
+    }
+  }
+
+  // Fallback a pubDate si el título no dice nada útil
+  const d = new Date(fallbackPubDate);
+  if (isNaN(d.getTime())) return null;
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -74,9 +112,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Inicializar cliente Supabase usando la Service Role Key para bypassing RLS si fuese necesario,
-    // o el token del usuario si se pasa en el Authorization header. 
-    // Usamos SERVICE_ROLE para que un CRON job también pueda correrla sin auth de usuario.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -90,7 +125,6 @@ serve(async (req: Request) => {
       detalle: [] as string[],
     };
 
-    // 1. Obtener mapa de sorteos desde DB
     const { data: sorteoData, error: sorteoErr } = await supabase
       .from("lottery_draws")
       .select("id, hora")
@@ -103,7 +137,6 @@ serve(async (req: Request) => {
       sorteoMap[row.hora] = row.id;
     }
 
-    // 2. Obtener duplicados existentes
     const { data: drawsData, error: drawsErr } = await supabase
       .from("draws")
       .select("fecha, sorteo_id");
@@ -115,7 +148,6 @@ serve(async (req: Request) => {
       existingKeys.add(`${row.fecha}|${row.sorteo_id}`);
     }
 
-    // 3. Procesar todos los slots fetching directo Deno -> Enloteria (CORS bypass native)
     for (const slot of SLOTS) {
       try {
         const url = `https://enloteria.com/rss/anguilla-${slot.slug}`;
@@ -130,7 +162,7 @@ serve(async (req: Request) => {
         const items = parseRSSItems(xml);
 
         for (const item of items) {
-          const fecha = parsePubDate(item.pubDate);
+          const fecha = parseRealDateFromTitle(item.title, item.pubDate);
           const numero = extractFirstPrize(item.title);
           
           if (!fecha || numero === null) continue;
@@ -150,14 +182,11 @@ serve(async (req: Request) => {
             continue;
           }
 
-          // Insertar en base de datos.
           const { error: insertErr } = await supabase.from("draws").insert({
             sorteo_id: sorteoId,
             fecha: fecha,
             numero: numero,
             origen: "scraper",
-            // Los campos "alto_bajo", "par_impar", "cuadrante" no se envían
-            // porque el TRIGGER public.classify_number en Postgres se encarga nativamente.
           });
 
           if (insertErr) {
