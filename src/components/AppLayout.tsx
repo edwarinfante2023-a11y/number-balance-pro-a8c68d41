@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 
 type NavItem = {
   to: string;
@@ -232,7 +233,8 @@ export function AppLayout() {
           <div className="flex-1" />
 
           {/* Profile Cluster */}
-          <div className="flex items-center gap-3">
+           <div className="flex items-center gap-3">
+             <SyncStatusBadge />
              <button className="hidden sm:flex size-12 items-center justify-center rounded-full bg-white border border-border text-muted-foreground hover:text-foreground hover:shadow-sm transition-all">
                 <Bell className="size-5" />
              </button>
@@ -259,7 +261,8 @@ export function AppLayout() {
              </div>
              <span className="text-[17px] font-bold text-foreground tracking-tight">Cuadrante</span>
            </div>
-           <div className="flex items-center gap-3">
+           <div className="flex items-center gap-2">
+             <SyncStatusBadge compact />
              <button className="relative size-9 flex items-center justify-center rounded-full bg-muted/50 border border-border text-foreground hover:bg-muted transition-colors outline-none cursor-pointer">
                <Bell className="size-[17px]" />
                <span className="absolute top-1 right-1.5 size-2.5 rounded-full bg-primary border-2 border-white" />
