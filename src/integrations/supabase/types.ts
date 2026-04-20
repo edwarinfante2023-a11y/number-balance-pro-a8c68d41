@@ -20,39 +20,39 @@ export type Database = {
           contexto: Json | null
           created_at: string
           descripcion: string
+          estado: string
+          fecha: string
+          hora: string | null
           id: string
           nivel: Database["public"]["Enums"]["alert_nivel"]
-          tipo: string
-          estado: string
           score: number
-          hora: string | null
-          fecha: string | null
+          tipo: string
         }
         Insert: {
           activa?: boolean
           contexto?: Json | null
           created_at?: string
           descripcion: string
+          estado?: string
+          fecha?: string
+          hora?: string | null
           id?: string
           nivel?: Database["public"]["Enums"]["alert_nivel"]
-          tipo: string
-          estado?: string
           score?: number
-          hora?: string | null
-          fecha?: string | null
+          tipo: string
         }
         Update: {
           activa?: boolean
           contexto?: Json | null
           created_at?: string
           descripcion?: string
+          estado?: string
+          fecha?: string
+          hora?: string | null
           id?: string
           nivel?: Database["public"]["Enums"]["alert_nivel"]
-          tipo?: string
-          estado?: string
           score?: number
-          hora?: string | null
-          fecha?: string | null
+          tipo?: string
         }
         Relationships: []
       }
