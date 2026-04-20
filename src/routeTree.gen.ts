@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ReglasRouteImport } from './routes/reglas'
+import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as ImportarRouteImport } from './routes/importar'
 import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
@@ -28,6 +29,11 @@ const ReportesRoute = ReportesRouteImport.update({
 const ReglasRoute = ReglasRouteImport.update({
   id: '/reglas',
   path: '/reglas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OportunidadesRoute = OportunidadesRouteImport.update({
+  id: '/oportunidades',
+  path: '/oportunidades',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImportarRoute = ImportarRouteImport.update({
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
+  '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
+  '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/configuracion': typeof ConfiguracionRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
+  '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/historial'
     | '/importar'
+    | '/oportunidades'
     | '/reglas'
     | '/reportes'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/historial'
     | '/importar'
+    | '/oportunidades'
     | '/reglas'
     | '/reportes'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/historial'
     | '/importar'
+    | '/oportunidades'
     | '/reglas'
     | '/reportes'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   ConfiguracionRoute: typeof ConfiguracionRoute
   HistorialRoute: typeof HistorialRoute
   ImportarRoute: typeof ImportarRoute
+  OportunidadesRoute: typeof OportunidadesRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
 }
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/reglas'
       fullPath: '/reglas'
       preLoaderRoute: typeof ReglasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oportunidades': {
+      id: '/oportunidades'
+      path: '/oportunidades'
+      fullPath: '/oportunidades'
+      preLoaderRoute: typeof OportunidadesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/importar': {
@@ -244,9 +264,19 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracionRoute: ConfiguracionRoute,
   HistorialRoute: HistorialRoute,
   ImportarRoute: ImportarRoute,
+  OportunidadesRoute: OportunidadesRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
