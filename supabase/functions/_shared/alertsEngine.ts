@@ -1,5 +1,5 @@
 import type { HourOpportunity, OpportunityRanking } from "./opportunityEngine.ts";
-import { format } from "date-fns";
+import { format } from "npm:date-fns@3.6.0";
 import type { AlertInsertExterno as AlertInsert, AlertRowExterno as AlertRow } from "./types.ts";
 
 export type { AlertInsert, AlertRow };
