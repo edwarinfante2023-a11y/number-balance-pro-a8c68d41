@@ -13,7 +13,7 @@ export interface RuleExterno {
   id?: string;
   nombre: string;
   descripcion?: string | null;
-  tipo: "racha" | "dominancia" | "patron" | "otro";
+  tipo: "racha" | "compensacion" | "patron" | "bloqueo" | "otro";
   condiciones: any;
   resultado_esperado?: string | null;
   activo: boolean;
@@ -25,7 +25,7 @@ export interface RuleExterno {
 export interface PatternExterno {
   id?: string;
   nombre: string;
-  descripcion?: string | null;
+  descripcion: string;
   tipo: string;
   condiciones: any;
   resultado_esperado?: string | null;
