@@ -26,7 +26,7 @@ export interface PatternExterno {
   id?: string;
   nombre: string;
   descripcion: string;
-  tipo: string;
+  tipo: "racha" | "compensacion" | "patron" | "bloqueo" | "otro";
   condiciones: any;
   resultado_esperado?: string | null;
   ocurrencias: number;
