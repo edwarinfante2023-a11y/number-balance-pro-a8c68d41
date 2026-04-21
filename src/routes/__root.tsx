@@ -61,6 +61,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Cuadrante — Análisis inteligente de sorteos" },
+      { name: "description", content: "Pattern Predictor Pro analyzes historical lottery draw data to identify patterns and trends." },
+      { property: "og:description", content: "Pattern Predictor Pro analyzes historical lottery draw data to identify patterns and trends." },
+      { name: "twitter:description", content: "Pattern Predictor Pro analyzes historical lottery draw data to identify patterns and trends." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/80f13517-6453-48b1-92a5-48a80f4820f7/id-preview-8a0ce4e1--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app-1776717448323.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/80f13517-6453-48b1-92a5-48a80f4820f7/id-preview-8a0ce4e1--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app-1776717448323.png" },
     ],
     links: [
       {
