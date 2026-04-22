@@ -1,5 +1,4 @@
 import type { HourOpportunity, OpportunityRanking } from "./opportunityEngine.ts";
-import { format } from "npm:date-fns@3.6.0";
 import type { AlertInsertExterno as AlertInsert, AlertRowExterno as AlertRow } from "./types.ts";
 
 export type { AlertInsert, AlertRow };
@@ -10,7 +9,7 @@ export type { AlertInsert, AlertRow };
  */
 export function generateAlertsFromRanking(ranking: OpportunityRanking): AlertInsert[] {
   const alerts: AlertInsert[] = [];
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = new Date().toISOString().slice(0, 10);
 
   for (const opp of ranking.ranking) {
     if (opp.nivel === "ALTO" || opp.score >= 75) {
