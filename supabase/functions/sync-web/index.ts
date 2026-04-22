@@ -11,76 +11,79 @@ const corsHeaders = {
 interface SlotConfig {
   slug: string;
   hora: string;
+  /** Hora en formato 24h (8, 9, ... 22) para comparar con la hora actual */
+  hour24: number;
   label: string;
 }
 
 const SLOTS: SlotConfig[] = [
-  { slug: "8am",  hora: "08:00", label: "Anguilla 8AM" },
-  { slug: "9am",  hora: "09:00", label: "Anguilla 9AM" },
-  { slug: "10am", hora: "10:00", label: "Anguilla 10AM" },
-  { slug: "11am", hora: "11:00", label: "Anguilla 11AM" },
-  { slug: "12pm", hora: "12:00", label: "Anguilla 12PM" },
-  { slug: "1pm",  hora: "13:00", label: "Anguilla 1PM" },
-  { slug: "2pm",  hora: "14:00", label: "Anguilla 2PM" },
-  { slug: "3pm",  hora: "15:00", label: "Anguilla 3PM" },
-  { slug: "4pm",  hora: "16:00", label: "Anguilla 4PM" },
-  { slug: "5pm",  hora: "17:00", label: "Anguilla 5PM" },
-  { slug: "6pm",  hora: "18:00", label: "Anguilla 6PM" },
-  { slug: "7pm",  hora: "19:00", label: "Anguilla 7PM" },
-  { slug: "8pm",  hora: "20:00", label: "Anguilla 8PM" },
-  { slug: "9pm",  hora: "21:00", label: "Anguilla 9PM" },
-  { slug: "10pm", hora: "22:00", label: "Anguilla 10PM" },
+  { slug: "8am",  hora: "08:00", hour24: 8,  label: "Anguilla 8AM" },
+  { slug: "9am",  hora: "09:00", hour24: 9,  label: "Anguilla 9AM" },
+  { slug: "10am", hora: "10:00", hour24: 10, label: "Anguilla 10AM" },
+  { slug: "11am", hora: "11:00", hour24: 11, label: "Anguilla 11AM" },
+  { slug: "12pm", hora: "12:00", hour24: 12, label: "Anguilla 12PM" },
+  { slug: "1pm",  hora: "13:00", hour24: 13, label: "Anguilla 1PM" },
+  { slug: "2pm",  hora: "14:00", hour24: 14, label: "Anguilla 2PM" },
+  { slug: "3pm",  hora: "15:00", hour24: 15, label: "Anguilla 3PM" },
+  { slug: "4pm",  hora: "16:00", hour24: 16, label: "Anguilla 4PM" },
+  { slug: "5pm",  hora: "17:00", hour24: 17, label: "Anguilla 5PM" },
+  { slug: "6pm",  hora: "18:00", hour24: 18, label: "Anguilla 6PM" },
+  { slug: "7pm",  hora: "19:00", hour24: 19, label: "Anguilla 7PM" },
+  { slug: "8pm",  hora: "20:00", hour24: 20, label: "Anguilla 8PM" },
+  { slug: "9pm",  hora: "21:00", hour24: 21, label: "Anguilla 9PM" },
+  { slug: "10pm", hora: "22:00", hour24: 22, label: "Anguilla 10PM" },
 ];
 
-// ─── Helpers de Parseo ───────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────
 
-const MESES: Record<string, string> = {
-  "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
-  "mayo": "05", "junio": "06", "julio": "07", "agosto": "08",
-  "septiembre": "09", "octubre": "10", "noviembre": "11", "diciembre": "12"
-};
+/**
+ * Obtener la fecha actual en zona horaria AST/Caribe (UTC-4).
+ * Supabase Edge Functions corren en UTC, así que ajustamos manualmente.
+ */
+function getNowAST(): Date {
+  const now = new Date();
+  // UTC-4 (AST — Atlantic Standard Time, que es la zona del RSS de enloteria.com)
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000;
+  return new Date(utcMs - 4 * 60 * 60_000);
+}
 
-function getOffsetDate(daysOffset: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + daysOffset);
+function formatDateISO(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
-function parseRealDateFromTitle(title: string, fallbackPubDate: string): string | null {
-  const lower = title.toLowerCase();
-  
-  if (lower.includes(" de hoy:")) {
-    return getOffsetDate(0);
-  }
-  if (lower.includes(" de ayer:")) {
-    return getOffsetDate(-1);
-  }
-  
-  // Buscar patrón "del [diaSemana] [dia] de [mes]:"
-  const dateMatch = lower.match(/del\s+[a-z]+\s+(\d{1,2})\s+de\s+([a-z]+):/);
-  if (dateMatch) {
-    const day = dateMatch[1].padStart(2, "0");
-    const monthStr = dateMatch[2];
-    const month = MESES[monthStr];
-    if (month) {
-      const year = new Date().getFullYear();
-      return `${year}-${month}-${day}`;
-    }
+/**
+ * Determina qué slot(s) scrape-ar según la hora actual AST.
+ * 
+ * Modo "hora" (default / cron): Solo el slot que acaba de cerrar.
+ *   - Si son las 11:05, scrapea el slot de 11am.
+ *   - Si son las 15:05, scrapea el slot de 3pm.
+ *
+ * Modo "full": Todos los slots cuya hora ya pasó hoy (para backfill manual).
+ */
+function getSlotsToScrape(mode: "hora" | "full", nowAST: Date): SlotConfig[] {
+  const currentHour = nowAST.getHours();
+
+  if (mode === "full") {
+    // Solo slots cuya hora ya pasó (no futuras)
+    return SLOTS.filter(s => s.hour24 <= currentHour);
   }
 
-  // Fallback a pubDate si el título no dice nada útil
-  const d = new Date(fallbackPubDate);
-  if (isNaN(d.getTime())) return null;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  // Modo hora: buscar exactamente el slot que acaba de cerrar
+  const targetSlot = SLOTS.find(s => s.hour24 === currentHour);
+  if (targetSlot) {
+    return [targetSlot];
+  }
+
+  // Si no hay slot exacto (e.g. se ejecutó a las 7:05 antes del primer sorteo),
+  // no scrapeamos nada
+  return [];
 }
 
 function extractFirstPrize(title: string): number | null {
+  // Buscar patrón ": XX-YY-ZZ" — primer número es el first prize
   const match = title.match(/:\s*(\d{1,2})-\d{1,2}-\d{1,2}/);
   if (!match) return null;
   return parseInt(match[1], 10);
@@ -104,7 +107,27 @@ function parseRSSItems(xml: string): Array<{ title: string; pubDate: string }> {
   return items;
 }
 
-// ─── Logic ───────────────────────────────────────────────────────────────
+/**
+ * Del feed RSS, toma SOLO el item que dice "de hoy" y que NO sea "pendiente".
+ * Retorna el primer premio (número) o null si no está disponible aún.
+ */
+function extractTodayResult(items: Array<{ title: string; pubDate: string }>): number | null {
+  for (const item of items) {
+    const lower = item.title.toLowerCase();
+
+    // Solo nos interesa el item "de hoy"
+    if (!lower.includes(" de hoy:")) continue;
+
+    // Si dice "pendiente", el resultado aún no ha salido
+    if (lower.includes("pendiente")) return null;
+
+    // Extraer el primer premio
+    return extractFirstPrize(item.title);
+  }
+  return null;
+}
+
+// ─── Servidor Edge Function ──────────────────────────────────────────────
 serve(async (req: Request) => {
   // Manejo de CORS Preflight
   if (req.method === "OPTIONS") {
@@ -116,15 +139,46 @@ serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // ─── Detectar modo ────────────────────────────────────────────────────
+    // POST body puede incluir { mode: "full" } para backfill manual
+    let mode: "hora" | "full" = "hora";
+    try {
+      if (req.method === "POST") {
+        const body = await req.json();
+        if (body?.mode === "full") mode = "full";
+      }
+    } catch {
+      // Si no hay body o no es JSON, usamos modo "hora" por defecto
+    }
+
+    const nowAST = getNowAST();
+    const todayISO = formatDateISO(nowAST);
+    const currentHourAST = nowAST.getHours();
+    const slotsToScrape = getSlotsToScrape(mode, nowAST);
+
     const summary = {
       ok: true,
+      mode,
+      horaActualAST: `${String(currentHourAST).padStart(2, "0")}:${String(nowAST.getMinutes()).padStart(2, "0")}`,
+      fechaHoy: todayISO,
+      slotsEvaluados: slotsToScrape.map(s => s.slug),
       totalProcesadas: 0,
       nuevasInsertadas: 0,
       duplicadasIgnoradas: 0,
+      sinResultado: 0,
       errores: 0,
       detalle: [] as string[],
     };
 
+    if (slotsToScrape.length === 0) {
+      summary.detalle.push(`ℹ Hora actual ${currentHourAST}:XX — ningún slot para scrapear.`);
+      return new Response(JSON.stringify(summary), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // ─── Cargar mappings de BD ────────────────────────────────────────────
     const { data: sorteoData, error: sorteoErr } = await supabase
       .from("lottery_draws")
       .select("id, hora")
@@ -137,9 +191,11 @@ serve(async (req: Request) => {
       sorteoMap[row.hora] = row.id;
     }
 
+    // ─── Precargar claves existentes SOLO de hoy para deduplicación ──────
     const { data: drawsData, error: drawsErr } = await supabase
       .from("draws")
-      .select("fecha, sorteo_id");
+      .select("fecha, sorteo_id")
+      .eq("fecha", todayISO);
 
     if (drawsErr) throw drawsErr;
 
@@ -148,7 +204,8 @@ serve(async (req: Request) => {
       existingKeys.add(`${row.fecha}|${row.sorteo_id}`);
     }
 
-    for (const slot of SLOTS) {
+    // ─── Procesar cada slot ──────────────────────────────────────────────
+    for (const slot of slotsToScrape) {
       try {
         const url = `https://enloteria.com/rss/anguilla-${slot.slug}`;
         const response = await fetch(url);
@@ -160,43 +217,48 @@ serve(async (req: Request) => {
 
         const xml = await response.text();
         const items = parseRSSItems(xml);
+        summary.totalProcesadas++;
 
-        for (const item of items) {
-          const fecha = parseRealDateFromTitle(item.title, item.pubDate);
-          const numero = extractFirstPrize(item.title);
-          
-          if (!fecha || numero === null) continue;
-          
-          summary.totalProcesadas++;
+        // ─── Extraer SOLO el resultado de hoy ──────────────────────────
+        const numero = extractTodayResult(items);
 
-          const sorteoId = sorteoMap[slot.hora];
-          if (!sorteoId) {
-            summary.errores++;
-            summary.detalle.push(`⚠ Sin mapeo en BD para hora ${slot.hora}`);
-            continue;
-          }
+        if (numero === null) {
+          summary.sinResultado++;
+          summary.detalle.push(`⏳ ${slot.label} — resultado de hoy aún pendiente`);
+          continue;
+        }
 
-          const key = `${fecha}|${sorteoId}`;
-          if (existingKeys.has(key)) {
-            summary.duplicadasIgnoradas++;
-            continue;
-          }
+        // ─── Validar mapping BD ────────────────────────────────────────
+        const sorteoId = sorteoMap[slot.hora];
+        if (!sorteoId) {
+          summary.errores++;
+          summary.detalle.push(`⚠ Sin mapeo en BD para hora ${slot.hora}`);
+          continue;
+        }
 
-          const { error: insertErr } = await supabase.from("draws").insert({
-            sorteo_id: sorteoId,
-            fecha: fecha,
-            numero: numero,
-            origen: "scraper",
-          });
+        // ─── Deduplicación ─────────────────────────────────────────────
+        const key = `${todayISO}|${sorteoId}`;
+        if (existingKeys.has(key)) {
+          summary.duplicadasIgnoradas++;
+          summary.detalle.push(`≡ ${slot.label} ${todayISO} ya existe — ignorada`);
+          continue;
+        }
 
-          if (insertErr) {
-            summary.errores++;
-            summary.detalle.push(`✗ Error insertando ${slot.label} ${fecha}: ${insertErr.message}`);
-          } else {
-            summary.nuevasInsertadas++;
-            existingKeys.add(key);
-            summary.detalle.push(`✓ ${slot.label} ${fecha} → #${numero.toString().padStart(2, "0")}`);
-          }
+        // ─── Insertar ─────────────────────────────────────────────────
+        const { error: insertErr } = await supabase.from("draws").insert({
+          sorteo_id: sorteoId,
+          fecha: todayISO,
+          numero: numero,
+          origen: "scraper",
+        });
+
+        if (insertErr) {
+          summary.errores++;
+          summary.detalle.push(`✗ Error insertando ${slot.label} ${todayISO}: ${insertErr.message}`);
+        } else {
+          summary.nuevasInsertadas++;
+          existingKeys.add(key);
+          summary.detalle.push(`✓ ${slot.label} ${todayISO} → #${numero.toString().padStart(2, "0")}`);
         }
       } catch (err) {
         summary.errores++;
