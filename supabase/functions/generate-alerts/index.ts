@@ -14,13 +14,13 @@ function adapterDrawToSorteo(draw: any): SorteoExterno {
   return {
     id: draw.id,
     fecha: draw.fecha,
-    hora: draw.hora,
+    hora: draw.lottery_draws?.hora ?? draw.hora ?? "",
     numeros: Array.isArray(draw.numeros) ? draw.numeros : [],
     super_x: draw.super_x,
     altoBajo: draw.alto_bajo,
     parImpar: draw.par_impar,
-    subcuadrante: draw.subcuadrante,
-    loteria: draw.loteria,
+    subcuadrante: draw.subcuadrante ?? draw.cuadrante,
+    loteria: draw.lottery_draws?.lotteries?.nombre ?? draw.loteria ?? "",
     numero: draw.numero || (draw.numeros && draw.numeros.length > 0 ? draw.numeros[0] : 0),
     origen: draw.origen,
     extra: draw.extra || {}
@@ -45,7 +45,7 @@ serve(async (req) => {
     // 1. Fetch draws (limit robust for metrics)
     const { data: rawDraws, error: e1 } = await supabase
       .from("draws")
-      .select("*")
+      .select("*, lottery_draws!inner(hora, loteria_id, lotteries!inner(nombre))")
       .order("created_at", { ascending: false })
       .limit(5000);
       
