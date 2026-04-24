@@ -24,6 +24,7 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SyncStatusBadge } from "@/components/SyncStatusBadge";
+import { PushPrompt } from "@/components/PushPrompt";
 
 type NavItem = {
   to: string;
@@ -363,6 +364,8 @@ export function AppLayout() {
           })}
         </div>
       </nav>
+
+      <PushPrompt />
     </div>
   );
 }

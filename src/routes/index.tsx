@@ -28,6 +28,7 @@ import {
 import { useDraws } from "@/hooks/useDraws";
 import { drawToSorteo } from "@/lib/drawAdapter";
 import { cn } from "@/lib/utils";
+import { getLotteryLogo } from "@/lib/lotteryLogos";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -389,9 +390,17 @@ function RowDia({ s }: { s: Sorteo }) {
         {s.numero.toString().padStart(2, "0")}
       </span>
 
-      <span className="text-[13px] font-semibold text-muted-foreground uppercase tracking-widest hidden sm:block w-32">
-        {s.loteria}
-      </span>
+      <div className="text-[13px] font-semibold text-muted-foreground uppercase tracking-widest hidden sm:flex items-center gap-2 w-32">
+        {getLotteryLogo(s.loteria) && (
+          <img 
+            src={getLotteryLogo(s.loteria)} 
+            alt={s.loteria} 
+            className="size-5 object-contain opacity-80"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
+        <span className="truncate">{s.loteria}</span>
+      </div>
 
       <div className="flex gap-2 flex-1 justify-end">
         <AltoBajoBadge value={s.altoBajo} />

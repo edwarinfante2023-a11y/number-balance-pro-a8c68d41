@@ -13,9 +13,14 @@ import {
   Network,
   Sparkles,
   FolderTree,
+  Bell,
+  BellOff,
+  Smartphone,
+  TestTube2,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { SyncLogsWidget } from "@/components/SyncLogsWidget";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useClassificationConfig, useUpdateClassificationConfig } from "@/hooks/useSettings";
 import {
   useLotteries,
@@ -47,6 +52,7 @@ function Configuracion() {
   const { data: lotteries = [] } = useLotteries();
   const createLottery = useCreateLottery();
   const deleteLottery = useDeleteLottery();
+  const push = usePushNotifications();
 
   const [draft, setDraft] = useState<{
     rangeMin: number;
@@ -264,6 +270,106 @@ function Configuracion() {
               />
             ))}
           </ul>
+        </div>
+
+        {/* Push Notifications */}
+        <div className="lg:col-span-12 bg-white rounded-[24px] lg:rounded-[32px] border border-border shadow-sm p-5 lg:p-8 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-6 border-b border-border pb-6">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "size-10 rounded-xl grid place-items-center",
+                push.isSubscribed ? "bg-primary/10" : "bg-muted"
+              )}>
+                {push.isSubscribed ? (
+                  <Bell className="size-5 text-primary" />
+                ) : (
+                  <BellOff className="size-5 text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-[16px] font-bold text-foreground">Notificaciones Push</h3>
+                <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">
+                  Web Push API
+                </p>
+              </div>
+            </div>
+
+            {push.isSubscribed && (
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[12px] font-bold text-emerald-700 uppercase tracking-wider">
+                  Activas
+                </span>
+              </div>
+            )}
+          </div>
+
+          {!push.isSupported ? (
+            <div className="rounded-[16px] bg-warning/10 border border-warning/20 p-5 text-[13px] text-orange-800 font-medium flex gap-4 items-start shadow-sm">
+              <ShieldAlert className="size-5 shrink-0 mt-0.5 text-warning" />
+              <div className="leading-relaxed">
+                Tu navegador no soporta notificaciones push. Usa Chrome, Edge, Firefox o Safari 16.4+
+                para activar esta funcionalidad.
+              </div>
+            </div>
+          ) : push.permission === "denied" ? (
+            <div className="rounded-[16px] bg-destructive/10 border border-destructive/20 p-5 text-[13px] text-red-800 font-medium flex gap-4 items-start shadow-sm">
+              <ShieldAlert className="size-5 shrink-0 mt-0.5 text-destructive" />
+              <div className="leading-relaxed">
+                <strong>Permiso denegado.</strong> Necesitas ir a la configuración del navegador para
+                re-habilitar los permisos de notificaciones para este sitio.
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 rounded-[20px] bg-muted/30 border border-border p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <Smartphone className="size-5 text-muted-foreground" />
+                  <span className="text-[13px] font-bold text-foreground">
+                    {push.isSubscribed
+                      ? "Recibirás alertas directamente en tu dispositivo"
+                      : "Activa las notificaciones para recibir alertas en tiempo real"}
+                  </span>
+                </div>
+                <p className="text-[12px] text-muted-foreground leading-relaxed mb-4">
+                  {push.isSubscribed
+                    ? "Cada vez que el motor detecte una oportunidad, recibirás una notificación push sin necesidad de tener la app abierta."
+                    : "Las alertas de oportunidades con score alto llegarán como notificaciones nativas del navegador. Funciona incluso con la pestaña cerrada."}
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => push.isSubscribed ? push.unsubscribe() : push.subscribe()}
+                    disabled={push.isLoading}
+                    className={cn(
+                      "inline-flex items-center gap-2 h-10 rounded-[12px] px-5 text-[13px] font-bold shadow-md disabled:opacity-50 transition-all hover:-translate-y-0.5",
+                      push.isSubscribed
+                        ? "bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:shadow-destructive/10"
+                        : "bg-primary text-white hover:shadow-lg"
+                    )}
+                  >
+                    {push.isLoading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : push.isSubscribed ? (
+                      <BellOff className="size-4" />
+                    ) : (
+                      <Bell className="size-4" />
+                    )}
+                    {push.isSubscribed ? "Desactivar" : "Activar Notificaciones"}
+                  </button>
+
+                  {push.isSubscribed && (
+                    <button
+                      onClick={push.sendTestNotification}
+                      className="inline-flex items-center gap-2 h-10 rounded-[12px] px-4 text-[12px] font-bold bg-muted text-muted-foreground hover:bg-muted/80 transition-all shadow-sm"
+                    >
+                      <TestTube2 className="size-4" />
+                      Probar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sync Logs Widget */}

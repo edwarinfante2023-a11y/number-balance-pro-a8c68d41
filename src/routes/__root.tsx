@@ -8,6 +8,8 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 import appCss from "../styles.css?url";
 
@@ -96,6 +98,29 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'draws',
+        },
+        () => {
+          // Invalidamos la query de 'draws' para que las tablas y dashboard se actualicen al instante
+          queryClient.invalidateQueries({ queryKey: ["draws"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AppLayout />

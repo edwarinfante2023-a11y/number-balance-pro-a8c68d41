@@ -18,6 +18,7 @@ import {
 import { AltoBajoBadge, ParImparBadge } from "@/components/ClassificationBadge";
 import { useDraws } from "@/hooks/useDraws";
 import { drawToSorteo } from "@/lib/drawAdapter";
+import { getLotteryLogo } from "@/lib/lotteryLogos";
 
 // ─── Helpers para comparación manual vs real ─────────────────────────────────
 
@@ -265,7 +266,17 @@ function ComparativaPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-[12px] font-mono font-bold text-muted-foreground uppercase tracking-widest">{row.fecha} · {row.hora}</span>
-                        <span className="font-bold text-foreground text-[14px] mt-1">{row.loteria}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          {getLotteryLogo(row.loteria) && (
+                            <img 
+                              src={getLotteryLogo(row.loteria)} 
+                              alt={row.loteria} 
+                              className="size-5 object-contain opacity-90"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
+                          <span className="font-bold text-foreground text-[14px]">{row.loteria}</span>
+                        </div>
                         <span className="text-[13px] text-muted-foreground mt-0.5" title={row.escenarioLabel}>
                           {row.escenarioLabel.length > 30 ? row.escenarioLabel.substring(0, 30) + '...' : row.escenarioLabel}
                         </span>
@@ -330,8 +341,18 @@ function ComparativaPage() {
                         <td className="px-6 py-4 text-[13px] font-bold text-foreground whitespace-nowrap">
                           {row.hora}
                         </td>
-                        <td className="px-6 py-4 text-[12px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
-                          {row.loteria}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            {getLotteryLogo(row.loteria) && (
+                              <img 
+                                src={getLotteryLogo(row.loteria)} 
+                                alt={row.loteria} 
+                                className="size-5 object-contain opacity-90"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            )}
+                            <span className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">{row.loteria}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 font-mono text-[16px] font-extrabold text-foreground tabular-nums">
                           {row.numero.toString().padStart(2, "0")}

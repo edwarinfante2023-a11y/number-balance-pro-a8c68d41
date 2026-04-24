@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { buildOpportunityRanking } from "../_shared/opportunityEngine.ts";
-import { generateAlertsFromRanking, dedupeAlerts } from "../_shared/alertsEngine.ts";
+import { generateAlertsFromRanking, dedupeAlerts, getTodayLocal } from "../_shared/alertsEngine.ts";
+import { sendPushToAll, type PushSubscriptionRecord } from "../_shared/webPush.ts";
 import type { SorteoExterno, RuleExterno, PatternExterno, AlertRowExterno } from "../_shared/types.ts";
 
 const corsHeaders = {
@@ -83,8 +84,8 @@ serve(async (req) => {
       });
     }
 
-    // 6. Fetch existing alerts today to test deduplication
-    const today = new Date().toISOString().split('T')[0]; // "yyyy-MM-dd"
+    // 6. Fetch existing alerts today to test deduplication (usando AST, no UTC)
+    const today = getTodayLocal();
     const { data: rawAlerts, error: e4 } = await supabase
       .from("alerts")
       .select("*")
@@ -106,10 +107,48 @@ serve(async (req) => {
        console.log(`[generate-alerts] Inserted ${deduped.length} new alerts into DB.`);
     }
 
+    // 9. Send Web Push notifications
+    let pushSent = 0;
+    if (deduped.length > 0) {
+      const { data: subs } = await supabase
+        .from("push_subscriptions")
+        .select("id, endpoint, keys_p256dh, keys_auth")
+        .eq("activa", true);
+
+      if (subs && subs.length > 0) {
+        // Usar la alerta de mayor score como mensaje principal
+        const topAlert = deduped.reduce((a, b) => (a.score > b.score ? a : b));
+        const isCritical = topAlert.nivel === "critical";
+
+        const pushResult = await sendPushToAll(
+          subs as PushSubscriptionRecord[],
+          {
+            title: isCritical ? "🚨 Alerta Crítica — Cuadrante" : "🎯 Nueva Alerta — Cuadrante",
+            body: `Score ${topAlert.score} a las ${topAlert.hora}. ${topAlert.descripcion?.slice(0, 100)}`,
+            tag: `alert-${today}-${topAlert.hora}`,
+            data: { url: "/alertas" },
+          },
+        );
+
+        pushSent = pushResult.sent;
+        console.log(`[generate-alerts] Push sent to ${pushResult.sent} devices, ${pushResult.expired.length} expired.`);
+
+        // 10. Cleanup expired subscriptions
+        if (pushResult.expired.length > 0) {
+          await supabase
+            .from("push_subscriptions")
+            .update({ activa: false })
+            .in("id", pushResult.expired);
+          console.log(`[generate-alerts] Cleaned ${pushResult.expired.length} expired push subs.`);
+        }
+      }
+    }
+
     return new Response(JSON.stringify({ 
        success: true, 
        inserted: deduped.length,
-       totalScored: newAlerts.length 
+       totalScored: newAlerts.length,
+       pushSent,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

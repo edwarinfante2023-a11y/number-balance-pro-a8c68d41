@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   Loader2,
   Activity,
@@ -10,6 +11,7 @@ import {
   TrendingUp,
   Hash,
   DatabaseZap,
+  Calendar,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,7 @@ import { drawToSorteo } from "@/lib/drawAdapter";
 import { getActiveRulesForSubset } from "@shared/rulesEngine";
 import { minePatterns, getActivePatterns } from "@shared/patternsEngine";
 import { toast } from "sonner";
+import { getLotteryLogo } from "@/lib/lotteryLogos";
 
 const HORAS = [
   "09:00",
@@ -51,7 +54,6 @@ const HORAS = [
   "22:00",
 ];
 
-
 // ─── Route ───────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute("/analisis-hora")({
@@ -68,7 +70,46 @@ export const Route = createFileRoute("/analisis-hora")({
 
 function AnalisisHora() {
   const { data: draws = [], isLoading } = useDraws({ limit: 5000 });
-  const all = useMemo(() => draws.map(drawToSorteo), [draws]);
+  const rawAll = useMemo(() => draws.map(drawToSorteo), [draws]);
+
+  type DatePreset = "hoy" | "ayer" | "7d" | "este_mes" | "ultimo_mes" | "todos" | "personalizado";
+  const [datePreset, setDatePreset] = useState<DatePreset>("todos");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
+
+  useEffect(() => {
+    const today = new Date();
+    if (datePreset === "todos") {
+      setFechaDesde("");
+      setFechaHasta("");
+    } else if (datePreset === "hoy") {
+      const d = format(today, "yyyy-MM-dd");
+      setFechaDesde(d);
+      setFechaHasta(d);
+    } else if (datePreset === "ayer") {
+      const d = format(subDays(today, 1), "yyyy-MM-dd");
+      setFechaDesde(d);
+      setFechaHasta(d);
+    } else if (datePreset === "7d") {
+      setFechaDesde(format(subDays(today, 6), "yyyy-MM-dd"));
+      setFechaHasta(format(today, "yyyy-MM-dd"));
+    } else if (datePreset === "este_mes") {
+      setFechaDesde(format(startOfMonth(today), "yyyy-MM-dd"));
+      setFechaHasta(format(endOfMonth(today), "yyyy-MM-dd"));
+    } else if (datePreset === "ultimo_mes") {
+      const lastMonth = subMonths(today, 1);
+      setFechaDesde(format(startOfMonth(lastMonth), "yyyy-MM-dd"));
+      setFechaHasta(format(endOfMonth(lastMonth), "yyyy-MM-dd"));
+    }
+  }, [datePreset]);
+
+  const all = useMemo(() => {
+    return rawAll.filter(s => {
+      if (fechaDesde && s.fecha < fechaDesde) return false;
+      if (fechaHasta && s.fecha > fechaHasta) return false;
+      return true;
+    });
+  }, [rawAll, fechaDesde, fechaHasta]);
 
   const horasDisponibles = useMemo(() => {
     const set = new Set(all.map((s) => s.hora));
@@ -245,6 +286,63 @@ function AnalisisHora() {
             <TrendingUp className="size-4" />
             Ir a Comparativa Global
           </Link>
+        </div>
+      </div>
+
+      {/* Toolbar: Date Range */}
+      <div className="bg-white rounded-[24px] border border-border shadow-sm overflow-hidden mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 px-6 py-4 bg-muted/5">
+          <div className="flex items-center gap-2">
+            <Calendar className="size-4 text-muted-foreground shrink-0" />
+            <select
+              value={datePreset}
+              onChange={(e) => setDatePreset(e.target.value as any)}
+              className="h-10 px-3 pr-8 rounded-xl border border-border bg-white text-[13px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer shadow-sm transition-all"
+            >
+              <option value="hoy">Hoy</option>
+              <option value="ayer">Ayer</option>
+              <option value="7d">Últimos 7 días</option>
+              <option value="este_mes">Este mes</option>
+              <option value="ultimo_mes">Último mes</option>
+              <option value="todos">Todo el tiempo</option>
+              <option value="personalizado">Personalizado...</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">Desde</span>
+            <input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => {
+                setFechaDesde(e.target.value);
+                setDatePreset("personalizado");
+              }}
+              className="h-10 px-4 rounded-xl border border-border bg-white text-[13px] font-mono font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-w-[130px]"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">Hasta</span>
+            <input
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => {
+                setFechaHasta(e.target.value);
+                setDatePreset("personalizado");
+              }}
+              className="h-10 px-4 rounded-xl border border-border bg-white text-[13px] font-mono font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-w-[130px]"
+            />
+          </div>
+          {datePreset !== "todos" && (
+            <button
+              onClick={() => {
+                setDatePreset("todos");
+              }}
+              className="h-10 px-4 rounded-xl border border-red-200 bg-red-50 text-red-600 text-[12px] font-bold uppercase tracking-widest hover:bg-red-100 transition-colors shrink-0"
+            >
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
 
@@ -659,26 +757,40 @@ function AnalisisHora() {
           <div className="w-full">
             {/* Mobile Card List */}
             <div className="lg:hidden flex flex-col divide-y divide-border bg-white w-full">
-              {recientes.map((s) => (
-                <div key={s.id} className="p-5 flex flex-col gap-3 bg-white hover:bg-muted/20 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-[12px] font-mono font-bold text-muted-foreground uppercase tracking-widest">{s.fecha}</span>
-                      <span className="font-bold text-foreground text-[14px] mt-1">{s.loteria}</span>
+              {recientes.map((s) => {
+                const logo = getLotteryLogo(s.loteria);
+
+                return (
+                  <div key={s.id} className="p-5 flex flex-col gap-3 bg-white hover:bg-muted/20 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-[12px] font-mono font-bold text-muted-foreground uppercase tracking-widest">{s.fecha}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          {logo && (
+                            <img 
+                              src={logo} 
+                              alt={s.loteria} 
+                              className="size-5 object-contain drop-shadow-sm" 
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
+                          <span className="font-bold text-foreground text-[14px]">{s.loteria}</span>
+                        </div>
+                      </div>
+                      <div className="size-12 rounded-xl bg-muted/40 border border-border flex items-center justify-center shadow-sm shrink-0">
+                        <span className="font-mono text-[22px] font-extrabold text-foreground">
+                          {s.numero.toString().padStart(2, "0")}
+                        </span>
+                      </div>
                     </div>
-                    <div className="size-12 rounded-xl bg-muted/40 border border-border flex items-center justify-center shadow-sm shrink-0">
-                      <span className="font-mono text-[22px] font-extrabold text-foreground">
-                        {s.numero.toString().padStart(2, "0")}
-                      </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <AltoBajoBadge value={s.altoBajo} soft={false} />
+                      <ParImparBadge value={s.parImpar} soft={false} />
+                      <SubcuadranteBadge value={s.subcuadrante} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <AltoBajoBadge value={s.altoBajo} soft={false} />
-                    <ParImparBadge value={s.parImpar} soft={false} />
-                    <SubcuadranteBadge value={s.subcuadrante} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Desktop Table */}
@@ -695,14 +807,27 @@ function AnalisisHora() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {recientes.map((s) => (
-                    <tr key={s.id} className="group hover:bg-muted/20 transition-colors">
-                      <td className="px-6 py-4 tabular-nums text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
-                        {s.fecha}
-                      </td>
-                      <td className="px-6 py-4 text-[13px] font-bold text-foreground">
-                        {s.loteria}
-                      </td>
+                  {recientes.map((s) => {
+                    const logo = getLotteryLogo(s.loteria);
+
+                    return (
+                      <tr key={s.id} className="group hover:bg-muted/20 transition-colors">
+                        <td className="px-6 py-4 tabular-nums text-[13px] font-mono font-medium text-muted-foreground whitespace-nowrap">
+                          {s.fecha}
+                        </td>
+                        <td className="px-6 py-4 text-[13px] font-bold text-foreground">
+                          <div className="flex items-center gap-2.5">
+                            {logo && (
+                              <img 
+                                src={logo} 
+                                alt={s.loteria} 
+                                className="size-6 object-contain drop-shadow-sm" 
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            )}
+                            <span>{s.loteria}</span>
+                          </div>
+                        </td>
                       <td className="px-6 py-4">
                         <span className="font-mono text-[18px] font-extrabold text-foreground bg-muted px-3 py-1 rounded-[8px] border border-border shadow-sm">
                           {s.numero.toString().padStart(2, "0")}
@@ -718,7 +843,8 @@ function AnalisisHora() {
                         <SubcuadranteBadge value={s.subcuadrante} />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import {
   Search,
   Trash2,
@@ -23,6 +24,7 @@ import { syncFromWeb, type SyncSummary } from "@/lib/webSyncEngine";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { getLotteryLogo } from "@/lib/lotteryLogos";
 
 export const Route = createFileRoute("/historial")({
   head: () => ({
@@ -47,9 +49,39 @@ function Historial() {
   const [q, setQ] = useState("");
   const [loteria, setLoteria] = useState("Todas");
   const [origen, setOrigen] = useState("Todos");
+  const [horaFiltro, setHoraFiltro] = useState("Todas");
+  
+  type DatePreset = "hoy" | "ayer" | "7d" | "este_mes" | "ultimo_mes" | "todos" | "personalizado";
+  const [datePreset, setDatePreset] = useState<DatePreset>("hoy");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
-  const [horaFiltro, setHoraFiltro] = useState("Todas");
+
+  useEffect(() => {
+    const today = new Date();
+    
+    if (datePreset === "todos") {
+      setFechaDesde("");
+      setFechaHasta("");
+    } else if (datePreset === "hoy") {
+      const d = format(today, "yyyy-MM-dd");
+      setFechaDesde(d);
+      setFechaHasta(d);
+    } else if (datePreset === "ayer") {
+      const d = format(subDays(today, 1), "yyyy-MM-dd");
+      setFechaDesde(d);
+      setFechaHasta(d);
+    } else if (datePreset === "7d") {
+      setFechaDesde(format(subDays(today, 6), "yyyy-MM-dd"));
+      setFechaHasta(format(today, "yyyy-MM-dd"));
+    } else if (datePreset === "este_mes") {
+      setFechaDesde(format(startOfMonth(today), "yyyy-MM-dd"));
+      setFechaHasta(format(endOfMonth(today), "yyyy-MM-dd"));
+    } else if (datePreset === "ultimo_mes") {
+      const lastMonth = subMonths(today, 1);
+      setFechaDesde(format(startOfMonth(lastMonth), "yyyy-MM-dd"));
+      setFechaHasta(format(endOfMonth(lastMonth), "yyyy-MM-dd"));
+    }
+  }, [datePreset]);
 
   // ─── Sync State ──────────────────────────────────────────────────
   const [isSyncing, setIsSyncing] = useState(false);
@@ -270,39 +302,59 @@ function Historial() {
 
         {/* Toolbar Row 2: Date Range */}
         <div className="relative z-10 flex flex-col sm:flex-row gap-3 px-6 py-4 border-b border-border bg-muted/5">
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2">
             <Calendar className="size-4 text-muted-foreground shrink-0" />
+            <select
+              value={datePreset}
+              onChange={(e) => setDatePreset(e.target.value as any)}
+              className="h-10 px-3 pr-8 rounded-xl border border-border bg-white text-[13px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer shadow-sm transition-all"
+            >
+              <option value="hoy">Hoy</option>
+              <option value="ayer">Ayer</option>
+              <option value="7d">Últimos 7 días</option>
+              <option value="este_mes">Este mes</option>
+              <option value="ultimo_mes">Último mes</option>
+              <option value="todos">Todo el tiempo</option>
+              <option value="personalizado">Personalizado...</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-2 flex-1">
             <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">Desde</span>
             <input
               type="date"
               value={fechaDesde}
-              onChange={(e) => setFechaDesde(e.target.value)}
-              className="h-10 px-4 rounded-xl border border-border bg-white text-[13px] font-mono font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-w-[140px]"
+              onChange={(e) => {
+                setFechaDesde(e.target.value);
+                setDatePreset("personalizado");
+              }}
+              className="h-10 px-4 rounded-xl border border-border bg-white text-[13px] font-mono font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-w-[130px]"
             />
           </div>
           <div className="flex items-center gap-2 flex-1">
-            <Calendar className="size-4 text-muted-foreground shrink-0" />
             <span className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground shrink-0">Hasta</span>
             <input
               type="date"
               value={fechaHasta}
-              onChange={(e) => setFechaHasta(e.target.value)}
-              className="h-10 px-4 rounded-xl border border-border bg-white text-[13px] font-mono font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-w-[140px]"
+              onChange={(e) => {
+                setFechaHasta(e.target.value);
+                setDatePreset("personalizado");
+              }}
+              className="h-10 px-4 rounded-xl border border-border bg-white text-[13px] font-mono font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all flex-1 min-w-[130px]"
             />
           </div>
-          {(fechaDesde || fechaHasta || horaFiltro !== "Todas" || origen !== "Todos" || loteria !== "Todas" || q) && (
+          {(datePreset !== "todos" || horaFiltro !== "Todas" || origen !== "Todos" || loteria !== "Todas" || q) && (
             <button
               onClick={() => {
                 setQ("");
                 setLoteria("Todas");
                 setOrigen("Todos");
                 setHoraFiltro("Todas");
-                setFechaDesde("");
-                setFechaHasta("");
+                setDatePreset("todos");
               }}
               className="h-10 px-4 rounded-xl border border-red-200 bg-red-50 text-red-600 text-[12px] font-bold uppercase tracking-widest hover:bg-red-100 transition-colors shrink-0"
             >
-              Limpiar filtros
+              Limpiar
             </button>
           )}
         </div>
@@ -342,7 +394,17 @@ function Historial() {
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                            <div className="flex flex-col">
-                             <span className="font-bold text-foreground text-[16px] tracking-tight">{s.loteria}</span>
+                             <div className="flex items-center gap-2">
+                               {getLotteryLogo(s.loteria) && (
+                                 <img 
+                                   src={getLotteryLogo(s.loteria)} 
+                                   alt={s.loteria} 
+                                   className="size-5 object-contain drop-shadow-sm"
+                                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                 />
+                               )}
+                               <span className="font-bold text-foreground text-[16px] tracking-tight">{s.loteria}</span>
+                             </div>
                              <span className="text-[12px] font-mono font-bold text-muted-foreground uppercase tracking-widest">{s.hora}</span>
                            </div>
                         </div>
@@ -427,7 +489,17 @@ function Historial() {
                           {s.hora}
                         </td>
                         <td className="px-6 py-4 text-[14px] font-bold text-foreground">
-                          {s.loteria}
+                          <div className="flex items-center gap-2.5">
+                            {getLotteryLogo(s.loteria) && (
+                              <img 
+                                src={getLotteryLogo(s.loteria)} 
+                                alt={s.loteria} 
+                                className="size-6 object-contain drop-shadow-sm"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                              />
+                            )}
+                            <span>{s.loteria}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className="font-mono text-[18px] lg:text-[20px] font-extrabold text-foreground bg-muted px-3 py-1 rounded-[8px] border border-border shadow-sm">
