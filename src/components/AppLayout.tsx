@@ -17,6 +17,7 @@ import {
   Search,
   Bell,
   TrendingUp,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +42,7 @@ const NAV: NavItem[] = [
   { to: "/historial", label: "Registro Histórico", icon: History, section: "MENU" },
   { to: "/analisis-hora", label: "Análisis por hora", icon: Clock, section: "MENU" },
   { to: "/oportunidades", label: "Oportunidades", icon: TrendingUp, section: "MENU" },
+  { to: "/equilibrio", label: "Equilibrio", icon: Scale, section: "MENU" },
   { to: "/comparativa", label: "Manual vs Real", icon: FileBarChart, section: "MENU" },
   { to: "/reglas", label: "Reglas Lógicas", icon: ScrollText, section: "MENU" },
   { to: "/importar", label: "Ingestión de Datos", icon: FileSpreadsheet, section: "DATA" },

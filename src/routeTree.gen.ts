@@ -14,6 +14,7 @@ import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as ImportarRouteImport } from './routes/importar'
 import { Route as HistorialRouteImport } from './routes/historial'
+import { Route as EquilibrioRouteImport } from './routes/equilibrio'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ComparativaRouteImport } from './routes/comparativa'
 import { Route as CapturaRouteImport } from './routes/captura'
@@ -45,6 +46,11 @@ const ImportarRoute = ImportarRouteImport.update({
 const HistorialRoute = HistorialRouteImport.update({
   id: '/historial',
   path: '/historial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EquilibrioRoute = EquilibrioRouteImport.update({
+  id: '/equilibrio',
+  path: '/equilibrio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfiguracionRoute = ConfiguracionRouteImport.update({
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/captura': typeof CapturaRoute
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
+  '/equilibrio': typeof EquilibrioRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/captura': typeof CapturaRoute
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
+  '/equilibrio': typeof EquilibrioRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/captura': typeof CapturaRoute
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
+  '/equilibrio': typeof EquilibrioRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/captura'
     | '/comparativa'
     | '/configuracion'
+    | '/equilibrio'
     | '/historial'
     | '/importar'
     | '/oportunidades'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/captura'
     | '/comparativa'
     | '/configuracion'
+    | '/equilibrio'
     | '/historial'
     | '/importar'
     | '/oportunidades'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/captura'
     | '/comparativa'
     | '/configuracion'
+    | '/equilibrio'
     | '/historial'
     | '/importar'
     | '/oportunidades'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   CapturaRoute: typeof CapturaRoute
   ComparativaRoute: typeof ComparativaRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
+  EquilibrioRoute: typeof EquilibrioRoute
   HistorialRoute: typeof HistorialRoute
   ImportarRoute: typeof ImportarRoute
   OportunidadesRoute: typeof OportunidadesRoute
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/historial'
       fullPath: '/historial'
       preLoaderRoute: typeof HistorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/equilibrio': {
+      id: '/equilibrio'
+      path: '/equilibrio'
+      fullPath: '/equilibrio'
+      preLoaderRoute: typeof EquilibrioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/configuracion': {
@@ -283,6 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapturaRoute: CapturaRoute,
   ComparativaRoute: ComparativaRoute,
   ConfiguracionRoute: ConfiguracionRoute,
+  EquilibrioRoute: EquilibrioRoute,
   HistorialRoute: HistorialRoute,
   ImportarRoute: ImportarRoute,
   OportunidadesRoute: OportunidadesRoute,
