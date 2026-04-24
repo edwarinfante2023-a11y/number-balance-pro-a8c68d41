@@ -101,8 +101,8 @@ export function usePushNotifications() {
         throw new Error("Suscripción push incompleta");
       }
 
-      // 4. Guardar en Supabase
-      const { error } = await supabase.from("push_subscriptions").upsert(
+      // 4. Guardar en Supabase (tabla nueva no presente aún en types.ts → cast)
+      const { error } = await (supabase as any).from("push_subscriptions").upsert(
         {
           user_id: session.user.id,
           endpoint: json.endpoint,
@@ -151,7 +151,7 @@ export function usePushNotifications() {
         await subscription.unsubscribe();
 
         // 2. Desactivar en Supabase
-        await supabase
+        await (supabase as any)
           .from("push_subscriptions")
           .update({ activa: false, updated_at: new Date().toISOString() })
           .eq("endpoint", endpoint);
