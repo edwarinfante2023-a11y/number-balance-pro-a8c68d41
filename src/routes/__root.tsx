@@ -10,6 +10,7 @@ import { Toaster } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { BalanceAlertsWatcher } from "@/components/BalanceAlertsWatcher";
 
 import appCss from "../styles.css?url";
 
@@ -124,6 +125,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppLayout />
+      <BalanceAlertsWatcher />
       <Toaster position="top-right" richColors closeButton />
     </QueryClientProvider>
   );
