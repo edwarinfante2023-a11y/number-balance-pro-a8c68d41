@@ -45,10 +45,10 @@ function Dashboard() {
     return (
       <div className="grid place-items-center py-32">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-16 rounded-[24px] surface-elevated grid place-items-center shadow-md">
+          <div className="size-16 rounded-[24px] surface-glass grid place-items-center shadow-md">
             <Loader2 className="size-6 animate-spin text-primary" />
           </div>
-          <span className="text-[13px] font-bold text-muted-foreground mr-1">Booting...</span>
+          <span className="text-[13px] font-bold text-white/70 mr-1">Booting Analytics Engine...</span>
         </div>
       </div>
     );
@@ -63,33 +63,32 @@ function Dashboard() {
 
 function EmptyState() {
   return (
-    <div className="pt-2">
+    <div className="pt-2 relative z-10">
       <div className="mb-8">
-        <h1 className="text-[32px] font-bold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-[15px] text-muted-foreground">
+        <h1 className="text-[32px] font-black tracking-tighter text-white">SYSTEM DASHBOARD</h1>
+        <p className="text-[15px] text-white/70">
           Analizador predictivo de matrices numéricas.
         </p>
       </div>
 
-      <div className="bg-white rounded-[32px] p-16 text-center max-w-2xl mx-auto mt-12 relative overflow-hidden shadow-sm border border-border">
-        <div className="mx-auto flex size-20 items-center justify-center rounded-[24px] bg-primary/10 mb-6">
+      <div className="surface-glass rounded-[32px] p-16 text-center max-w-2xl mx-auto mt-12 relative overflow-hidden border-white/10">
+        <div className="mx-auto flex size-20 items-center justify-center rounded-[24px] bg-primary/20 border border-primary/30 shadow-[0_0_15px_rgba(162,240,68,0.2)] mb-6">
           <Database className="size-8 text-primary" />
         </div>
-        <h3 className="text-2xl font-bold tracking-tight text-foreground mb-3">Workspace Vacío</h3>
-        <p className="text-[15px] text-muted-foreground leading-relaxed max-w-md mx-auto mb-10">
-          Inyecta datos históricos o inicia capturas manuales para que el motor algorítmico evalúe
-          el balance.
+        <h3 className="text-2xl font-bold tracking-tight text-white mb-3">Workspace Vacío</h3>
+        <p className="text-[15px] text-white/70 leading-relaxed max-w-md mx-auto mb-10">
+          Inyecta datos históricos o inicia capturas manuales para que el motor algorítmico evalúe el balance.
         </p>
         <div className="flex justify-center gap-4">
           <Link
             to="/importar"
-            className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-primary text-primary-foreground text-[15px] font-bold tracking-wide shadow-[0_8px_20px_oklch(0.42_0.09_155/0.25)] hover:shadow-[0_12px_24px_oklch(0.42_0.09_155/0.35)] transition-all transform hover:-translate-y-1"
+            className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-primary text-black text-[15px] font-bold tracking-wide shadow-[0_0_20px_rgba(162,240,68,0.4)] hover:shadow-[0_0_30px_rgba(162,240,68,0.6)] transition-all transform hover:-translate-y-1"
           >
             Importar Excel
           </Link>
           <Link
             to="/captura"
-            className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-white border border-border text-foreground text-[15px] font-bold hover:bg-muted/30 transition-all hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-full bg-white/5 border border-white/20 text-white text-[15px] font-bold hover:bg-white/10 transition-all hover:-translate-y-0.5"
           >
             Captura manual
           </Link>
@@ -141,11 +140,11 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
   );
 
   return (
-    <div className="space-y-6 pt-2">
+    <div className="space-y-6 pt-2 relative z-10">
       {/* Header Match Donezo */}
       <div className="mb-8">
-        <h1 className="text-[32px] font-bold tracking-tight text-foreground">Panel Principal</h1>
-        <p className="text-[15px] text-muted-foreground mt-1">
+        <h1 className="text-[32px] font-black tracking-tighter text-white uppercase">ANALYTICS DASHBOARD</h1>
+        <p className="text-[15px] text-white/70 mt-1">
           Motor algorítmico de clasificación, balances estocásticos y escenarios.
         </p>
       </div>
@@ -244,11 +243,11 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
           </div>
 
           {/* Second row of stats inside the cluster */}
-          <div className="col-span-1 sm:col-span-3 surface-elevated rounded-[24px] p-6 lg:p-8 flex flex-col justify-between stagger-5 animate-fade-up">
+          <div className="col-span-1 sm:col-span-3 surface-glass rounded-[24px] p-6 lg:p-8 flex flex-col justify-between stagger-5 animate-fade-up border-white/10">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-[16px] font-bold text-foreground">Balance Analítico</h2>
-                <p className="text-[13px] text-muted-foreground mt-1">
+                <h2 className="text-[16px] font-bold text-white">Balance Analítico</h2>
+                <p className="text-[13px] text-white/50 mt-1">
                   Oscilación de cuadrantes (Últimos {balance.total} impactos)
                 </p>
               </div>
@@ -278,24 +277,24 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
       {/* ─── Línea del día + Sidebar: Rachas + Alertas ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         {/* Stream */}
-        <div className="col-span-1 lg:col-span-2 surface-elevated rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 overflow-hidden stagger-5 animate-fade-up">
+        <div className="col-span-1 lg:col-span-2 surface-glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 overflow-hidden stagger-5 animate-fade-up border-white/10">
           <div className="flex items-center justify-between mb-6 lg:mb-8">
             <div>
-              <h2 className="text-[18px] font-bold text-foreground">Timeline en vivo</h2>
-              <p className="text-[13px] text-muted-foreground mt-1 font-medium">{today}</p>
+              <h2 className="text-[18px] font-bold text-white">Timeline en vivo</h2>
+              <p className="text-[13px] text-white/60 mt-1 font-medium">{today}</p>
             </div>
             {ruedaDia.length > 0 && (
-              <div className="flex items-center gap-2 bg-muted/50 border border-border px-4 py-1.5 rounded-full">
-                <span className="size-2 rounded-full bg-primary" />
-                <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full">
+                <span className="size-2 rounded-full bg-primary shadow-[0_0_8px_rgba(162,240,68,0.8)]" />
+                <span className="text-[11px] font-bold text-white uppercase tracking-wider">
                   {ruedaDia.length} Eventos
                 </span>
               </div>
             )}
           </div>
           {ruedaDia.length === 0 ? (
-            <div className="text-[14px] text-muted-foreground py-10 text-center bg-muted/20 rounded-[20px] border border-dashed border-border flex flex-col items-center">
-              <ClockIcon className="size-6 text-muted-foreground/30 mb-3" />
+            <div className="text-[14px] text-white/50 py-10 text-center bg-white/5 rounded-[20px] border border-dashed border-white/10 flex flex-col items-center">
+              <ClockIcon className="size-6 text-white/30 mb-3" />
               Esperando señales...
             </div>
           ) : (
@@ -309,10 +308,10 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
 
         {/* Anomalies */}
         <div className="col-span-1 space-y-6">
-          <div className="surface-elevated rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 stagger-6 animate-fade-up h-full relative overflow-hidden">
-            <h2 className="text-[16px] font-bold text-foreground mb-6">Anomalías Activas</h2>
+          <div className="surface-glass rounded-[24px] lg:rounded-[32px] p-6 lg:p-8 stagger-6 animate-fade-up h-full relative overflow-hidden border-white/10">
+            <h2 className="text-[16px] font-bold text-white mb-6">Anomalías Activas</h2>
             {rachas.length === 0 ? (
-              <div className="text-[13px] text-muted-foreground text-center py-6 bg-primary/5 rounded-[16px] font-medium text-primary">
+              <div className="text-[13px] text-white/60 text-center py-6 bg-primary/10 rounded-[16px] font-medium text-primary border border-primary/20">
                 Entropía estable
               </div>
             ) : (
@@ -331,17 +330,17 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
                     <div
                       key={i}
                       className={cn(
-                        "flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 border transition-all cursor-default",
+                        "flex items-center justify-between gap-3 rounded-[16px] px-4 py-3 transition-all cursor-default border",
                         isPrimary
-                          ? "bg-white border-border shadow-sm"
-                          : "bg-muted/30 border-transparent",
+                          ? "bg-white/10 border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                          : "bg-black/20 border-white/5",
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <span className={`size-3 rounded-full ${color} shadow-sm`} />
                         <div>
-                          <div className="text-[14px] font-bold text-foreground">{r.valor}</div>
-                          <div className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">
+                          <div className="text-[14px] font-bold text-white">{r.valor}</div>
+                          <div className="text-[11px] text-white/50 font-semibold uppercase tracking-wide">
                             {r.tipo}
                           </div>
                         </div>
@@ -350,8 +349,8 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
                         className={cn(
                           "text-[12px] font-bold tabular-nums px-2.5 py-1 rounded-lg",
                           isPrimary
-                            ? "bg-primary/10 text-primary"
-                            : "bg-foreground/5 text-foreground",
+                            ? "bg-primary/20 text-primary border border-primary/30"
+                            : "bg-white/5 text-white/70 border border-white/10",
                         )}
                       >
                         ×{r.longitud}
@@ -363,7 +362,7 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
             )}
 
             <div className="absolute inset-x-0 bottom-0 p-8 pt-0 mt-8">
-              <button className="w-full py-3 rounded-[12px] bg-foreground text-white text-[13px] font-bold shadow-md hover:bg-foreground/90 transition-colors">
+              <button className="w-full py-3 rounded-[12px] bg-white text-black text-[13px] font-bold shadow-[0_0_15px_rgba(255,255,255,0.2)] hover:bg-white/90 transition-colors">
                 Purge Cache
               </button>
             </div>
@@ -378,19 +377,19 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
 
 function RowDia({ s }: { s: Sorteo }) {
   return (
-    <div className="flex items-center gap-4 py-3 px-4 surface-interactive rounded-[16px] group border-b border-border mb-0 hover:bg-muted/30">
+    <div className="flex items-center gap-4 py-3 px-4 rounded-[16px] group border-b border-white/10 mb-0 hover:bg-white/5 transition-colors">
       <div className="flex items-center gap-3 w-32 shrink-0">
-        <div className="size-6 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground/50 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+        <div className="size-6 rounded-md bg-black/40 flex items-center justify-center text-[10px] font-bold text-white/30 group-hover:bg-primary/20 group-hover:text-primary transition-colors border border-white/5">
           {">"}
         </div>
-        <span className="text-[13px] font-semibold text-foreground tabular-nums">{s.hora}</span>
+        <span className="text-[13px] font-semibold text-white tabular-nums">{s.hora}</span>
       </div>
 
-      <span className="font-mono text-xl font-bold tabular-nums w-12 shrink-0 text-foreground text-center">
+      <span className="font-mono text-xl font-bold tabular-nums w-12 shrink-0 text-primary text-center drop-shadow-[0_0_8px_rgba(162,240,68,0.4)]">
         {s.numero.toString().padStart(2, "0")}
       </span>
 
-      <div className="text-[13px] font-semibold text-muted-foreground uppercase tracking-widest hidden sm:flex items-center gap-2 w-32">
+      <div className="text-[13px] font-semibold text-white/50 uppercase tracking-widest hidden sm:flex items-center gap-2 w-32">
         {getLotteryLogo(s.loteria) && (
           <img 
             src={getLotteryLogo(s.loteria)} 

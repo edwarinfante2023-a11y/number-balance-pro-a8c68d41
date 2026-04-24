@@ -39,8 +39,6 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -48,19 +46,15 @@
   --color-alto: var(--alto);
   --color-alto-foreground: var(--alto-foreground);
   --color-alto-soft: var(--alto-soft);
-  --color-alto-soft-foreground: var(--alto-soft-foreground);
   --color-bajo: var(--bajo);
   --color-bajo-foreground: var(--bajo-foreground);
   --color-bajo-soft: var(--bajo-soft);
-  --color-bajo-soft-foreground: var(--bajo-soft-foreground);
   --color-par: var(--par);
   --color-par-foreground: var(--par-foreground);
   --color-par-soft: var(--par-soft);
-  --color-par-soft-foreground: var(--par-soft-foreground);
   --color-impar: var(--impar);
   --color-impar-foreground: var(--impar-foreground);
   --color-impar-soft: var(--impar-soft);
-  --color-impar-soft-foreground: var(--impar-soft-foreground);
 
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -71,68 +65,64 @@
   /* MASSIVE radius for modern SaaS card look */
   --radius: 1.5rem; /* 24px */
 
-  /* Pure minimalist light surfaces */
-  --background: oklch(0.975 0.005 240); /* Slight pearl gray for the main canvas */
-  --foreground: oklch(0.2 0.02 240); /* Deep slate for text, softer than black */
-  --card: oklch(1 0 0); /* Pure white for cards */
-  --card-foreground: oklch(0.2 0.02 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 240);
+  /* Dark Glassmorphic Surfaces */
+  --background: oklch(0.18 0.05 140); /* #1c3a16 approx */
+  --foreground: oklch(0.98 0 0); /* White */
+  --card: oklch(0.15 0.04 140 / 0.4); /* Translucent dark green */
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.15 0.04 140 / 0.8);
+  --popover-foreground: oklch(0.98 0 0);
 
-  /* The Forest Green Signature */
-  /* #1A5336 -> ~oklch(0.42 0.09 155) */
-  --primary: oklch(0.42 0.09 155);
-  --primary-foreground: oklch(1 0 0);
+  /* The Neon Green Signature */
+  /* #A2F044 -> ~oklch(0.85 0.2 135) or #458B24 */
+  --primary: oklch(0.85 0.2 135); /* #A2F044 */
+  --primary-foreground: oklch(0.2 0.1 140); /* Dark green text on neon bg */
 
   /* Secondary & Accents */
-  --secondary: oklch(0.95 0.01 240);
-  --secondary-foreground: oklch(0.25 0.02 240);
-  --muted: oklch(0.96 0.01 240);
-  --muted-foreground: oklch(0.6 0.01 240);
-  --accent: oklch(0.94 0.02 155); /* Very soft green highlight */
-  --accent-foreground: oklch(0.35 0.09 155);
+  --secondary: oklch(0.25 0.05 140);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.25 0.05 140 / 0.5); /* Subtle translucent background */
+  --muted-foreground: oklch(0.7 0.02 140); /* Soft light gray/green */
+  --accent: oklch(0.85 0.2 135 / 0.2);
+  --accent-foreground: oklch(0.85 0.2 135);
 
   --destructive: oklch(0.6 0.2 25);
   --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0 0 0 / 0.06); /* Almost invisible borders */
-  --input: oklch(0 0 0 / 0.08);
-  --ring: oklch(0.42 0.09 155);
+  --border: oklch(1 1 1 / 0.1); /* Subtle white borders */
+  --input: oklch(1 1 1 / 0.1);
+  --ring: oklch(0.85 0.2 135 / 0.5);
 
-  /* Semantic Data Colors (Refined for light mode) */
-  /* ALTO = Red/Orange */
-  --alto: oklch(0.6 0.2 25);
-  --alto-foreground: oklch(1 0 0);
-  --alto-soft: oklch(0.95 0.05 25);
-  --alto-soft-foreground: oklch(0.5 0.15 25);
+  /* Semantic Data Colors (Refined for dark mode) */
+  /* ALTO = Neon Orange/Red */
+  --alto: oklch(0.65 0.22 30);
+  --alto-foreground: oklch(0.98 0 0);
+  --alto-soft: oklch(0.65 0.22 30 / 0.2);
 
-  /* BAJO = Blue */
-  --bajo: oklch(0.55 0.15 250);
-  --bajo-foreground: oklch(1 0 0);
-  --bajo-soft: oklch(0.95 0.04 250);
-  --bajo-soft-foreground: oklch(0.45 0.12 250);
+  /* BAJO = Neon Blue */
+  --bajo: oklch(0.7 0.15 250);
+  --bajo-foreground: oklch(0.98 0 0);
+  --bajo-soft: oklch(0.7 0.15 250 / 0.2);
 
   /* PAR = Primary Green */
-  --par: oklch(0.42 0.09 155);
-  --par-foreground: oklch(1 0 0);
-  --par-soft: oklch(0.94 0.03 155);
-  --par-soft-foreground: oklch(0.35 0.09 155);
+  --par: oklch(0.85 0.2 135);
+  --par-foreground: oklch(0.2 0.1 140);
+  --par-soft: oklch(0.85 0.2 135 / 0.2);
 
-  /* IMPAR = Yellow/Amber */
-  --impar: oklch(0.75 0.16 70);
-  --impar-foreground: oklch(1 0 0);
-  --impar-soft: oklch(0.96 0.06 70);
-  --impar-soft-foreground: oklch(0.6 0.14 70);
+  /* IMPAR = Neon Yellow/Amber */
+  --impar: oklch(0.85 0.18 80);
+  --impar-foreground: oklch(0.2 0.1 140);
+  --impar-soft: oklch(0.85 0.18 80 / 0.2);
 
-  --success: oklch(0.6 0.15 150);
-  --warning: oklch(0.75 0.16 70);
-  --info: oklch(0.55 0.15 250);
+  --success: oklch(0.85 0.2 135);
+  --warning: oklch(0.85 0.18 80);
+  --info: oklch(0.7 0.15 250);
 
   /* ── Smooth, large drop shadows ── */
-  --shadow-card: 0 10px 40px -10px oklch(0 0 0 / 0.04);
-  --shadow-elevated: 0 16px 48px -12px oklch(0 0 0 / 0.08);
-  --shadow-inner-light: inset 0 2px 4px oklch(0 0 0 / 0.01);
-  --shadow-glow-emerald: 0 8px 24px -6px oklch(0.42 0.09 155 / 0.3);
+  --shadow-card: 0 10px 40px -10px oklch(0 0 0 / 0.5);
+  --shadow-elevated: 0 16px 48px -12px oklch(0 0 0 / 0.6);
+  --shadow-inner-light: inset 0 2px 4px oklch(1 1 1 / 0.05);
+  --shadow-glow-emerald: 0 8px 32px -8px oklch(0.85 0.2 135 / 0.4);
 }
 
 @layer base {
@@ -203,43 +193,47 @@
   }
 }
 
-/* ── Surfaces (Donezo Light Mode Edition) ── */
+/* ── Surfaces (Dark Glassmorphic Edition) ── */
 
-.surface-raised {
+.surface-raised,
+.surface-elevated,
+.surface-glass {
   background: var(--color-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-card);
-}
-
-.surface-elevated {
-  background: var(--color-card);
-  border: 1px solid oklch(0 0 0 / 0.04);
-  box-shadow: var(--shadow-elevated);
+  box-shadow: var(--shadow-card), var(--shadow-inner-light);
 }
 
 .surface-interactive {
   background: var(--color-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .surface-interactive:hover {
-  border-color: oklch(0 0 0 / 0.08);
+  background: oklch(0.2 0.06 140 / 0.6);
+  border-color: oklch(1 1 1 / 0.2);
   box-shadow: var(--shadow-elevated);
   transform: translateY(-2px);
 }
 
 .surface-inset {
-  background: oklch(0.98 0 0); /* very faint gray recess */
-  border: 1px solid oklch(0 0 0 / 0.05);
-  box-shadow: inset 0 2px 4px oklch(0 0 0 / 0.02);
+  background: oklch(0 0 0 / 0.2); /* Deep recess */
+  border: 1px solid oklch(1 1 1 / 0.05);
+  box-shadow: inset 0 4px 8px oklch(0 0 0 / 0.3);
 }
 
 /* Forest Green Hero Card */
 .surface-hero-green {
-  background: linear-gradient(145deg, oklch(0.45 0.1 155), oklch(0.35 0.08 155));
+  background: linear-gradient(145deg, oklch(0.3 0.1 140 / 0.9), oklch(0.15 0.05 140 / 0.8));
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid oklch(0.85 0.2 135 / 0.3);
   color: oklch(1 0 0);
-  box-shadow: var(--shadow-glow-emerald);
+  box-shadow: var(--shadow-glow-emerald), var(--shadow-card);
 }
 
 /* ── Animations ── */
