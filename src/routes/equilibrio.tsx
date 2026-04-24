@@ -8,6 +8,9 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  AlertTriangle,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -23,6 +26,8 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { useBalance, type BalanceWindow, type HourPoint } from "@/hooks/useBalance";
+import { useBalanceAlerts } from "@/hooks/useBalanceAlerts";
+import { useBalanceAlertsConfig } from "@/hooks/useSettings";
 
 export const Route = createFileRoute("/equilibrio")({
   head: () => ({
@@ -51,6 +56,12 @@ const WINDOW_OPTIONS: { label: string; value: BalanceWindow }[] = [
 
 function EquilibrioPage() {
   const [windowDays, setWindowDays] = useState<BalanceWindow>(30);
+  const { data: globalCfg } = useBalanceAlertsConfig();
+  const [overrideThreshold, setOverrideThreshold] = useState<number | null>(null);
+  const effectiveThreshold = overrideThreshold ?? globalCfg?.threshold ?? 15;
+  const { alerts: balanceAlerts } = useBalanceAlerts(windowDays, {
+    threshold: effectiveThreshold,
+  });
   const { series, kpis, isLoading } = useBalance(windowDays);
 
   if (isLoading) {
