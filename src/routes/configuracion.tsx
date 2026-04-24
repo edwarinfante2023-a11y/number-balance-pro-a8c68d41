@@ -562,3 +562,193 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+// ─── Balance Alerts Settings Section ─────────────────────────────────────
+
+function BalanceAlertsSection() {
+  const { data: cfg, isLoading } = useBalanceAlertsConfig();
+  const updateMut = useUpdateBalanceAlertsConfig();
+  const [draft, setDraft] = useState<BalanceAlertsConfig | null>(null);
+
+  const current: BalanceAlertsConfig = draft ?? cfg ?? defaultBalanceAlerts;
+  const dirty =
+    draft !== null &&
+    cfg !== undefined &&
+    JSON.stringify(draft) !== JSON.stringify(cfg);
+
+  function patch(p: Partial<BalanceAlertsConfig>) {
+    setDraft({ ...current, ...p });
+  }
+
+  async function save() {
+    if (!draft) return;
+    try {
+      await updateMut.mutateAsync(draft);
+      toast.success("Umbrales de desbalance actualizados.");
+      setDraft(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al guardar.");
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-border shadow-sm p-5 lg:p-8 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-6 border-b border-border pb-6">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-orange-100 border border-orange-200 grid place-items-center">
+            <Scale className="size-5 text-orange-600" />
+          </div>
+          <div>
+            <h3 className="text-[16px] font-bold text-foreground">
+              Alertas de Desbalance
+            </h3>
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">
+              Threshold Engine
+            </p>
+          </div>
+        </div>
+        {dirty && (
+          <button
+            onClick={save}
+            disabled={updateMut.isPending}
+            className="inline-flex items-center gap-2 h-10 rounded-[12px] bg-primary text-white px-5 text-[13px] font-bold shadow-md disabled:opacity-50 hover:shadow-lg transition-all hover:-translate-y-0.5"
+          >
+            {updateMut.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            Guardar
+          </button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-10 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin mr-3" />
+          Cargando configuración...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Master + categorías */}
+          <div className="space-y-5">
+            <ToggleRow
+              label="Activar alertas en tiempo real"
+              hint="Master switch global. Si está apagado, no se dispara ningún toast ni se calcula nada."
+              checked={current.enabled}
+              onChange={(v) => patch({ enabled: v })}
+            />
+            <ToggleRow
+              label="Monitorear Alto / Bajo"
+              hint="Detecta horas con sesgo hacia ALTO o BAJO."
+              checked={current.watchAB}
+              onChange={(v) => patch({ watchAB: v })}
+              disabled={!current.enabled}
+            />
+            <ToggleRow
+              label="Monitorear Par / Impar"
+              hint="Detecta horas con sesgo hacia PAR o IMPAR."
+              checked={current.watchPI}
+              onChange={(v) => patch({ watchPI: v })}
+              disabled={!current.enabled}
+            />
+          </div>
+
+          {/* Threshold + min samples */}
+          <div className="space-y-6">
+            <div className="bg-muted/30 rounded-[20px] p-5 border border-border">
+              <Field label={`Δ MÍNIMO (≥ ${current.threshold}%)`}>
+                <input
+                  type="range"
+                  min={5}
+                  max={40}
+                  step={1}
+                  value={current.threshold}
+                  onChange={(e) => patch({ threshold: parseInt(e.target.value) })}
+                  disabled={!current.enabled}
+                  className="w-full mt-3 accent-primary h-2 bg-muted rounded-full appearance-none cursor-pointer disabled:opacity-40"
+                />
+                <div className="flex justify-between text-[11px] font-bold text-muted-foreground tabular-nums mt-3">
+                  <span>5%</span>
+                  <span>20%</span>
+                  <span>40%</span>
+                </div>
+                <p className="text-[12px] text-muted-foreground font-medium mt-3 leading-relaxed">
+                  Una hora dispara alerta cuando el % del lado dominante se aleja al menos
+                  esto del 50%. Δ ≥ {(current.threshold * 1.5).toFixed(0)}% = severidad crítica.
+                </p>
+              </Field>
+            </div>
+
+            <div className="bg-muted/30 rounded-[20px] p-5 border border-border">
+              <Field label={`MUESTRA MÍNIMA (≥ ${current.minSamples} sorteos)`}>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={current.minSamples}
+                  onChange={(e) =>
+                    patch({ minSamples: Math.max(1, parseInt(e.target.value || "1")) })
+                  }
+                  disabled={!current.enabled}
+                  className="w-full h-12 px-4 rounded-[12px] bg-white border border-border text-[16px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary tabular-nums text-center disabled:opacity-40"
+                />
+                <p className="text-[12px] text-muted-foreground font-medium mt-3 leading-relaxed">
+                  Las horas con menos sorteos que este mínimo se ignoran (evita falsos
+                  positivos por muestra pequeña).
+                </p>
+              </Field>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  hint,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-start justify-between gap-4 p-4 rounded-[16px] border border-border bg-muted/20",
+        disabled && "opacity-50",
+      )}
+    >
+      <div className="min-w-0">
+        <div className="text-[13px] font-bold text-foreground">{label}</div>
+        <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">{hint}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={cn(
+          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors mt-1",
+          checked ? "bg-primary" : "bg-muted-foreground/30",
+          disabled && "cursor-not-allowed",
+        )}
+      >
+        <span
+          className={cn(
+            "inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform",
+            checked ? "translate-x-[22px]" : "translate-x-0.5",
+          )}
+        />
+      </button>
+    </div>
+  );
+}
