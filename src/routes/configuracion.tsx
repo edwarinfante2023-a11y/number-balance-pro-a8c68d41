@@ -21,7 +21,14 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { SyncLogsWidget } from "@/components/SyncLogsWidget";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { useClassificationConfig, useUpdateClassificationConfig } from "@/hooks/useSettings";
+import {
+  useClassificationConfig,
+  useUpdateClassificationConfig,
+  useBalanceAlertsConfig,
+  useUpdateBalanceAlertsConfig,
+  defaultBalanceAlerts,
+  type BalanceAlertsConfig,
+} from "@/hooks/useSettings";
 import {
   useLotteries,
   useCreateLottery,
