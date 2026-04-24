@@ -91,7 +91,7 @@ export function useUpdateBalanceAlertsConfig() {
       const { error } = await supabase
         .from("settings")
         .upsert(
-          { clave: "balance_alerts", valor: cfg as unknown as Record<string, unknown> },
+          [{ clave: "balance_alerts", valor: cfg as unknown as Record<string, unknown> }],
           { onConflict: "clave" },
         );
       if (error) throw error;
