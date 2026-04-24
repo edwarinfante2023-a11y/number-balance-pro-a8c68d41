@@ -17,6 +17,7 @@ import {
   BellOff,
   Smartphone,
   TestTube2,
+  Scale,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { SyncLogsWidget } from "@/components/SyncLogsWidget";
