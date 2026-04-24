@@ -642,3 +642,156 @@ function HourTable({ series }: { series: HourPoint[] }) {
     </div>
   );
 }
+
+// ─── Balance Alerts Panel ─────────────────────────────────────────────────
+
+function BalanceAlertsPanel({
+  alerts,
+  threshold,
+  globalThreshold,
+  override,
+  onOverrideChange,
+  enabled,
+}: {
+  alerts: ReturnType<typeof useBalanceAlerts>["alerts"];
+  threshold: number;
+  globalThreshold: number;
+  override: number | null;
+  onOverrideChange: (v: number | null) => void;
+  enabled: boolean;
+}) {
+  const isOverridden = override !== null && override !== globalThreshold;
+  return (
+    <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-border shadow-sm p-5 lg:p-7">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 mb-5">
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              "size-10 rounded-xl grid place-items-center shrink-0",
+              enabled
+                ? "bg-orange-100 border border-orange-200"
+                : "bg-muted border border-border",
+            )}
+          >
+            {enabled ? (
+              <Bell className="size-5 text-orange-600" />
+            ) : (
+              <BellOff className="size-5 text-muted-foreground" />
+            )}
+          </div>
+          <div>
+            <h3 className="text-[16px] font-bold text-foreground tracking-tight">
+              Alertas de Desbalance en Tiempo Real
+            </h3>
+            <p className="text-[12.5px] text-muted-foreground mt-1 max-w-xl leading-relaxed">
+              Avisa cuando una hora cruza el umbral Δ ≥ {threshold}% para Alto/Bajo o Par/Impar.
+              Las nuevas detecciones disparan un toast inmediato mientras navegas la app.
+              {!enabled && " (Deshabilitado en Configuración)"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 lg:items-end shrink-0 lg:min-w-[280px]">
+          <div className="flex items-center justify-between gap-3 w-full">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              Umbral de sesión
+            </span>
+            <span className="text-[14px] font-extrabold tabular-nums text-foreground">
+              Δ ≥ {threshold}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={5}
+            max={40}
+            step={1}
+            value={threshold}
+            onChange={(e) => onOverrideChange(parseInt(e.target.value))}
+            className="w-full accent-primary h-2 bg-muted rounded-full appearance-none cursor-pointer"
+          />
+          <div className="flex items-center justify-between gap-2 w-full text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground">
+            <span>5%</span>
+            <span>
+              Default global: {globalThreshold}%{" "}
+              {isOverridden && (
+                <button
+                  type="button"
+                  onClick={() => onOverrideChange(null)}
+                  className="ml-2 text-primary hover:underline"
+                >
+                  resetear
+                </button>
+              )}
+            </span>
+            <span>40%</span>
+          </div>
+        </div>
+      </div>
+
+      {alerts.length === 0 ? (
+        <div className="rounded-[16px] border border-dashed border-border bg-muted/20 py-8 text-center">
+          <div className="text-[13px] font-bold text-muted-foreground">
+            Ninguna hora supera el umbral actual.
+          </div>
+          <p className="text-[12px] text-muted-foreground/80 mt-1 font-medium">
+            Reduce Δ o amplía la ventana para ver detecciones marginales.
+          </p>
+        </div>
+      ) : (
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {alerts.map((a) => (
+            <li
+              key={a.id}
+              className={cn(
+                "rounded-[16px] border p-4 flex items-start gap-3 transition-all",
+                a.severity === "critical"
+                  ? "bg-orange-50 border-orange-200"
+                  : "bg-amber-50/40 border-amber-200",
+              )}
+            >
+              <div
+                className={cn(
+                  "size-9 rounded-lg grid place-items-center shrink-0",
+                  a.severity === "critical"
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-amber-100 text-amber-700",
+                )}
+              >
+                <AlertTriangle className="size-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[15px] font-extrabold tabular-nums text-foreground">
+                    {a.hora}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    {a.category}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center rounded-md border border-border bg-white px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-widest text-foreground">
+                    {a.dominantSide}
+                  </span>
+                  <span className="text-[12px] font-bold text-foreground tabular-nums">
+                    {a.pct.toFixed(1)}%
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[11px] font-bold tabular-nums",
+                      a.severity === "critical" ? "text-orange-700" : "text-amber-700",
+                    )}
+                  >
+                    Δ +{a.delta.toFixed(1)}pts
+                  </span>
+                </div>
+                <div className="text-[11px] text-muted-foreground font-medium mt-1.5">
+                  {a.total} sorteos en la franja
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
