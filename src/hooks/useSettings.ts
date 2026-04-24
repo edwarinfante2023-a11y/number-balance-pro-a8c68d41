@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { defaultConfig, type ClassificationConfig } from "@shared/lottery";
+import type { Json } from "@/integrations/supabase/types";
 
 export function useClassificationConfig() {
   return useQuery({
@@ -91,7 +92,7 @@ export function useUpdateBalanceAlertsConfig() {
       const { error } = await supabase
         .from("settings")
         .upsert(
-          [{ clave: "balance_alerts", valor: cfg as unknown as Record<string, unknown> }],
+          [{ clave: "balance_alerts", valor: cfg as unknown as Json }],
           { onConflict: "clave" },
         );
       if (error) throw error;
