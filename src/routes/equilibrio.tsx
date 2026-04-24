@@ -137,6 +137,16 @@ function EquilibrioPage() {
         <WorstHourCard kpis={kpis} />
       </div>
 
+      {/* ── Panel de Alertas de Desbalance ──────────────────── */}
+      <BalanceAlertsPanel
+        alerts={balanceAlerts}
+        threshold={effectiveThreshold}
+        globalThreshold={globalCfg?.threshold ?? 15}
+        override={overrideThreshold}
+        onOverrideChange={setOverrideThreshold}
+        enabled={globalCfg?.enabled ?? true}
+      />
+
       {/* ── Rachas pendientes ────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
         <StreakCard
