@@ -55,9 +55,9 @@ export function StatCard({
     <div
       className={cn(
         "group relative flex flex-col justify-between overflow-hidden rounded-[24px] p-6 lg:p-7",
-        "surface-glass border-white/10 transition-all duration-300",
+        "bg-white border border-black/[0.04] shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] transition-all duration-300",
         styles.borderHover,
-        "hover:-translate-y-1 cursor-default",
+        "hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] cursor-default",
       )}
     >
       {/* Soft gradient background decoration */}
@@ -72,8 +72,8 @@ export function StatCard({
       <div className="relative z-10 flex items-start justify-between mb-8">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <span className={cn("size-2 rounded-full shadow-[0_0_8px_currentColor]", styles.dot)} />
-            <span className="text-[13px] font-bold text-white/60 group-hover:text-white transition-colors duration-300">
+            <span className={cn("size-2 rounded-full", styles.dot)} />
+            <span className="text-[13px] font-bold text-muted-foreground group-hover:text-foreground transition-colors duration-300">
               {label}
             </span>
           </div>
@@ -94,12 +94,12 @@ export function StatCard({
       {/* Bottom section: Value and Hint */}
       <div className="relative z-10">
         <div className="flex items-baseline gap-2">
-          <div className="text-[40px] font-extrabold tracking-tight text-white leading-none transition-transform duration-300 group-hover:translate-x-1">
+          <div className="text-[40px] font-extrabold tracking-tight text-foreground leading-none transition-transform duration-300 group-hover:translate-x-1">
             {value}
           </div>
         </div>
         {hint && (
-          <div className="mt-3 flex items-center gap-2 text-[12px] font-medium text-white/50 leading-relaxed border-t border-white/10 pt-3">
+          <div className="mt-3 flex items-center gap-2 text-[12px] font-medium text-muted-foreground leading-relaxed border-t border-black/[0.04] pt-3">
             {hint}
           </div>
         )}

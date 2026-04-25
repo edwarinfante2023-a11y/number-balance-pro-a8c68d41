@@ -117,36 +117,36 @@ export function AppLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-[#1c3a16] text-foreground flex relative font-sans overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground flex relative font-sans overflow-hidden">
       
       {/* Global Fallback CSS Background & Lottery Image */}
       <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#418523] via-[#1E431B] to-[#0A1A08]">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/lottery-bg.png')] bg-cover bg-center opacity-100 mix-blend-overlay" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('/fondo.jpg.png')] bg-cover bg-center opacity-100 mix-blend-overlay" />
         {/* Glow effect */}
         <div className="absolute -bottom-64 -left-64 w-[600px] h-[600px] bg-[#66C52A] rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-pulse pointer-events-none" />
       </div>
 
-      {/* ─── Sidebar (Glassmorphic) ───────────────────────────────────────────── */}
+      {/* ─── Sidebar (Pristine White) ───────────────────────────────────────────── */}
       <aside
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-[60] w-[280px] m-4 lg:my-6 lg:ml-6 flex flex-col shrink-0 surface-glass rounded-[32px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:translate-x-0 shadow-[0_20px_40px_rgba(0,0,0,0.5)] lg:shadow-md hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]",
+          "fixed lg:static inset-y-0 left-0 z-[60] w-[280px] m-4 lg:my-6 lg:ml-6 flex flex-col shrink-0 bg-white rounded-[32px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:translate-x-0 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] lg:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] border border-black/[0.04]",
           open ? "translate-x-0" : "-translate-x-[120%] lg:translate-x-0"
         )}
       >
         {/* Brand */}
         <div className="flex items-center gap-3 px-8 h-[88px] shrink-0">
-          <div className="flex size-[32px] items-center justify-center rounded-full bg-primary/20 border border-primary/40 shadow-[0_0_15px_rgba(162,240,68,0.3)]">
+          <div className="flex size-[32px] items-center justify-center rounded-full bg-primary/10 border border-primary/20">
             <div className="size-3 rounded-full bg-primary" />
           </div>
           <div className="leading-none flex items-center gap-1.5">
-            <span className="text-[20px] font-black text-white tracking-tighter">
+            <span className="text-[20px] font-black text-foreground tracking-tighter">
               LOTTERY
             </span>
           </div>
           {/* Close on mobile */}
           <button
             onClick={() => setOpen(false)}
-            className="lg:hidden ml-auto size-8 flex items-center justify-center rounded-full bg-white/10 text-white/70 outline-none cursor-pointer hover:bg-white/20"
+            className="lg:hidden ml-auto size-8 flex items-center justify-center rounded-full bg-muted text-muted-foreground outline-none cursor-pointer hover:bg-muted/80 transition-colors"
           >
             <X className="size-4" />
           </button>
@@ -176,17 +176,17 @@ export function AppLayout() {
                         className={cn(
                           "group relative flex items-center justify-between rounded-xl px-4 py-3 text-[14px] font-bold transition-all duration-300 outline-none overflow-hidden",
                           active
-                            ? "text-primary bg-primary/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] border border-primary/20"
-                            : "text-white/60 hover:text-white hover:bg-white/5",
+                            ? "text-primary bg-primary/[0.08] shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)]"
+                            : "text-muted-foreground hover:text-foreground hover:bg-black/[0.02]",
                         )}
                       >
                         {/* The green active bar on the left */}
                         {active && (
-                           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-3/5 rounded-r-full bg-primary shadow-[0_0_10px_var(--color-primary)]" />
+                           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-3/5 rounded-r-full bg-primary" />
                         )}
                         
                         <div className="flex items-center gap-3 relative z-10 transition-transform duration-200 group-hover:translate-x-1">
-                          <Icon className={cn("size-[18px]", active ? "text-primary drop-shadow-[0_0_8px_rgba(162,240,68,0.6)]" : "text-white/50 group-hover:text-white/90")} />
+                          <Icon className={cn("size-[18px]", active ? "text-primary" : "text-muted-foreground/70 group-hover:text-foreground")} />
                           <span>{item.label}</span>
                         </div>
                         
@@ -241,10 +241,10 @@ export function AppLayout() {
         <header className="hidden lg:flex items-center gap-4 px-5 lg:px-8 h-[88px] shrink-0">
 
           {/* Search bar mock */}
-          <div className="hidden md:flex items-center h-12 surface-glass border border-white/10 rounded-full px-4 w-full max-w-[400px] transition-shadow focus-within:ring-2 focus-within:ring-primary/40 focus-within:bg-black/40">
-             <Search className="size-4 text-white/50 mr-3" />
-             <input type="text" placeholder="Search analytics..." className="bg-transparent border-none outline-none flex-1 text-[14px] text-white placeholder:text-white/40 font-medium" />
-             <div className="flex items-center justify-center p-1 px-2 rounded-md bg-white/10 text-[10px] font-bold text-white/70 ml-2">
+          <div className="hidden md:flex items-center h-12 bg-white/90 backdrop-blur-md border border-black/[0.04] rounded-full px-4 w-full max-w-[400px] shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] transition-shadow focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-white">
+             <Search className="size-4 text-muted-foreground mr-3" />
+             <input type="text" placeholder="Search analytics..." className="bg-transparent border-none outline-none flex-1 text-[14px] text-foreground placeholder:text-muted-foreground font-medium" />
+             <div className="flex items-center justify-center p-1 px-2 rounded-md bg-muted text-[10px] font-bold text-muted-foreground ml-2">
                ⌘ F
              </div>
           </div>
@@ -254,44 +254,44 @@ export function AppLayout() {
            {/* Profile Cluster */}
            <div className="flex items-center gap-3">
              <SyncStatusBadge />
-             <Link to="/alertas" className="relative hidden sm:flex size-12 items-center justify-center rounded-full surface-glass border-white/10 text-white/70 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 hover:bg-white/10">
+             <Link to="/alertas" className="relative hidden sm:flex size-12 items-center justify-center rounded-full bg-white border border-black/[0.04] shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] text-muted-foreground hover:text-foreground transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 hover:bg-black/[0.02]">
                 <Bell className="size-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2.5 right-2.5 flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold text-black bg-primary rounded-full border border-black shadow-[0_0_10px_rgba(162,240,68,0.8)]">
+                  <span className="absolute top-2.5 right-2.5 flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold text-primary-foreground bg-primary rounded-full border-2 border-white">
                     {unreadCount}
                   </span>
                 )}
              </Link>
              
-             <div className="flex items-center gap-3 h-12 surface-glass rounded-full pl-2 pr-5 cursor-pointer hover:bg-white/10 transition-colors border-white/10">
-               <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40 shadow-[0_0_10px_rgba(162,240,68,0.2)]">
+             <div className="flex items-center gap-3 h-12 bg-white rounded-full pl-2 pr-5 cursor-pointer hover:bg-white/90 transition-colors border border-black/[0.04] shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
+               <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                   <span className="text-[12px] font-black text-primary">
                     {(session.user.email ?? "A")[0].toUpperCase()}
                   </span>
                </div>
                <div className="hidden lg:flex flex-col justify-center">
-                 <span className="text-[13px] font-bold text-white leading-none tracking-wide">{session.user.email?.split("@")[0] || "Administrador"}</span>
-                 <span className="text-[11px] text-white/50 mt-1 leading-none">{session.user.email}</span>
+                 <span className="text-[13px] font-bold text-foreground leading-none tracking-wide">{session.user.email?.split("@")[0] || "Administrador"}</span>
+                 <span className="text-[11px] text-muted-foreground mt-1 leading-none">{session.user.email}</span>
                </div>
              </div>
           </div>
          </header>
 
         {/* ─── MOBILE NATIVE TOP HEADER ─── */}
-        <header className="flex lg:hidden sticky top-0 z-40 h-[64px] items-center justify-between px-5 surface-glass border-b border-white/10 rounded-b-3xl mx-2 mt-2">
+        <header className="flex lg:hidden sticky top-0 z-40 h-[64px] items-center justify-between px-5 bg-white/95 backdrop-blur-xl border-b border-black/[0.04] rounded-b-3xl mx-2 mt-2 shadow-sm">
            <div className="flex items-center gap-2.5">
-             <div className="flex size-8 items-center justify-center rounded-full bg-primary/20 border border-primary/40 shadow-[0_0_10px_rgba(162,240,68,0.3)]">
+             <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
                <div className="size-2 rounded-full bg-primary" />
              </div>
-             <span className="text-[17px] font-black text-white tracking-tighter">LOTTERY</span>
+             <span className="text-[17px] font-black text-foreground tracking-tighter">LOTTERY</span>
            </div>
            <div className="flex items-center gap-2">
              <SyncStatusBadge compact />
-             <Link to="/alertas" className="relative size-9 flex items-center justify-center rounded-full bg-white/10 border border-white/10 text-white hover:bg-white/20 transition-colors outline-none cursor-pointer">
+             <Link to="/alertas" className="relative size-9 flex items-center justify-center rounded-full bg-black/5 border border-black/[0.04] text-foreground hover:bg-black/10 transition-colors outline-none cursor-pointer">
                <Bell className="size-[17px]" />
-               {unreadCount > 0 && <span className="absolute top-1 right-1.5 size-2.5 rounded-full bg-primary border border-black shadow-[0_0_5px_rgba(162,240,68,0.8)]" />}
+               {unreadCount > 0 && <span className="absolute top-1 right-1.5 size-2.5 rounded-full bg-primary border border-white" />}
              </Link>
-             <div className="size-9 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
+             <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
                <span className="text-[12px] font-black text-primary">
                  {(session.user.email ?? "A")[0].toUpperCase()}
                </span>
@@ -309,7 +309,7 @@ export function AppLayout() {
 
       {/* ─── NATIVE FLOATING BOTTOM NAVIGATION (Mobile Only) ─── */}
       <nav className="fixed lg:hidden bottom-[calc(env(safe-area-inset-bottom)+1rem)] left-4 right-4 z-50">
-        <div className="flex items-center justify-around h-[70px] px-2 surface-glass border border-white/20 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] rounded-[24px]">
+        <div className="flex items-center justify-around h-[70px] px-2 bg-white/95 backdrop-blur-xl border border-black/[0.04] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.15)] rounded-[24px]">
           {[
             { to: "/", icon: LayoutDashboard, label: "Home" },
             { to: "/captura", icon: PencilLine, label: "Captura" },
@@ -326,8 +326,8 @@ export function AppLayout() {
                 <div className={cn(
                    "relative flex items-center justify-center rounded-[18px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]",
                    active 
-                     ? "size-[44px] bg-primary text-black shadow-[0_0_20px_rgba(162,240,68,0.5)] -translate-y-[10px]" 
-                     : "size-[40px] bg-transparent text-white/50 group-hover:bg-white/10 group-hover:text-white"
+                     ? "size-[44px] bg-primary text-primary-foreground shadow-[0_8px_20px_-4px_var(--color-primary)] -translate-y-[10px]" 
+                     : "size-[40px] bg-transparent text-muted-foreground group-hover:bg-muted/50 group-hover:text-foreground"
                 )}>
                    <Icon className={cn("size-[22px]", active ? "stroke-[2.5px] drop-shadow-sm" : "stroke-[1.75px]")} />
                 </div>
