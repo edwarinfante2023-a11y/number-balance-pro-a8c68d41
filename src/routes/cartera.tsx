@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2 } from "lucide-react";
+import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, Flame, Gauge } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { useGenerateCartera, useCarteraDelDia, useCarteraStats } from "@/hooks/useCartera";
+import { useGenerateCartera, useCarteraDelDia, useCarteraStats, useCarterasDelDia } from "@/hooks/useCartera";
 import { useLotteryDraws } from "@/hooks/useLotteries";
 import { toast } from "sonner";
 import {
@@ -40,6 +40,7 @@ function CarteraPage() {
   const generate = useGenerateCartera();
   const cartera = useCarteraDelDia(hora);
   const stats = useCarteraStats(windowDays);
+  const carterasHoy = useCarterasDelDia();
 
   const onGenerate = async () => {
     if (!hora) {
@@ -141,6 +142,96 @@ function CarteraPage() {
       </section>
 
       {/* ─── Dashboard rolling ─────────────────────── */}
+      {/* ─── Confianza por hora (hoy) ──────────────── */}
+      <section className="surface-raised rounded-[24px] p-6 bg-white/95 backdrop-blur-md shadow-sm border border-black/[0.04]">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-[18px] font-black tracking-tight text-foreground inline-flex items-center gap-2">
+              <Gauge className="size-5 text-primary" />
+              Confianza por hora — hoy
+            </h2>
+            <p className="text-[12px] text-muted-foreground mt-0.5">
+              Score interno (0–100) de cada cartera generada hoy. Las marcadas <b>alta</b> son candidatas a oportunidad.
+            </p>
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            Umbrales provisorios · alta ≥ 70 · media 50–69 · baja &lt; 50
+          </div>
+        </div>
+
+        {carterasHoy.isLoading ? (
+          <div className="grid place-items-center h-24 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+          </div>
+        ) : !carterasHoy.data || carterasHoy.data.length === 0 ? (
+          <div className="rounded-xl bg-muted/40 p-5 text-center text-[13px] text-muted-foreground">
+            Aún no hay carteras generadas hoy. El cron horario las arma a los <b>:02</b> de cada hora.
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-2">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2">Hora</th>
+                  <th className="px-3 py-2">Confianza</th>
+                  <th className="px-3 py-2">Internal</th>
+                  <th className="px-3 py-2">Top μ</th>
+                  <th className="px-3 py-2">Gap</th>
+                  <th className="px-3 py-2">Sorteos hora</th>
+                  <th className="px-3 py-2">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {carterasHoy.data
+                  .map((c: any) => {
+                    const conf = (c.contexto?.confidence ?? {}) as {
+                      internalScore?: number; topMean?: number; gap?: number;
+                    };
+                    const score = conf.internalScore ?? 0;
+                    return { c, conf, score };
+                  })
+                  .sort((a, b) => b.score - a.score)
+                  .map(({ c, conf, score }) => {
+                    const tier = score >= 70 ? "alta" : score >= 50 ? "media" : "baja";
+                    return (
+                      <tr
+                        key={c.id}
+                        className={cn(
+                          "border-t border-border/60 transition",
+                          tier === "alta" && "bg-primary/5",
+                        )}
+                      >
+                        <td className="px-3 py-2.5 font-bold tabular-nums">{c.hora}</td>
+                        <td className="px-3 py-2.5">
+                          <ConfidencePill tier={tier} />
+                        </td>
+                        <td className="px-3 py-2.5 font-black tabular-nums">{score}</td>
+                        <td className="px-3 py-2.5 tabular-nums text-muted-foreground">
+                          {conf.topMean?.toFixed?.(1) ?? "—"}
+                        </td>
+                        <td className="px-3 py-2.5 tabular-nums text-muted-foreground">
+                          {conf.gap !== undefined ? (conf.gap >= 0 ? "+" : "") + conf.gap.toFixed(1) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 tabular-nums text-muted-foreground">
+                          {c.contexto?.totalDrawsHora ?? 0}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <button
+                            onClick={() => setHora(c.hora)}
+                            className="h-7 px-3 rounded-lg bg-muted hover:bg-muted/70 text-[11px] font-bold transition"
+                          >
+                            Ver
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       <section className="surface-raised rounded-[24px] p-6 bg-white/95 backdrop-blur-md shadow-sm border border-black/[0.04]">
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -246,6 +337,20 @@ function CarteraPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function ConfidencePill({ tier }: { tier: "alta" | "media" | "baja" }) {
+  const map = {
+    alta:  { label: "Alta",  cls: "bg-primary text-primary-foreground", icon: <Flame className="size-3" /> },
+    media: { label: "Media", cls: "bg-primary/15 text-primary",          icon: null },
+    baja:  { label: "Baja",  cls: "bg-muted text-muted-foreground",      icon: null },
+  } as const;
+  const m = map[tier];
+  return (
+    <span className={cn("inline-flex items-center gap-1 h-6 px-2 rounded-full text-[11px] font-bold", m.cls)}>
+      {m.icon}{m.label}
+    </span>
   );
 }
 
