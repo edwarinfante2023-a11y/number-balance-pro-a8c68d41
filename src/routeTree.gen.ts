@@ -17,6 +17,7 @@ import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as EquilibrioRouteImport } from './routes/equilibrio'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ComparativaRouteImport } from './routes/comparativa'
+import { Route as CarteraRouteImport } from './routes/cartera'
 import { Route as CapturaRouteImport } from './routes/captura'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
@@ -63,6 +64,11 @@ const ComparativaRoute = ComparativaRouteImport.update({
   path: '/comparativa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CarteraRoute = CarteraRouteImport.update({
+  id: '/cartera',
+  path: '/cartera',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CapturaRoute = CapturaRouteImport.update({
   id: '/captura',
   path: '/captura',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
+  '/cartera': typeof CarteraRoute
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/equilibrio': typeof EquilibrioRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
+  '/cartera': typeof CarteraRoute
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/equilibrio': typeof EquilibrioRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/analisis-hora': typeof AnalisisHoraRoute
   '/auth': typeof AuthRoute
   '/captura': typeof CapturaRoute
+  '/cartera': typeof CarteraRoute
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/equilibrio': typeof EquilibrioRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/analisis-hora'
     | '/auth'
     | '/captura'
+    | '/cartera'
     | '/comparativa'
     | '/configuracion'
     | '/equilibrio'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/analisis-hora'
     | '/auth'
     | '/captura'
+    | '/cartera'
     | '/comparativa'
     | '/configuracion'
     | '/equilibrio'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/analisis-hora'
     | '/auth'
     | '/captura'
+    | '/cartera'
     | '/comparativa'
     | '/configuracion'
     | '/equilibrio'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   AnalisisHoraRoute: typeof AnalisisHoraRoute
   AuthRoute: typeof AuthRoute
   CapturaRoute: typeof CapturaRoute
+  CarteraRoute: typeof CarteraRoute
   ComparativaRoute: typeof ComparativaRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   EquilibrioRoute: typeof EquilibrioRoute
@@ -257,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComparativaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cartera': {
+      id: '/cartera'
+      path: '/cartera'
+      fullPath: '/cartera'
+      preLoaderRoute: typeof CarteraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/captura': {
       id: '/captura'
       path: '/captura'
@@ -301,6 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalisisHoraRoute: AnalisisHoraRoute,
   AuthRoute: AuthRoute,
   CapturaRoute: CapturaRoute,
+  CarteraRoute: CarteraRoute,
   ComparativaRoute: ComparativaRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   EquilibrioRoute: EquilibrioRoute,
@@ -313,3 +334,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
