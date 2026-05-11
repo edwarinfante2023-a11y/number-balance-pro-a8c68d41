@@ -18,10 +18,17 @@ import {
   Smartphone,
   TestTube2,
   Scale,
+  Monitor,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { SyncLogsWidget } from "@/components/SyncLogsWidget";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import {
+  usePushSubscriptions,
+  useRevokePushSubscription,
+  parseDeviceLabel,
+} from "@/hooks/usePushSubscriptions";
 import {
   useClassificationConfig,
   useUpdateClassificationConfig,
@@ -378,6 +385,8 @@ function Configuracion() {
               </div>
             </div>
           )}
+
+          <SubscribedDevicesList currentEndpoint={push.currentEndpoint} />
         </div>
 
         {/* Sync Logs Widget */}
@@ -749,6 +758,86 @@ function ToggleRow({
           )}
         />
       </button>
+    </div>
+  );
+}
+
+function SubscribedDevicesList({ currentEndpoint }: { currentEndpoint: string | null }) {
+  const { data: devices = [], isLoading } = usePushSubscriptions();
+  const revoke = useRevokePushSubscription();
+  const active = devices.filter((d) => d.activa);
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 pt-6 border-t border-border flex items-center gap-2 text-[13px] text-muted-foreground font-medium">
+        <Loader2 className="size-4 animate-spin" /> Cargando dispositivos…
+      </div>
+    );
+  }
+
+  if (active.length === 0) return null;
+
+  return (
+    <div className="mt-6 pt-6 border-t border-border">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-[13px] font-bold text-foreground uppercase tracking-widest">
+          Mis dispositivos
+        </h4>
+        <span className="text-[11px] font-bold text-muted-foreground tabular-nums">
+          {active.length} activo{active.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+      <ul className="space-y-2">
+        {active.map((d) => {
+          const isCurrent = currentEndpoint && d.endpoint === currentEndpoint;
+          return (
+            <li
+              key={d.id}
+              className="flex items-center gap-3 rounded-[16px] bg-muted/30 border border-border px-4 py-3"
+            >
+              <div className="size-9 rounded-xl bg-white border border-border grid place-items-center shrink-0">
+                <Monitor className="size-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-bold text-foreground truncate">
+                    {parseDeviceLabel(d.user_agent)}
+                  </span>
+                  {isCurrent && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">
+                      Este
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-muted-foreground tabular-nums mt-0.5">
+                  Última actividad{" "}
+                  {new Date(d.last_seen_at).toLocaleString("es", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!confirm("Revocar push para este dispositivo?")) return;
+                  revoke.mutate(d.id, {
+                    onSuccess: () => toast.success("Dispositivo revocado"),
+                    onError: (e) =>
+                      toast.error(e instanceof Error ? e.message : "Error revocando"),
+                  });
+                }}
+                disabled={revoke.isPending}
+                className="size-9 rounded-xl grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-40"
+                aria-label="Revocar dispositivo"
+              >
+                <X className="size-4" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

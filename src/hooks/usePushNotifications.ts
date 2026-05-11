@@ -26,6 +26,7 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState<PushPermission>("default");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentEndpoint, setCurrentEndpoint] = useState<string | null>(null);
 
   const isSupported =
     typeof window !== "undefined" &&
@@ -48,6 +49,7 @@ export function usePushNotifications() {
       .then((registration) => registration.pushManager.getSubscription())
       .then((sub) => {
         setIsSubscribed(!!sub);
+        setCurrentEndpoint(sub?.endpoint ?? null);
         setIsLoading(false);
       })
       .catch(() => {
@@ -108,8 +110,9 @@ export function usePushNotifications() {
           endpoint: json.endpoint,
           keys_p256dh: json.keys.p256dh,
           keys_auth: json.keys.auth,
+          user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
           activa: true,
-          updated_at: new Date().toISOString(),
+          last_seen_at: new Date().toISOString(),
         },
         {
           onConflict: "endpoint",
@@ -119,6 +122,7 @@ export function usePushNotifications() {
       if (error) throw error;
 
       setIsSubscribed(true);
+      setCurrentEndpoint(subscription.endpoint);
       toast.success("🔔 Notificaciones push activadas", {
         description: "Recibirás alertas directamente en tu dispositivo.",
       });
@@ -153,11 +157,12 @@ export function usePushNotifications() {
         // 2. Desactivar en Supabase
         await (supabase as any)
           .from("push_subscriptions")
-          .update({ activa: false, updated_at: new Date().toISOString() })
+          .update({ activa: false, last_seen_at: new Date().toISOString() })
           .eq("endpoint", endpoint);
       }
 
       setIsSubscribed(false);
+      setCurrentEndpoint(null);
       toast.success("Notificaciones desactivadas");
       return true;
     } catch (err) {
@@ -192,6 +197,7 @@ export function usePushNotifications() {
     permission,
     isSubscribed,
     isLoading,
+    currentEndpoint,
     subscribe,
     unsubscribe,
     sendTestNotification,
