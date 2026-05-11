@@ -37,8 +37,9 @@ export function useActiveOpportunityAlerts() {
 
   // Realtime: invalidar al detectar cambios
   useEffect(() => {
+    const channelName = `opportunity_alerts_changes_${Math.random().toString(36).slice(2, 8)}`;
     const channel = supabase
-      .channel("opportunity_alerts_changes")
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "opportunity_alerts" },
@@ -46,7 +47,9 @@ export function useActiveOpportunityAlerts() {
           qc.invalidateQueries({ queryKey: ["opportunity-alerts"] });
         },
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.warn("[opportunity_alerts realtime]", status, err);
+      });
     return () => {
       supabase.removeChannel(channel);
     };
