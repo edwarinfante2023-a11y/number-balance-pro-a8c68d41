@@ -24,6 +24,7 @@ import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicHooksScanOpportunitiesRouteImport } from './routes/api/public/hooks/scan-opportunities'
+import { Route as ApiPublicHooksLearnPatternsRouteImport } from './routes/api/public/hooks/learn-patterns'
 import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
 import { Route as ApiPublicHooksEvaluateResultsRouteImport } from './routes/api/public/hooks/evaluate-results'
 
@@ -103,6 +104,12 @@ const ApiPublicHooksScanOpportunitiesRoute =
     path: '/api/public/hooks/scan-opportunities',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksLearnPatternsRoute =
+  ApiPublicHooksLearnPatternsRouteImport.update({
+    id: '/api/public/hooks/learn-patterns',
+    path: '/api/public/hooks/learn-patterns',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksGenerateCarterasRoute =
   ApiPublicHooksGenerateCarterasRouteImport.update({
     id: '/api/public/hooks/generate-carteras',
@@ -133,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/reportes': typeof ReportesRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
+  '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
 export interface FileRoutesByTo {
@@ -152,6 +160,7 @@ export interface FileRoutesByTo {
   '/reportes': typeof ReportesRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
+  '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
 export interface FileRoutesById {
@@ -172,6 +181,7 @@ export interface FileRoutesById {
   '/reportes': typeof ReportesRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
+  '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
 export interface FileRouteTypes {
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
+    | '/api/public/hooks/learn-patterns'
     | '/api/public/hooks/scan-opportunities'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
+    | '/api/public/hooks/learn-patterns'
     | '/api/public/hooks/scan-opportunities'
   id:
     | '__root__'
@@ -231,6 +243,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
+    | '/api/public/hooks/learn-patterns'
     | '/api/public/hooks/scan-opportunities'
   fileRoutesById: FileRoutesById
 }
@@ -251,6 +264,7 @@ export interface RootRouteChildren {
   ReportesRoute: typeof ReportesRoute
   ApiPublicHooksEvaluateResultsRoute: typeof ApiPublicHooksEvaluateResultsRoute
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
+  ApiPublicHooksLearnPatternsRoute: typeof ApiPublicHooksLearnPatternsRoute
   ApiPublicHooksScanOpportunitiesRoute: typeof ApiPublicHooksScanOpportunitiesRoute
 }
 
@@ -361,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksScanOpportunitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/learn-patterns': {
+      id: '/api/public/hooks/learn-patterns'
+      path: '/api/public/hooks/learn-patterns'
+      fullPath: '/api/public/hooks/learn-patterns'
+      preLoaderRoute: typeof ApiPublicHooksLearnPatternsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/generate-carteras': {
       id: '/api/public/hooks/generate-carteras'
       path: '/api/public/hooks/generate-carteras'
@@ -395,6 +416,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportesRoute: ReportesRoute,
   ApiPublicHooksEvaluateResultsRoute: ApiPublicHooksEvaluateResultsRoute,
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
+  ApiPublicHooksLearnPatternsRoute: ApiPublicHooksLearnPatternsRoute,
   ApiPublicHooksScanOpportunitiesRoute: ApiPublicHooksScanOpportunitiesRoute,
 }
 export const routeTree = rootRouteImport
