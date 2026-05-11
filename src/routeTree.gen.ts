@@ -25,6 +25,7 @@ import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicHooksScanOpportunitiesRouteImport } from './routes/api/public/hooks/scan-opportunities'
 import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
+import { Route as ApiPublicHooksEvaluateResultsRouteImport } from './routes/api/public/hooks/evaluate-results'
 
 const ReportesRoute = ReportesRouteImport.update({
   id: '/reportes',
@@ -108,6 +109,12 @@ const ApiPublicHooksGenerateCarterasRoute =
     path: '/api/public/hooks/generate-carteras',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksEvaluateResultsRoute =
+  ApiPublicHooksEvaluateResultsRouteImport.update({
+    id: '/api/public/hooks/evaluate-results',
+    path: '/api/public/hooks/evaluate-results',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/scan-opportunities'
   fileRoutesByTo: FileRoutesByTo
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/scan-opportunities'
   id:
@@ -217,6 +229,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/scan-opportunities'
   fileRoutesById: FileRoutesById
@@ -236,6 +249,7 @@ export interface RootRouteChildren {
   OportunidadesRoute: typeof OportunidadesRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
+  ApiPublicHooksEvaluateResultsRoute: typeof ApiPublicHooksEvaluateResultsRoute
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
   ApiPublicHooksScanOpportunitiesRoute: typeof ApiPublicHooksScanOpportunitiesRoute
 }
@@ -354,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksGenerateCarterasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/evaluate-results': {
+      id: '/api/public/hooks/evaluate-results'
+      path: '/api/public/hooks/evaluate-results'
+      fullPath: '/api/public/hooks/evaluate-results'
+      preLoaderRoute: typeof ApiPublicHooksEvaluateResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -372,6 +393,7 @@ const rootRouteChildren: RootRouteChildren = {
   OportunidadesRoute: OportunidadesRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
+  ApiPublicHooksEvaluateResultsRoute: ApiPublicHooksEvaluateResultsRoute,
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
   ApiPublicHooksScanOpportunitiesRoute: ApiPublicHooksScanOpportunitiesRoute,
 }
