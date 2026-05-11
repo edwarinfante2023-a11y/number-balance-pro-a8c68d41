@@ -23,6 +23,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicHooksScanOpportunitiesRouteImport } from './routes/api/public/hooks/scan-opportunities'
 import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
 
 const ReportesRoute = ReportesRouteImport.update({
@@ -95,6 +96,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksScanOpportunitiesRoute =
+  ApiPublicHooksScanOpportunitiesRouteImport.update({
+    id: '/api/public/hooks/scan-opportunities',
+    path: '/api/public/hooks/scan-opportunities',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksGenerateCarterasRoute =
   ApiPublicHooksGenerateCarterasRouteImport.update({
     id: '/api/public/hooks/generate-carteras',
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
+  '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -135,6 +143,7 @@ export interface FileRoutesByTo {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
+  '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -153,6 +162,7 @@ export interface FileRoutesById {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
+  '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/api/public/hooks/generate-carteras'
+    | '/api/public/hooks/scan-opportunities'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/api/public/hooks/generate-carteras'
+    | '/api/public/hooks/scan-opportunities'
   id:
     | '__root__'
     | '/'
@@ -206,6 +218,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/api/public/hooks/generate-carteras'
+    | '/api/public/hooks/scan-opportunities'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -224,6 +237,7 @@ export interface RootRouteChildren {
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
+  ApiPublicHooksScanOpportunitiesRoute: typeof ApiPublicHooksScanOpportunitiesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -326,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/scan-opportunities': {
+      id: '/api/public/hooks/scan-opportunities'
+      path: '/api/public/hooks/scan-opportunities'
+      fullPath: '/api/public/hooks/scan-opportunities'
+      preLoaderRoute: typeof ApiPublicHooksScanOpportunitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/generate-carteras': {
       id: '/api/public/hooks/generate-carteras'
       path: '/api/public/hooks/generate-carteras'
@@ -352,7 +373,17 @@ const rootRouteChildren: RootRouteChildren = {
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
+  ApiPublicHooksScanOpportunitiesRoute: ApiPublicHooksScanOpportunitiesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
