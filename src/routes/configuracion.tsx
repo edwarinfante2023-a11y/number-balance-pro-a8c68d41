@@ -385,6 +385,8 @@ function Configuracion() {
               </div>
             </div>
           )}
+
+          <SubscribedDevicesList currentEndpoint={null} />
         </div>
 
         {/* Sync Logs Widget */}
