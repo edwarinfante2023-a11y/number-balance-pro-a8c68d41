@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, Flame, Gauge } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useGenerateCartera, useCarteraDelDia, useCarteraStats, useCarterasDelDia } from "@/hooks/useCartera";
@@ -23,10 +23,14 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/cartera")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    hora: typeof search.hora === "string" ? search.hora : undefined,
+  }),
   component: CarteraPage,
 });
 
 function CarteraPage() {
+  const { hora: horaSearch } = Route.useSearch();
   const { data: lotteryDraws } = useLotteryDraws();
   const horasDisponibles = useMemo(() => {
     const set = new Set<string>();
@@ -35,6 +39,13 @@ function CarteraPage() {
   }, [lotteryDraws]);
 
   const [hora, setHora] = useState<string | null>(null);
+
+  // Auto-cargar hora del search param (deep-link desde push/banner)
+  useEffect(() => {
+    if (horaSearch && horaSearch !== hora) setHora(horaSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [horaSearch]);
+
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(30);
 
   const generate = useGenerateCartera();
