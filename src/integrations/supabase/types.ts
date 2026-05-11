@@ -82,7 +82,7 @@ export type Database = {
           {
             foreignKeyName: "cartera_resultados_cartera_id_fkey"
             columns: ["cartera_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "carteras"
             referencedColumns: ["id"]
           },

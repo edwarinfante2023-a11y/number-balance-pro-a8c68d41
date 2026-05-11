@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Activity, Target, Gauge, TrendingUp as TUp, Loader2 } from "lucide-react";
+import { Activity, Target, Gauge, TrendingUp as TUp, Loader2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   useScoreMetrics,
@@ -15,6 +15,8 @@ export function ScoreMetricsSection() {
 
   const matrix = useMemo(() => computeConfusion(rows, threshold), [rows, threshold]);
   const hours = useMemo(() => bucketByHour(rows), [rows]);
+  const totalEvaluadas = matrix.tp + matrix.fp + matrix.fn + matrix.tn;
+  const lowCoverage = !isLoading && totalEvaluadas < 20;
   const maxHourRate = useMemo(
     () =>
       Math.max(
@@ -63,6 +65,18 @@ export function ScoreMetricsSection() {
         </div>
       ) : (
         <>
+          {lowCoverage && (
+            <div className="rounded-[16px] border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+              <Info className="size-4 text-amber-600 mt-0.5 shrink-0" />
+              <div className="text-[13px] text-amber-800 font-medium leading-snug">
+                <strong>Datos insuficientes ({totalEvaluadas} carteras evaluadas).</strong> Las
+                métricas necesitan al menos 20 evaluaciones para ser confiables. Las carteras se
+                generan automáticamente cada hora a los :02 y se evalúan a los :05 contra los
+                números ganadores cargados.
+              </div>
+            </div>
+          )}
+
           {/* Top metrics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Metric
