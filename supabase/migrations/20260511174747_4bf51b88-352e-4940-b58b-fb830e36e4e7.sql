@@ -1,0 +1,1 @@
+DELETE FROM public.opportunity_alerts WHERE id = '0deb9859-ce02-4b98-8721-a8160feec9be';
