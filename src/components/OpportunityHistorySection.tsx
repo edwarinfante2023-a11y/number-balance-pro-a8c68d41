@@ -1,5 +1,7 @@
-import { useMemo } from "react";
-import { Loader2, History, CheckCircle2, XCircle, MinusCircle, BarChart3 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2, History, CheckCircle2, XCircle, MinusCircle, BarChart3, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import {
   useOpportunityHistory,
@@ -9,6 +11,28 @@ import {
 
 export function OpportunityHistorySection() {
   const { data: rows = [], isLoading } = useOpportunityHistory(200);
+  const qc = useQueryClient();
+  const [evaluating, setEvaluating] = useState(false);
+
+  const handleReevaluate = async () => {
+    setEvaluating(true);
+    try {
+      const res = await fetch("/api/public/hooks/evaluate-results", { method: "POST" });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error ?? "Error desconocido");
+      toast.success(
+        json.evaluadas === 0
+          ? "Sin carteras nuevas para evaluar"
+          : `${json.evaluadas} evaluadas · ${json.aciertos} aciertos`,
+      );
+      qc.invalidateQueries({ queryKey: ["opportunity_history"] });
+      qc.invalidateQueries({ queryKey: ["score_metrics"] });
+    } catch (err: any) {
+      toast.error(err?.message ?? "No se pudo evaluar");
+    } finally {
+      setEvaluating(false);
+    }
+  };
 
   const buckets = useMemo(() => bucketByScore(rows), [rows]);
 
@@ -30,19 +54,29 @@ export function OpportunityHistorySection() {
             Alertas disparadas y su tasa de acierto real
           </p>
         </div>
-        {overallRate !== null && (
-          <div className="surface-elevated rounded-[16px] px-4 py-2 text-right">
-            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              Acierto global
+        <div className="flex items-center gap-3">
+          {overallRate !== null && (
+            <div className="surface-elevated rounded-[16px] px-4 py-2 text-right">
+              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Acierto global
+              </div>
+              <div className="text-[22px] font-extrabold tabular-nums text-primary">
+                {overallRate.toFixed(1)}%
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">
+                {totalAciertos}/{totalEvaluadas} evaluadas
+              </div>
             </div>
-            <div className="text-[22px] font-extrabold tabular-nums text-primary">
-              {overallRate.toFixed(1)}%
-            </div>
-            <div className="text-[10px] text-muted-foreground font-medium">
-              {totalAciertos}/{totalEvaluadas} evaluadas
-            </div>
-          </div>
-        )}
+          )}
+          <button
+            onClick={handleReevaluate}
+            disabled={evaluating}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-[12px] bg-primary text-primary-foreground text-[12px] font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={cn("size-3.5", evaluating && "animate-spin")} />
+            Re-evaluar
+          </button>
+        </div>
       </div>
 
       {/* Buckets */}
