@@ -108,8 +108,9 @@ export function usePushNotifications() {
           endpoint: json.endpoint,
           keys_p256dh: json.keys.p256dh,
           keys_auth: json.keys.auth,
+          user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
           activa: true,
-          updated_at: new Date().toISOString(),
+          last_seen_at: new Date().toISOString(),
         },
         {
           onConflict: "endpoint",
@@ -153,7 +154,7 @@ export function usePushNotifications() {
         // 2. Desactivar en Supabase
         await (supabase as any)
           .from("push_subscriptions")
-          .update({ activa: false, updated_at: new Date().toISOString() })
+          .update({ activa: false, last_seen_at: new Date().toISOString() })
           .eq("endpoint", endpoint);
       }
 
