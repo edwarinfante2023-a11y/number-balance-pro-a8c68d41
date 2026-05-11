@@ -1,152 +1,166 @@
-## Plan técnico: MVP Fase 1 — Motor de Cartera de 25 Números
+## Plan — Flujo de oportunidades en tiempo real
 
-### Objetivo del MVP
-Validar **una sola hipótesis** en 90 días: ¿una cartera de 25 números, seleccionada con la señal compuesta que ya tenemos, supera consistentemente al baseline aleatorio (25/100 = 25% hit-rate esperado)?
+### Objetivo del flujo (lo que vas a vivir como usuario)
 
-Todo lo demás (ML, optimización multi-objetivo, auto-tuning) queda fuera. Si el lift no aparece con lo simple, no va a aparecer con lo complejo.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Cada 5 min, el sistema mira: ¿hay alguna hora cuyo sorteo   │
+│ ocurre en los próximos 25–35 min con cartera ya generada    │
+│ Y con internalScore ≥ 70 Y sin resultado todavía?           │
+└──────────┬───────────────────────────────────────────────────┘
+           │ SÍ
+           ▼
+┌──────────────────────────────────────────────────────────────┐
+│  T-30min antes del sorteo te llega:                          │
+│  ① Push del navegador (incluso con la app cerrada)           │
+│  ② Banner persistente arriba de toda la app                  │
+│  ③ Sonido corto (si la app está abierta)                     │
+│                                                              │
+│  Texto: "🔥 Oportunidad 17:00 · score 84/100 · 25 números"  │
+│  → Click te lleva a /cartera con esa hora cargada            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Una alerta por (fecha, hora) — nunca se repite. Si más tarde sube el score de la misma hora, no vuelve a notificar.
 
 ---
 
-### Alcance INCLUIDO
-
-1. **Generador de cartera por hora** — input: hora objetivo. Output: lista de 25 números rankeados con score y razón.
-2. **Registro de carteras propuestas** — cada cartera generada se persiste antes del sorteo (no se puede editar después).
-3. **Evaluación automática post-sorteo** — cuando llega el resultado real, marcar hit/miss y guardar métricas.
-4. **Dashboard de performance rolling** — hit-rate cartera vs baseline 25%, lift acumulado, gráfico por hora y por día.
-5. **Una sola estrategia activa** — la señal compuesta actual (reglas + patrones + equilibrio). Sin variantes.
-
-### Alcance EXCLUIDO (Fase 2+)
-- Multi-estrategia / A/B testing de algoritmos
-- Auto-aprendizaje / retraining
-- Optimización de tamaño de cartera (siempre 25)
-- Carteras manuales editables
-- Notificaciones push de carteras
-- Backtesting histórico masivo (eso va en Fase 1.5 si Fase 1 muestra señal)
+### Decisiones aprobadas
+- **Anticipación:** 30 min antes del sorteo (con tolerancia de ±5 min para alinear con el cron)
+- **Canales:** push del navegador + banner persistente in-app + sonido corto
+- **Disparo:** `internalScore ≥ 70` Y todavía no existe resultado en `cartera_resultados`
 
 ---
 
 ### Arquitectura
 
 ```text
-┌─────────────────────────────────────────────────┐
-│  scraper (existe) → draws table                 │
-└────────────────┬────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────┐
-│  carteraEngine (nuevo, server-side)             │
-│  - lee draws + rules + patterns                 │
-│  - score por número (0-100) usando señal actual │
-│  - selecciona top 25                            │
-└────────────────┬────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────┐
-│  carteras (tabla nueva) — propuesta inmutable   │
-└────────────────┬────────────────────────────────┘
-                 │  (cuando llega resultado real)
-                 ▼
-┌─────────────────────────────────────────────────┐
-│  evaluator (cron) → cartera_resultados          │
-└────────────────┬────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────┐
-│  /cartera (UI) — generador + dashboard rolling  │
-└─────────────────────────────────────────────────┘
+pg_cron (cada 5 min)
+       │
+       ▼
+/api/public/hooks/scan-opportunities  ── busca horas que cumplen criterio
+       │                                  e inserta en opportunity_alerts
+       ▼
+opportunity_alerts (tabla nueva)         (UNIQUE por fecha+hora — anti-spam)
+       │
+       ├──→ Edge function: send-opportunity-push
+       │         └──→ Web Push a todos los push_subscriptions activos
+       │                 └──→ Service Worker → notificación nativa
+       │
+       └──→ Cliente (Realtime subscription)
+                 └──→ OpportunityWatcher (componente sin UI):
+                          ① toast persistente con botón "Ver cartera"
+                          ② banner sticky arriba de la app
+                          ③ play() de un .wav corto
 ```
 
 ---
 
-### Schema (2 tablas nuevas)
+### Detalles técnicos
 
-**`carteras`** — propuesta inmutable
-- `id uuid PK`
-- `fecha date NOT NULL`
-- `hora text NOT NULL`
-- `numeros integer[] NOT NULL` — los 25 elegidos
-- `scores jsonb NOT NULL` — `{ "23": 87, "47": 82, ... }`
-- `estrategia text NOT NULL DEFAULT 'composite_v1'`
-- `contexto jsonb` — snapshot de reglas/patrones que justificaron la selección
-- `created_at timestamptz`
-- UNIQUE(`fecha`, `hora`, `estrategia`) — una cartera por hora/estrategia
+#### 1. Tablas nuevas (migración idempotente)
 
-**`cartera_resultados`** — evaluación post-sorteo
-- `id uuid PK`
-- `cartera_id uuid FK → carteras`
-- `numero_ganador integer NOT NULL`
-- `acierto boolean NOT NULL` — `numero_ganador IN cartera.numeros`
-- `evaluated_at timestamptz`
-- UNIQUE(`cartera_id`)
+**`push_subscriptions`** (no existe — el edge function ya la referencia pero la tabla nunca se creó):
+- `id uuid PK`, `user_id uuid` (FK → auth.users), `endpoint text UNIQUE`, `p256dh text`, `auth text`, `created_at`, `last_seen_at`
+- RLS: usuario solo ve/escribe sus propias subs
 
-Ambas con RLS `has_role(auth.uid(), 'admin')` (mismo patrón que el resto).
+**`opportunity_alerts`**:
+- `id uuid PK`, `fecha date`, `hora text`, `cartera_id uuid` (FK → carteras), `internal_score int`, `top_mean numeric`, `gap numeric`, `notified_at timestamptz`, `dismissed_at timestamptz NULL`, `created_at`
+- `UNIQUE (fecha, hora)` — garantiza una sola alerta por slot
+- RLS admin como el resto
+
+#### 2. Lead-time y "ventana de aviso"
+
+El cron corre cada 5 min y busca horas cuyo `hora` (HH:MM) caiga en la ventana **`[ahora+25min, ahora+35min]`**. Eso te da el aviso ~30 min antes con margen para que el cron no falle un ciclo.
+
+#### 3. Endpoint cron `/api/public/hooks/scan-opportunities` (TanStack server route)
+
+```text
+1. fecha = hoy, ahora = NOW
+2. ventana = [ahora+25min, ahora+35min]
+3. SELECT carteras del día con hora ∈ ventana
+4. Filtrar:
+   - contexto.confidence.internalScore ≥ 70
+   - NO existe cartera_resultados para esa cartera
+   - NO existe ya opportunity_alert para (fecha, hora)
+5. Para cada match: INSERT en opportunity_alerts
+6. Disparar edge function send-opportunity-push con la lista
+```
+
+Schedule pg_cron: `*/5 * * * *`.
+
+#### 4. Edge function `send-opportunity-push` (reutiliza `webPush.ts` existente)
+
+- Recibe `{ alerts: [{ id, hora, internal_score }] }`
+- Lee `push_subscriptions` activas
+- Envía payload `{ title, body, url: "/cartera?hora=HH:MM", tag: "opp-HH:MM" }` a cada sub
+- Maneja 404/410 → cleanup de la sub expirada (igual que `generate-alerts` ya hace)
+
+#### 5. Service Worker (`public/sw.js`)
+
+Ya existe para push. Verificar que el handler `notificationclick` use el `url` del payload para abrir `/cartera?hora=...`.
+
+#### 6. Cliente — `OpportunityWatcher.tsx` (nuevo componente sin UI)
+
+Se monta en `__root.tsx` junto a `BalanceAlertsWatcher`. Hace:
+- Realtime subscription a `opportunity_alerts` (`postgres_changes` INSERT)
+- Al recibir nueva alerta:
+  - `toast()` con duración indefinida + acción "Ver cartera"
+  - Set state global → `OpportunityBanner` visible
+  - `new Audio("/notification.wav").play().catch(()=>{})` (silencioso si autoplay bloqueado)
+
+#### 7. `OpportunityBanner.tsx` (nuevo, en AppLayout)
+
+Banner sticky `top-0` amarillo/primary cuando hay alertas activas (no dismissed):
+```text
+🔥 Oportunidad 17:00 · score 84/100 · cierra en 28 min  [Ver]  [×]
+```
+El [×] hace UPDATE `dismissed_at = now()`. Si hay >1, muestra "+N más" expandible.
+
+#### 8. Página `/oportunidades` (extender la existente)
+
+Tabla histórica de todas las `opportunity_alerts`: fecha, hora, score, si fue acertada (join con `cartera_resultados`), tasa de acierto solo de las alertadas vs todas.
 
 ---
 
-### Componentes técnicos
+### Anti-spam y casos borde
 
-**1. `supabase/functions/_shared/carteraEngine.ts`**
-- Función pura: `buildCartera(sorteos, rules, patterns, hora) → { numeros, scores, contexto }`
-- Score por número: combina (a) frecuencia ajustada por hora, (b) señal de equilibrio (compensación pendiente), (c) match con reglas activas, (d) match con patrones de esa hora.
-- Determinista: misma input → mismo output (clave para auditoría).
-
-**2. Server function: `src/lib/cartera.functions.ts`**
-- `generateCartera({ hora })` — protegida con `requireSupabaseAuth`. Llama al engine, persiste en `carteras`, devuelve la propuesta.
-- `getCarteraStats({ días })` — devuelve hit-rate rolling, lift vs baseline, breakdown por hora.
-
-**3. Cron de evaluación: `src/routes/api/public/hooks/evaluate-carteras.ts`**
-- Corre cada hora. Busca carteras sin resultado cuyo sorteo ya ocurrió (`draws` con misma fecha+hora). Inserta en `cartera_resultados`.
-
-**4. UI: `src/routes/cartera.tsx`**
-- Selector de hora → botón "Generar cartera"
-- Grid 5×5 con los 25 números, cada uno con badge de score y tooltip con razón
-- Sección inferior: dashboard rolling 30/60/90 días
-  - KPI: Hit-rate cartera vs 25% baseline, lift absoluto, sample size (N sorteos evaluados)
-  - Línea: hit-rate por día (últimos 90)
-  - Barra: hit-rate por hora (qué franjas funcionan mejor)
-  - Banda de confianza para distinguir señal real de ruido (Wilson score interval)
-
-**5. Hook: `src/hooks/useCartera.ts`** — wrappers de las server fns con TanStack Query.
-
----
-
-### Lo que NO hay que construir todavía
-
-- Edge functions complejas con ML
-- Sistema de versionado de estrategias (lo agregamos en Fase 2 cuando exista una segunda estrategia)
-- UI para editar carteras (la inmutabilidad ES la feature — sin trampa al evaluar)
-- Notificaciones push de carteras (primero validar que la señal existe)
-- Reportes PDF / exportación
-
----
-
-### Cómo se valida el éxito
-
-Después de **90 días corriendo en producción** con generación automática hora a hora:
-
-| Métrica | Umbral mínimo para seguir |
+| Caso | Comportamiento |
 |---|---|
-| Sample size | ≥ 500 carteras evaluadas |
-| Hit-rate observado | ≥ 28% (baseline 25% + 3pp de lift) |
-| Wilson lower bound 95% | > 25% |
-| Estabilidad | Lift positivo en ≥ 60% de las semanas |
-
-Si los 4 se cumplen → Fase 2 (auto-tuning, multi-estrategia).
-Si no → la lotería es genuinamente aleatoria y el sistema te lo dice honestamente. Igualmente valioso.
+| Cron corre 2 veces seguidas y ve la misma hora | UNIQUE constraint la rechaza, no notifica de nuevo |
+| Score sube de 65 a 78 después de la primera detección | Como ya existe la fila, no se re-notifica (ok) |
+| Usuario sin push permission | Solo recibe banner + sonido (degradación graceful) |
+| Sorteo ya ocurrió mientras se procesaba | Filtro `NOT EXISTS cartera_resultados` lo excluye |
+| Hora de madrugada cuando estás durmiendo | El push igual llega, el banner aparece al abrir la app |
 
 ---
 
-### Orden de implementación (1 sola entrega)
+### Orden de implementación (1 sesión)
 
-1. Migración: `carteras` + `cartera_resultados` (idempotente, patrón del CLAUDE.md)
-2. `carteraEngine.ts` compartido + tests básicos
-3. Server functions `generateCartera` + `getCarteraStats`
-4. Cron `evaluate-carteras` + agendar pg_cron horario
-5. Ruta `/cartera` con generador + dashboard
-6. Entrada en sidebar de `AppLayout`
-
-Estimado: 1 sesión de implementación. Sin tocar lo existente (scraper, alertas, equilibrio, etc.).
+1. Migración: `push_subscriptions` + `opportunity_alerts` + RLS
+2. Edge function `send-opportunity-push` (reutiliza `webPush.ts`)
+3. Server route `src/routes/api/public/hooks/scan-opportunities.ts`
+4. Schedule pg_cron `scan-opportunities` cada 5 min
+5. `OpportunityWatcher.tsx` (Realtime + toast + sonido) en `__root.tsx`
+6. `OpportunityBanner.tsx` sticky en `AppLayout`
+7. Asset `public/notification.wav` (sonido corto, ~1seg)
+8. Verificar `sw.js` maneja `notificationclick` con la URL del payload
+9. Extender `/oportunidades` con tabla histórica + tasa de acierto de las alertadas
 
 ---
 
-¿Apruebas el plan así o quieres ajustar alcance antes de implementar?
+### Lo que NO se hace en esta fase
+- Configuración por usuario del lead-time (queda hardcoded a 30 min ±5)
+- Snooze / silenciamiento por hora
+- Stats avanzadas (lift de las alertadas vs no alertadas — sale solo cuando haya datos)
+- Email de respaldo
+- Alertas predictivas multi-sorteo
+
+---
+
+### Cómo se valida que funciona
+
+1. Generar manualmente una cartera para una hora ~30 min en el futuro con score forzado ≥ 70
+2. Esperar el siguiente ciclo de cron (≤5 min)
+3. Verificar: fila en `opportunity_alerts`, push recibido, banner visible, sonido reproducido
+4. Click en la notificación → debe abrir `/cartera?hora=HH:MM` con esa hora pre-cargada

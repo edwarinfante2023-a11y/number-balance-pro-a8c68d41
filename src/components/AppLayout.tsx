@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { OpportunityBanner } from "@/components/OpportunityBanner";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
@@ -303,6 +304,7 @@ export function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 min-w-0 relative">
+          <OpportunityBanner />
           <div className="mx-auto h-full px-4 lg:px-8 pb-32 lg:pb-10 animate-fade-in relative z-10">
             <Outlet />
           </div>

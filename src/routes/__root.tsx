@@ -11,6 +11,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BalanceAlertsWatcher } from "@/components/BalanceAlertsWatcher";
+import { OpportunityWatcher } from "@/components/OpportunityWatcher";
 
 import appCss from "../styles.css?url";
 
@@ -126,6 +127,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AppLayout />
       <BalanceAlertsWatcher />
+      <OpportunityWatcher />
       <Toaster position="top-right" richColors closeButton />
     </QueryClientProvider>
   );

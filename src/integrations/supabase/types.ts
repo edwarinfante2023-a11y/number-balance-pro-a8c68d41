@@ -284,6 +284,53 @@ export type Database = {
           },
         ]
       }
+      opportunity_alerts: {
+        Row: {
+          cartera_id: string
+          created_at: string
+          dismissed_at: string | null
+          fecha: string
+          gap: number
+          hora: string
+          id: string
+          internal_score: number
+          notified_at: string | null
+          top_mean: number
+        }
+        Insert: {
+          cartera_id: string
+          created_at?: string
+          dismissed_at?: string | null
+          fecha: string
+          gap?: number
+          hora: string
+          id?: string
+          internal_score: number
+          notified_at?: string | null
+          top_mean?: number
+        }
+        Update: {
+          cartera_id?: string
+          created_at?: string
+          dismissed_at?: string | null
+          fecha?: string
+          gap?: number
+          hora?: string
+          id?: string
+          internal_score?: number
+          notified_at?: string | null
+          top_mean?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_alerts_cartera_id_fkey"
+            columns: ["cartera_id"]
+            isOneToOne: false
+            referencedRelation: "carteras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patterns: {
         Row: {
           aciertos: number
@@ -341,6 +388,42 @@ export type Database = {
           tipo?: Database["public"]["Enums"]["rule_tipo"]
           ultima_deteccion?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          activa: boolean
+          created_at: string
+          endpoint: string
+          id: string
+          keys_auth: string
+          keys_p256dh: string
+          last_seen_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          endpoint: string
+          id?: string
+          keys_auth: string
+          keys_p256dh: string
+          last_seen_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          endpoint?: string
+          id?: string
+          keys_auth?: string
+          keys_p256dh?: string
+          last_seen_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
