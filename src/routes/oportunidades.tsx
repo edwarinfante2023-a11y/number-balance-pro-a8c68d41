@@ -21,6 +21,7 @@ import { useRules } from "@/hooks/useRules";
 import { usePatterns } from "@/hooks/usePatterns";
 import { drawToSorteo } from "@/lib/drawAdapter";
 import { OpportunityHistorySection } from "@/components/OpportunityHistorySection";
+import { ScoreMetricsSection } from "@/components/ScoreMetricsSection";
 import {
   buildOpportunityRanking,
   type HourOpportunity,
@@ -219,6 +220,11 @@ function OportunidadesPage() {
       {/* ─── Histórico de alertas + tasa de acierto ──────────────────────── */}
       <div className="stagger-4 animate-fade-up">
         <OpportunityHistorySection />
+      </div>
+
+      {/* ─── Métricas avanzadas: precisión, recall, evolución por hora ───── */}
+      <div className="stagger-4 animate-fade-up">
+        <ScoreMetricsSection />
       </div>
     </div>
   );
