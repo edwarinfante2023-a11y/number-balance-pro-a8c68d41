@@ -45,6 +45,14 @@ export interface CarteraResult {
     reglasActivas: number;
     patronesHora: number;
     estrategia: string;
+    confidence: {
+      topMean: number;       // promedio de score del top 25
+      nextMean: number;      // promedio de score de los siguientes 25 (26-50)
+      gap: number;           // topMean - nextMean → cuán "destacados" son los elegidos
+      stdevTop: number;      // dispersión interna del top 25
+      spread: number;        // max - min del top 25
+      internalScore: number; // 0-100, combinación heurística (provisorio para Fase 2)
+    };
   };
 }
 
@@ -164,6 +172,24 @@ export function buildCartera(
     reasonsOut[String(n)] = reasons.get(n) ?? [];
   }
 
+  // ─── Confianza interna (datos crudos para calibrar Fase 2) ──
+  const topScores = top.map((x) => x.s);
+  const nextSlice = all.slice(SIZE, SIZE * 2).map((x) => x.s);
+  const mean = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+  const topMean = mean(topScores);
+  const nextMean = mean(nextSlice);
+  const gap = topMean - nextMean;
+  const variance = topScores.length
+    ? topScores.reduce((s, v) => s + (v - topMean) ** 2, 0) / topScores.length
+    : 0;
+  const stdevTop = Math.sqrt(variance);
+  const spread = topScores.length ? Math.max(...topScores) - Math.min(...topScores) : 0;
+  // Heurística provisoria: gap fuerte + topMean alto + sample suficiente.
+  const sampleFactor = Math.min(1, totalHora / 50);
+  const internalScore = Math.round(
+    Math.max(0, Math.min(100, topMean * 0.5 + gap * 1.5 + sampleFactor * 20)),
+  );
+
   return {
     numeros,
     scores: scoresOut,
@@ -178,6 +204,14 @@ export function buildCartera(
       reglasActivas: reglasAct.length,
       patronesHora: patronesHora.length,
       estrategia: "composite_v1",
+      confidence: {
+        topMean: Math.round(topMean * 10) / 10,
+        nextMean: Math.round(nextMean * 10) / 10,
+        gap: Math.round(gap * 10) / 10,
+        stdevTop: Math.round(stdevTop * 10) / 10,
+        spread,
+        internalScore,
+      },
     },
   };
 }

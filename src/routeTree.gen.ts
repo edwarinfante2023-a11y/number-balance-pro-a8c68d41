@@ -23,6 +23,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
 
 const ReportesRoute = ReportesRouteImport.update({
   id: '/reportes',
@@ -94,6 +95,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksGenerateCarterasRoute =
+  ApiPublicHooksGenerateCarterasRouteImport.update({
+    id: '/api/public/hooks/generate-carteras',
+    path: '/api/public/hooks/generate-carteras',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +134,7 @@ export interface FileRoutesByTo {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +152,7 @@ export interface FileRoutesById {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/generate-carteras'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/generate-carteras'
   id:
     | '__root__'
     | '/'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/generate-carteras'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,6 +223,7 @@ export interface RootRouteChildren {
   OportunidadesRoute: typeof OportunidadesRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
+  ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/generate-carteras': {
+      id: '/api/public/hooks/generate-carteras'
+      path: '/api/public/hooks/generate-carteras'
+      fullPath: '/api/public/hooks/generate-carteras'
+      preLoaderRoute: typeof ApiPublicHooksGenerateCarterasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -330,6 +351,7 @@ const rootRouteChildren: RootRouteChildren = {
   OportunidadesRoute: OportunidadesRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
+  ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
