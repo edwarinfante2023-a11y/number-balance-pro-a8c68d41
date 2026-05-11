@@ -23,6 +23,7 @@ import { drawToSorteo } from "@/lib/drawAdapter";
 import { OpportunityHistorySection } from "@/components/OpportunityHistorySection";
 import { ScoreMetricsSection } from "@/components/ScoreMetricsSection";
 import { CronStatusSection } from "@/components/CronStatusSection";
+import { PatternsLearningSection } from "@/components/PatternsLearningSection";
 import {
   buildOpportunityRanking,
   type HourOpportunity,
@@ -231,6 +232,11 @@ function OportunidadesPage() {
       {/* ─── Estado del cron ──────────────────────────────────────────────── */}
       <div className="stagger-4 animate-fade-up">
         <CronStatusSection />
+      </div>
+
+      {/* ─── Aprendizaje de patrones (Nivel B) ────────────────────────────── */}
+      <div className="stagger-4 animate-fade-up">
+        <PatternsLearningSection />
       </div>
     </div>
   );
