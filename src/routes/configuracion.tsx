@@ -18,10 +18,17 @@ import {
   Smartphone,
   TestTube2,
   Scale,
+  Monitor,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { SyncLogsWidget } from "@/components/SyncLogsWidget";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import {
+  usePushSubscriptions,
+  useRevokePushSubscription,
+  parseDeviceLabel,
+} from "@/hooks/usePushSubscriptions";
 import {
   useClassificationConfig,
   useUpdateClassificationConfig,
