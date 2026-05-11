@@ -95,6 +95,23 @@ export function useCarteraDelDia(hora: string | null, fecha?: string) {
   });
 }
 
+/** Todas las carteras de un día (todas las horas). */
+export function useCarterasDelDia(fecha?: string) {
+  const f = fecha ?? new Date().toISOString().slice(0, 10);
+  return useQuery({
+    queryKey: ["carteras-dia", f],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("carteras")
+        .select("id, fecha, hora, numeros, contexto, created_at")
+        .eq("fecha", f)
+        .order("hora", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 /** Stats rolling: trae los resultados evaluados en los últimos `dias` y agrega. */
 export function useCarteraStats(dias = 90) {
   return useQuery({
