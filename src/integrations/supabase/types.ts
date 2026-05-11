@@ -56,6 +56,71 @@ export type Database = {
         }
         Relationships: []
       }
+      cartera_resultados: {
+        Row: {
+          acierto: boolean
+          cartera_id: string
+          evaluated_at: string
+          id: string
+          numero_ganador: number
+        }
+        Insert: {
+          acierto: boolean
+          cartera_id: string
+          evaluated_at?: string
+          id?: string
+          numero_ganador: number
+        }
+        Update: {
+          acierto?: boolean
+          cartera_id?: string
+          evaluated_at?: string
+          id?: string
+          numero_ganador?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cartera_resultados_cartera_id_fkey"
+            columns: ["cartera_id"]
+            isOneToOne: false
+            referencedRelation: "carteras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carteras: {
+        Row: {
+          contexto: Json
+          created_at: string
+          estrategia: string
+          fecha: string
+          hora: string
+          id: string
+          numeros: number[]
+          scores: Json
+        }
+        Insert: {
+          contexto?: Json
+          created_at?: string
+          estrategia?: string
+          fecha: string
+          hora: string
+          id?: string
+          numeros: number[]
+          scores?: Json
+        }
+        Update: {
+          contexto?: Json
+          created_at?: string
+          estrategia?: string
+          fecha?: string
+          hora?: string
+          id?: string
+          numeros?: number[]
+          scores?: Json
+        }
+        Relationships: []
+      }
       draws: {
         Row: {
           alto_bajo: string
