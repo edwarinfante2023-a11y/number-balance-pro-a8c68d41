@@ -20,6 +20,7 @@ import { useDraws } from "@/hooks/useDraws";
 import { useRules } from "@/hooks/useRules";
 import { usePatterns } from "@/hooks/usePatterns";
 import { drawToSorteo } from "@/lib/drawAdapter";
+import { OpportunityHistorySection } from "@/components/OpportunityHistorySection";
 import {
   buildOpportunityRanking,
   type HourOpportunity,
@@ -213,6 +214,11 @@ function OportunidadesPage() {
             <RankingRow key={opp.hora} opp={opp} position={idx + 1} />
           ))}
         </div>
+      </div>
+
+      {/* ─── Histórico de alertas + tasa de acierto ──────────────────────── */}
+      <div className="stagger-4 animate-fade-up">
+        <OpportunityHistorySection />
       </div>
     </div>
   );
