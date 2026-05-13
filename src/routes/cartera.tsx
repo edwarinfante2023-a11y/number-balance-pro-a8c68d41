@@ -230,7 +230,7 @@ function CarteraPage() {
           </div>
         ) : !carterasHoy.data || carterasHoy.data.length === 0 ? (
           <div className="rounded-xl bg-muted/40 p-5 text-center text-[13px] text-muted-foreground">
-            Aún no hay carteras generadas hoy. El cron horario las arma a los <b>:02</b> de cada hora.
+            No hay carteras para <b>{fechaTabla}</b>. {fechaTabla === todayStr ? <>El cron horario las arma a los <b>:02</b> de cada hora.</> : "Probá otra fecha."}
           </div>
         ) : (
           <>
