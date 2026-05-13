@@ -21,6 +21,7 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { AttributionSection } from "@/components/AttributionSection";
 
 export const Route = createFileRoute("/cartera")({
   validateSearch: (search: Record<string, unknown>) => ({
