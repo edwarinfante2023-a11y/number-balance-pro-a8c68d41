@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -190,6 +190,26 @@ function SimCard({
   const [filtroTabla, setFiltroTabla] = useState<"todos" | "aciertos" | "fallos">("todos");
   const [filtroFecha, setFiltroFecha] = useState<string | null>(null);
   const [tablaAbierta, setTablaAbierta] = useState(false);
+  const tablaRef = useRef<HTMLDetailsElement | null>(null);
+
+  // Auto-scroll perfecto: cuando se filtra por fecha y la tabla está abierta,
+  // hacemos scroll al <details> después de que el DOM repinte (doble rAF).
+  useEffect(() => {
+    if (!filtroFecha || !tablaAbierta) return;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = tablaRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const offset = 80; // separación del top (header sticky)
+        window.scrollTo({
+          top: window.scrollY + rect.top - offset,
+          behavior: "smooth",
+        });
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [filtroFecha, tablaAbierta]);
   const filas = sim.rows.filter((r) =>
     (filtroTabla === "todos" ? true : filtroTabla === "aciertos" ? r.acierto : !r.acierto) &&
     (filtroFecha ? r.fecha === filtroFecha : true)
@@ -319,10 +339,7 @@ function SimCard({
                     setFiltroFecha(activo ? null : d.fecha);
                     setFiltroTabla("todos");
                     setTablaAbierta(true);
-                    // scroll suave hacia la tabla
-                    setTimeout(() => {
-                      document.getElementById(`tabla-${title}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                    }, 50);
+                    // El scroll lo dispara el useEffect de [filtroFecha, tablaAbierta]
                   }}
                   className={`w-full flex items-center gap-2 text-[11px] p-1.5 rounded-md transition text-left ${
                     activo ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted/60"
@@ -443,6 +460,7 @@ function SimCard({
           className="mt-1 group"
           open={tablaAbierta}
           id={`tabla-${title}`}
+          ref={tablaRef}
         >
           <summary
             onClick={(e) => { e.preventDefault(); setTablaAbierta((v) => !v); }}
