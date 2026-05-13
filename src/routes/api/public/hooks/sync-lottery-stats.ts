@@ -38,70 +38,40 @@ interface ParsedStats {
   vencidos: Map<number, number>;        // numero -> días sin salir
 }
 
-/** Quita tags HTML pero conserva los textos en orden, separados por `\n`. */
-function htmlToText(html: string): string {
-  // Saca <script> y <style> completos
-  let s = html.replace(/<script[\s\S]*?<\/script>/gi, "")
-              .replace(/<style[\s\S]*?<\/style>/gi, "");
-  // Convierte cierres de bloque comunes en saltos
-  s = s.replace(/<\/(div|p|li|h[1-6]|tr|td|span)>/gi, "$&\n");
-  // Strip tags
-  s = s.replace(/<[^>]+>/g, " ");
-  // Decode entidades básicas
-  s = s.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-  return s;
-}
-
 function parseStatsFromHtml(html: string): ParsedStats {
-  const text = htmlToText(html);
-  const lines = text.split(/\s+/).map((l) => l.trim()).filter(Boolean);
-
-  // Total de sorteos analizados — buscar número grande seguido de "sorteos analizados"
-  // El raw HTML lo tiene como "344" y luego "SORTEOS ANALIZADOS".
-  let totalSorteos: number | null = null;
-  const totalMatch = text.match(/(\d{2,5})\s*(?:<[^>]*>\s*)*\s*sorteos\s+analizados/i);
-  if (totalMatch) totalSorteos = parseInt(totalMatch[1], 10);
-
   const frecuencias = new Map<number, number>();
   const vencidos = new Map<number, number>();
 
-  // ── Vencidos: tokens tipo "48250d", "63188d" — número 2 dígitos + entero + 'd'
-  for (const tok of lines) {
-    const m = tok.match(/^(\d{2})(\d{1,4})d$/);
-    if (m) {
-      const n = parseInt(m[1], 10);
-      const d = parseInt(m[2], 10);
-      if (n >= 0 && n <= 99 && Number.isFinite(d)) {
-        // mantener el mayor (algunas horas listan varias veces el mismo)
-        const prev = vencidos.get(n);
-        if (prev === undefined || d > prev) vencidos.set(n, d);
-      }
+  // ── Total de sorteos analizados (card "Sorteos Analizados")
+  let totalSorteos: number | null = null;
+  const totalMatch = html.match(
+    /stats-card-value">\s*(\d{1,5})\s*<\/div>\s*<div class="stats-card-label">\s*Sorteos\s+Analizados/i,
+  );
+  if (totalMatch) totalSorteos = parseInt(totalMatch[1], 10);
+
+  // ── Frecuencias: el grid "Todos los Números" usa title="NN: ×F" en cada celda.
+  // Esto da los 100 números de forma 100% confiable.
+  const freqRegex = /title="(\d{2}):\s*[×x](\d{1,4})"/g;
+  let m: RegExpExecArray | null;
+  while ((m = freqRegex.exec(html)) !== null) {
+    const n = parseInt(m[1], 10);
+    const f = parseInt(m[2], 10);
+    if (n >= 0 && n <= 99 && Number.isFinite(f)) {
+      // El grid puede repetir un número entre secciones (calientes/fríos/todos);
+      // nos quedamos con el mayor para representar la frecuencia total.
+      const prev = frecuencias.get(n);
+      if (prev === undefined || f > prev) frecuencias.set(n, f);
     }
   }
 
-  // ── Frecuencias: tokens tipo "0012", "8322", "4714" — 2 dígitos numero + freq.
-  // Ojo: también aparecen patrones tipo "83×22" para hot/cold; los soportamos.
-  for (const tok of lines) {
-    // Patrón con × o x (calientes/fríos)
-    let m = tok.match(/^(\d{1,2})[×x](\d{1,4})$/);
-    if (m) {
-      const n = parseInt(m[1], 10);
-      const f = parseInt(m[2], 10);
-      if (n >= 0 && n <= 99 && Number.isFinite(f)) {
-        const prev = frecuencias.get(n);
-        if (prev === undefined || f > prev) frecuencias.set(n, f);
-      }
-      continue;
-    }
-    // Patrón compacto "NNFF" (sección "Todos los Números"): 2 dígitos + freq sin separador.
-    m = tok.match(/^(\d{2})(\d{1,3})$/);
-    if (m && !tok.endsWith("d")) {
-      const n = parseInt(m[1], 10);
-      const f = parseInt(m[2], 10);
-      if (n >= 0 && n <= 99 && Number.isFinite(f) && f >= 0 && f <= 9999) {
-        const prev = frecuencias.get(n);
-        if (prev === undefined || f > prev) frecuencias.set(n, f);
-      }
+  // ── Vencidos: <span class="stats-ball overdue">NN</span> ... <span class="stats-count">Dd</span>
+  const vencRegex = /stats-ball\s+overdue">\s*(\d{2})\s*<\/span>\s*<span\s+class="stats-count">\s*(\d{1,5})d\s*</gi;
+  while ((m = vencRegex.exec(html)) !== null) {
+    const n = parseInt(m[1], 10);
+    const d = parseInt(m[2], 10);
+    if (n >= 0 && n <= 99 && Number.isFinite(d)) {
+      const prev = vencidos.get(n);
+      if (prev === undefined || d > prev) vencidos.set(n, d);
     }
   }
 
