@@ -193,6 +193,21 @@ function SimCard({
   );
   const fallos = sim.jugadas - sim.aciertos;
 
+  // Aciertos agrupados por día (siempre visible)
+  const porDia = useMemo(() => {
+    const m = new Map<string, { aciertos: number; jugadas: number }>();
+    sim.rows.forEach((r) => {
+      const k = r.fecha;
+      const cur = m.get(k) ?? { aciertos: 0, jugadas: 0 };
+      cur.jugadas++;
+      if (r.acierto) cur.aciertos++;
+      m.set(k, cur);
+    });
+    return Array.from(m.entries())
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([fecha, v]) => ({ fecha, ...v }));
+  }, [sim.rows]);
+
   let veredictoIcon = "⚪️";
   let veredictoTitulo = "Sin datos";
   let veredictoDetalle = "Todavía no hay sorteos evaluados con este filtro.";
@@ -280,6 +295,34 @@ function SimCard({
               {money(cfg.fondoInicial)} {positive ? "+" : "−"} {money(Math.abs(sim.pl))} ={" "}
               <b>{money(sim.balanceFinal)}</b>
             </div>
+          </div>
+        </div>
+      )}
+
+      {porDia.length > 0 && (
+        <div className="mb-3 p-3 rounded-xl bg-background/60 border border-border">
+          <div className="font-bold text-[10px] uppercase text-muted-foreground mb-2">
+            Aciertos por día ({fmt(sim.aciertos)} de {fmt(sim.jugadas)} en total)
+          </div>
+          <div className="space-y-1.5">
+            {porDia.map((d) => {
+              const pct = d.jugadas > 0 ? (d.aciertos / d.jugadas) * 100 : 0;
+              return (
+                <div key={d.fecha} className="flex items-center gap-2 text-[11px]">
+                  <span className="font-mono text-muted-foreground w-20 shrink-0">{d.fecha}</span>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${pct >= breakEven * 100 ? "bg-emerald-500" : "bg-red-400"}`}
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
+                  <span className="font-mono font-semibold w-24 text-right shrink-0">
+                    <span className="text-emerald-600">{d.aciertos} ✓</span>
+                    <span className="text-muted-foreground"> de {d.jugadas}</span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
