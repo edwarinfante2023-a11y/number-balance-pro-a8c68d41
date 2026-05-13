@@ -247,6 +247,38 @@ function SimCard({
         <div className="text-muted-foreground">{veredictoDetalle}</div>
       </div>
 
+      {sim.jugadas > 0 && (
+        <div className="mb-3 p-3 rounded-xl bg-muted/40 border border-border text-[12px] leading-relaxed">
+          <div className="font-bold text-[10px] uppercase text-muted-foreground mb-1.5">
+            De dónde sale el saldo final
+          </div>
+          <div className="font-mono space-y-0.5">
+            <div>
+              <span className="text-muted-foreground">Cobraste:</span>{" "}
+              <b>{fmt(sim.aciertos)}</b> aciertos × {money(cfg.apuestaPorNumero * cfg.pago)} ={" "}
+              <b className="text-emerald-600">{money(sim.cobrado)}</b>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Apostaste:</span>{" "}
+              <b>{fmt(sim.jugadas)}</b> sorteos × {money(cfg.numerosPorCartera * cfg.apuestaPorNumero)} ={" "}
+              <b className="text-red-600">−{money(sim.invertido)}</b>
+            </div>
+            <div className="pt-1 mt-1 border-t border-border/60">
+              <span className="text-muted-foreground">Ganancia:</span>{" "}
+              {money(sim.cobrado)} − {money(sim.invertido)} ={" "}
+              <b className={positive ? "text-emerald-600" : "text-red-600"}>
+                {positive ? "+" : ""}{money(sim.pl)}
+              </b>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Saldo final:</span>{" "}
+              {money(cfg.fondoInicial)} {positive ? "+" : "−"} {money(Math.abs(sim.pl))} ={" "}
+              <b>{money(sim.balanceFinal)}</b>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 mb-3">
         <Stat
           label="Te queda"
