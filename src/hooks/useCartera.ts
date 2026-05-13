@@ -103,7 +103,7 @@ export function useCarterasDelDia(fecha?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("carteras")
-        .select("id, fecha, hora, numeros, contexto, created_at")
+        .select("id, fecha, hora, numeros, scores, contexto, created_at, cartera_resultados ( acierto, numero_ganador, evaluated_at )")
         .eq("fecha", f)
         .order("hora", { ascending: true });
       if (error) throw error;
