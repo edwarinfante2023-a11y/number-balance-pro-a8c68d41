@@ -21,6 +21,7 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { AttributionSection } from "@/components/AttributionSection";
 
 export const Route = createFileRoute("/cartera")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -272,6 +273,9 @@ function CarteraPage() {
               </div>
             );
           })()}
+          <div className="mb-5">
+            <AttributionSection />
+          </div>
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-[13px]">
               <thead>

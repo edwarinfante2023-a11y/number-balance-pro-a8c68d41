@@ -1,50 +1,65 @@
 ## Objetivo
-Cerrar el loop **generar cartera → cargar ganador → evaluar acierto** para que las métricas de precisión/recall/F1 (y `/oportunidades`) tengan datos reales con los que validar el score.
+Saber **qué señal del motor está aportando más aciertos reales** — frecuencia por hora, balance, reglas o patrones — para poder subir/bajar pesos de forma informada.
 
-## Estado actual detectado
-- ✅ `generate-carteras.ts` ya existe y es idempotente por `(fecha, hora, estrategia)`.
-- ❌ **No hay evaluador**: nada inserta en `cartera_resultados` cuando entra un `draw` ganador.
-- ⚠️ Solo hay **1 cartera y 1 resultado** en DB → el cron de generate-carteras no está activo (o nunca corrió).
-- ⚠️ `cartera_resultados.cartera_id` no tiene índice único → riesgo de duplicados en evaluaciones repetidas.
-- ⚠️ El scraper carga `draws` automáticamente, pero la evaluación no se dispara desde ahí.
+## Cómo funciona la atribución (concepto)
+
+Cuando una cartera acierta, el `numero_ganador` es uno de los 25 elegidos. Ese número tiene guardado en `carteras.contexto.reasons["N"]` un array tipo:
+
+```
+["+freq hora ×7", "+balance BAJO", "+regla X", "+patrón Y"]
+```
+
+Cada string empieza con un **prefijo identificable** (`+freq`, `+balance`, `+regla`, `+patrón`). Agrupando por prefijo a través de todos los aciertos históricos, se puede calcular:
+
+- **Aciertos atribuidos por señal** — cuántas veces cada señal "tocó" un número ganador
+- **Peso de score atribuido** — qué % del score del ganador venía de cada señal
+- **Hit-rate por señal** — de las veces que una señal estaba presente en el top 25, cuántas pegó
+
+Esto NO requiere cambiar el motor — solo leer datos ya guardados.
 
 ## Cambios
 
-### 1. Garantizar idempotencia en `cartera_resultados`
-- Agregar `UNIQUE (cartera_id)` para que el evaluador pueda hacer `upsert` sin duplicar.
+### 1. Hook nuevo `useAttributionStats`
+Archivo: `src/hooks/useAttributionStats.ts`
 
-### 2. Endpoint evaluador `/api/public/hooks/evaluate-results`
-Server route POST que:
-- Lee todos los `draws` de las últimas 48 h con su `lottery_draws.hora` (ventana corta para que sea barato y robusto).
-- Para cada `(fecha, hora, numero_ganador)`, busca las `carteras` correspondientes que aún no tengan resultado.
-- Inserta/upsert `cartera_resultados { cartera_id, numero_ganador, acierto: numeros.includes(numero_ganador) }`.
-- Devuelve resumen `{ evaluadas, aciertos, errores }`.
+Query que cruza `cartera_resultados` (acierto=true) con `carteras.contexto.reasons` y `carteras.scores`. Por cada acierto:
+- Lee `reasons[String(numero_ganador)]`
+- Clasifica cada string por prefijo en una de 4 categorías: `freq | balance | regla | patron`
+- Acumula contadores
 
-### 3. Activar pg_cron para los dos hooks
-Vía la herramienta `insert` (no migración):
-- `generate-carteras` → cada hora a `*/1 * * * *` con minuto `:02`. *(Nota: cron mínimo es por minuto; usaremos `2 * * * *` = cada hora a los :02).*
-- `evaluate-results` → `5 * * * *` (cada hora a los :05, después de que el scraper haya tenido tiempo de cargar draws nuevos).
-- Headers con `apikey` (anon key) apuntando a `https://project--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app`.
+Devuelve:
+```ts
+{
+  totalAciertos: number,
+  porSenal: Array<{
+    senal: 'freq'|'balance'|'regla'|'patron',
+    aciertosTocados: number,    // # aciertos donde esta señal contribuyó
+    pctAciertos: number,         // % de aciertos donde estaba presente
+    presenciasEnTop: number,     // # veces que estaba en algún número del top 25 (denominador)
+    hitRateSenal: number,        // aciertosTocados / presenciasEnTop
+  }>,
+  topPatrones: Array<{ nombre: string, aciertos: number }>,  // patrones específicos más efectivos
+  topReglas:   Array<{ nombre: string, aciertos: number }>,
+}
+```
 
-### 4. Botón "Re-evaluar ahora" en `/oportunidades`
-Pequeño botón al lado del header de **Histórico de oportunidades** que llama al evaluador on-demand. Útil para no esperar al cron mientras debuggeás. Toast con el resumen.
+### 2. Componente nuevo `AttributionSection`
+Archivo: `src/components/AttributionSection.tsx`
 
-### 5. Mejora UX: indicador de cobertura
-En la sección de validación de score, agregar un mini-banner que avise cuando hay <20 carteras evaluadas: *"Las métricas necesitan más datos para ser confiables. Las carteras se generan automáticamente cada hora."*
+Sección visual con:
+- **4 cards tipo KPI** (una por señal): icono + nombre + `% aciertos` + barra de progreso + hit-rate vs baseline 25%
+- **Mini-leaderboard**: top 5 patrones y top 5 reglas que más aciertos tocaron (con su nombre real desde DB)
+- **Insight automático**: una línea tipo *"La señal que más está aportando es **frecuencia por hora** (presente en 80% de tus aciertos, hit-rate 32%)"*
 
-## Lo que NO incluye este plan (lo dejo para después)
-- **Backfill histórico walk-forward** (regenerar carteras retroactivas con corte temporal correcto). Es laborioso y pesado; mejor lo abordamos como paso 2 una vez que el loop "vivo" funcione y veas cómo se comportan las métricas con datos reales día a día.
-- Cambios al engine de generación o al motor de oportunidades.
+Usa solo tokens semánticos (`bg-card`, `text-primary`, etc.) — sin colores hardcodeados.
 
-## Detalles técnicos
-- **Migración**: `ALTER TABLE cartera_resultados ADD CONSTRAINT cartera_resultados_cartera_id_unique UNIQUE (cartera_id);` (con `DROP CONSTRAINT IF EXISTS` antes para idempotencia).
-- **Evaluador**: usa `supabaseAdmin` (bypassa RLS porque corre desde cron), lee draws con join a `lottery_draws`, agrupa por `(fecha, hora)`, hace un solo `upsert` masivo a `cartera_resultados`.
-- **Cron SQL** vía `insert` tool, no migración (contiene anon key específica del proyecto).
-- **Botón manual**: `fetch("/api/public/hooks/evaluate-results", { method: "POST" })` desde el componente, sin auth porque está bajo `/api/public/`.
+### 3. Integración
+Agregar `<AttributionSection />` en `/cartera`, debajo de las KPIs de rentabilidad que ya existen. Banner sutil si `totalAciertos < 5`: *"Necesitamos más aciertos evaluados para que estos números sean estables."*
+
+## Lo que NO incluye este plan
+- Cambiar pesos del motor (lo dejamos como paso 2 cuando ya veas qué señal manda)
+- Cambios al schema de DB (todo se calcula desde campos existentes)
+- Backfill de carteras viejas
 
 ## Resultado esperado
-Tras el primer ciclo del cron (≤1 hora) y a medida que entren draws ganadores:
-- `carteras` se llena con una entrada por hora activa por día.
-- `cartera_resultados.acierto` se llena automáticamente.
-- Las cards de la sección **"Validación del score"** dejan de mostrar "—" y empiezan a mostrar precisión, recall, F1 y lift reales.
-- El selector de umbral (60/70/80/90) funciona con datos.
+En `/cartera` vas a ver de un vistazo: *"de los 2 aciertos de hoy, el ganador venía con score alto principalmente por **freq hora + patrón [Auto: 3x ALTO -> BAJO]**"*. Cuando lleguen 20-30 aciertos, tendrás señal estadística clara de qué subir y qué bajar.
