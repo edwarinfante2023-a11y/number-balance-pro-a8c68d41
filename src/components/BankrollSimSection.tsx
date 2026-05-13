@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,6 +88,18 @@ export function BankrollSimSection() {
       {isLoading || !data ? (
         <div className="text-sm text-muted-foreground py-8 text-center">Calculando…</div>
       ) : (
+        <>
+          <div className="mb-3 p-3 bg-muted/30 rounded-xl text-[11px] leading-relaxed">
+            <div className="font-bold text-foreground mb-1">¿Cómo se calcula?</div>
+            <div className="text-muted-foreground">
+              Tomamos cada cartera de los últimos 90 días que ya tiene resultado. Por cada
+              sorteo restamos <b>{money(costoPorJugada)}</b> (lo que apostarías a los {cfg.numerosPorCartera} números) y
+              si el ganador estaba en tu cartera te sumamos <b>{money(premio)}</b>.
+              <br />
+              <b>Izquierda</b>: cuenta los <b>{data.all.jugadas}</b> sorteos disponibles.{" "}
+              <b>Derecha</b>: solo los <b>{data.filtered.jugadas}</b> sorteos donde el motor marcó confianza ≥ {cfg.scoreMin}.
+            </div>
+          </div>
         <div className="grid md:grid-cols-2 gap-4">
           <SimCard
             title="Si juegas SIEMPRE"
@@ -104,6 +117,7 @@ export function BankrollSimSection() {
             highlight
           />
         </div>
+        </>
       )}
 
       {data && data.all.jugadas < 30 && (
@@ -251,6 +265,43 @@ function SimCard({
             ? `Aciertas ${((sim.hitRate - breakEven) * 100).toFixed(1)}% más de lo necesario para ganar`
             : `Te falta acertar ${((breakEven - sim.hitRate) * 100).toFixed(1)}% más para no perder`}
       </div>
+
+      {sim.jugadas > 0 && (
+        <details className="mt-2 group">
+          <summary className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none">
+            <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+            Ver el cálculo paso a paso
+          </summary>
+          <div className="mt-2 p-3 bg-muted/40 rounded-lg text-[11px] font-mono leading-relaxed space-y-1">
+            <div className="font-sans font-bold text-muted-foreground text-[10px] uppercase mb-1">
+              Lo que entra al cálculo
+            </div>
+            <div>• Sorteos jugados: <b>{fmt(sim.jugadas)}</b></div>
+            <div>• Aciertos: <b>{fmt(sim.aciertos)}</b> · Fallos: <b>{fmt(sim.jugadas - sim.aciertos)}</b></div>
+            <div className="font-sans font-bold text-muted-foreground text-[10px] uppercase mt-2 mb-1">
+              Gastos
+            </div>
+            <div>{fmt(sim.jugadas)} sorteos × {money(cfg.numerosPorCartera * cfg.apuestaPorNumero)} = <b>{money(sim.invertido)}</b></div>
+            <div className="font-sans font-bold text-muted-foreground text-[10px] uppercase mt-2 mb-1">
+              Cobros
+            </div>
+            <div>{fmt(sim.aciertos)} aciertos × {money(cfg.apuestaPorNumero * cfg.pago)} = <b>{money(sim.cobrado)}</b></div>
+            <div className="font-sans font-bold text-muted-foreground text-[10px] uppercase mt-2 mb-1">
+              Resultado
+            </div>
+            <div>
+              {money(sim.cobrado)} − {money(sim.invertido)} ={" "}
+              <b className={positive ? "text-emerald-600" : "text-red-600"}>
+                {positive ? "+" : ""}{money(sim.pl)}
+              </b>
+            </div>
+            <div>
+              Saldo: {money(cfg.fondoInicial)} {positive ? "+" : "−"} {money(Math.abs(sim.pl))} ={" "}
+              <b>{money(sim.balanceFinal)}</b>
+            </div>
+          </div>
+        </details>
+      )}
     </div>
   );
 }
