@@ -4,6 +4,7 @@ import {
   buildCartera,
   type CarteraPattern,
   type CarteraRule,
+  type CarteraHistoricalStats,
 } from "@/lib/carteraEngine";
 import type { Draw } from "@/hooks/useDraws";
 
@@ -43,7 +44,12 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
         const skipped = horasTodas.length - horas.length;
 
         // 2. Inputs comunes (una sola lectura)
-        const [{ data: rawDraws, error: e1 }, { data: rawRules, error: e2 }, { data: rawPatterns, error: e3 }] =
+        const [
+          { data: rawDraws, error: e1 },
+          { data: rawRules, error: e2 },
+          { data: rawPatterns, error: e3 },
+          { data: rawStats, error: e4 },
+        ] =
           await Promise.all([
             supabaseAdmin
               .from("draws")
@@ -55,10 +61,15 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
               .from("patterns")
               .select("id,nombre,resultado_esperado,efectividad,hora,activa,estado")
               .eq("activa", true),
+            // Stats históricas: usamos periodo=0 (todo el historial) por defecto.
+            supabaseAdmin
+              .from("lottery_stats")
+              .select("hora,numero,frecuencia,dias_vencido,total_sorteos")
+              .eq("periodo", 0),
           ]);
-        if (e1 || e2 || e3) {
+        if (e1 || e2 || e3 || e4) {
           return Response.json(
-            { ok: false, error: e1?.message ?? e2?.message ?? e3?.message },
+            { ok: false, error: e1?.message ?? e2?.message ?? e3?.message ?? e4?.message },
             { status: 500 },
           );
         }
@@ -71,6 +82,21 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
           sorteo_nombre: r.lottery_draws.nombre,
         }));
 
+        // Indexar stats por hora para lookup O(1)
+        const statsByHora = new Map<string, CarteraHistoricalStats>();
+        for (const row of rawStats ?? []) {
+          let entry = statsByHora.get(row.hora);
+          if (!entry) {
+            entry = { frecuencias: {}, vencidos: {}, totalSorteos: row.total_sorteos ?? 0 };
+            statsByHora.set(row.hora, entry);
+          }
+          entry.frecuencias[row.numero] = row.frecuencia;
+          if (row.dias_vencido != null) entry.vencidos[row.numero] = row.dias_vencido;
+          if (row.total_sorteos && row.total_sorteos > entry.totalSorteos) {
+            entry.totalSorteos = row.total_sorteos;
+          }
+        }
+
         // 3. Generar/upsert por hora
         const generated: Array<{ hora: string; internalScore: number }> = [];
         const errors: Array<{ hora: string; error: string }> = [];
@@ -81,6 +107,7 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
               (rawRules ?? []) as CarteraRule[],
               (rawPatterns ?? []) as CarteraPattern[],
               hora,
+              statsByHora.get(hora),
             );
             const { error } = await supabaseAdmin.from("carteras").upsert(
               [{
