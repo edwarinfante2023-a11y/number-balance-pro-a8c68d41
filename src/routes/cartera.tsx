@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, Flame, Gauge } from "lucide-react";
+import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, XCircle, MinusCircle, Flame, Gauge, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useGenerateCartera, useCarteraDelDia, useCarteraStats, useCarterasDelDia } from "@/hooks/useCartera";
 import { useLotteryDraws } from "@/hooks/useLotteries";
@@ -213,6 +213,65 @@ function CarteraPage() {
             Aún no hay carteras generadas hoy. El cron horario las arma a los <b>:02</b> de cada hora.
           </div>
         ) : (
+          <>
+          {(() => {
+            // Resumen demo del día: apuesta = $1 por número (25 por cartera), payout = 70x
+            const APUESTA = 1;
+            const PAYOUT = 70;
+            const evaluadas = (carterasHoy.data as any[]).filter((c) => {
+              const r = Array.isArray(c.cartera_resultados) ? c.cartera_resultados[0] : c.cartera_resultados;
+              return r?.acierto !== undefined && r?.acierto !== null;
+            });
+            const aciertos = evaluadas.filter((c) => {
+              const r = Array.isArray(c.cartera_resultados) ? c.cartera_resultados[0] : c.cartera_resultados;
+              return r.acierto === true;
+            }).length;
+            const apostado = evaluadas.length * 25 * APUESTA;
+            const cobrado = aciertos * PAYOUT * APUESTA;
+            const pnl = cobrado - apostado;
+            const roi = apostado > 0 ? (pnl / apostado) * 100 : 0;
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                <div className="rounded-xl border border-black/[0.04] bg-white p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Carteras hoy</div>
+                  <div className="mt-1 text-[20px] font-black tabular-nums">{(carterasHoy.data as any[]).length}</div>
+                  <div className="text-[11px] text-muted-foreground">{evaluadas.length} evaluadas · {aciertos} aciertos</div>
+                </div>
+                <div className="rounded-xl border border-black/[0.04] bg-white p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Hit-rate hoy</div>
+                  <div className="mt-1 text-[20px] font-black tabular-nums">
+                    {evaluadas.length > 0 ? `${((aciertos / evaluadas.length) * 100).toFixed(0)}%` : "—"}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">baseline 25%</div>
+                </div>
+                <div className="rounded-xl border border-black/[0.04] bg-white p-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Apostado / Cobrado</div>
+                  <div className="mt-1 text-[20px] font-black tabular-nums">${apostado} / ${cobrado}</div>
+                  <div className="text-[11px] text-muted-foreground">$1 por número · pago 70×</div>
+                </div>
+                <div className={cn(
+                  "rounded-xl border p-3",
+                  pnl > 0 ? "bg-emerald-50 border-emerald-200" :
+                  pnl < 0 ? "bg-rose-50 border-rose-200" :
+                  "bg-white border-black/[0.04]",
+                )}>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">P&amp;L demo</div>
+                  <div className={cn(
+                    "mt-1 text-[20px] font-black tabular-nums",
+                    pnl > 0 ? "text-emerald-700" : pnl < 0 ? "text-rose-700" : "text-foreground",
+                  )}>
+                    {pnl >= 0 ? "+" : ""}${pnl}
+                  </div>
+                  <div className={cn(
+                    "text-[11px] font-bold",
+                    pnl > 0 ? "text-emerald-700" : pnl < 0 ? "text-rose-700" : "text-muted-foreground",
+                  )}>
+                    ROI {roi >= 0 ? "+" : ""}{roi.toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           <div className="overflow-x-auto -mx-2">
             <table className="w-full text-[13px]">
               <thead>
@@ -224,6 +283,9 @@ function CarteraPage() {
                   <th className="px-3 py-2">Gap</th>
                   <th className="px-3 py-2">Sorteos hora</th>
                   <th className="px-3 py-2">Generada</th>
+                  <th className="px-3 py-2">Resultado</th>
+                  <th className="px-3 py-2">Ganador</th>
+                  <th className="px-3 py-2 text-right">P&amp;L</th>
                   <th className="px-3 py-2">Acción</th>
                 </tr>
               </thead>
@@ -239,6 +301,20 @@ function CarteraPage() {
                   .sort((a, b) => b.score - a.score)
                   .map(({ c, conf, score }) => {
                     const tier = score >= 70 ? "alta" : score >= 50 ? "media" : "baja";
+                    const res = Array.isArray(c.cartera_resultados) ? c.cartera_resultados[0] : c.cartera_resultados;
+                    const acierto: boolean | null = res?.acierto ?? null;
+                    const ganador: number | null = res?.numero_ganador ?? null;
+                    // Posición del ganador rankeada por score
+                    let posScore: number | null = null;
+                    if (acierto === true && ganador !== null && c.scores) {
+                      const ranked = Object.entries(c.scores as Record<string, number>)
+                        .map(([n, s]) => ({ n: Number(n), s: Number(s) }))
+                        .sort((a, b) => b.s - a.s || a.n - b.n);
+                      const idx = ranked.findIndex((x) => x.n === ganador);
+                      if (idx >= 0) posScore = idx + 1;
+                    }
+                    // P&L demo: $1 por número (25), payout 70x si pega
+                    const pnlRow = acierto === true ? 70 - 25 : acierto === false ? -25 : null;
                     return (
                       <tr
                         key={c.id}
@@ -269,6 +345,47 @@ function CarteraPage() {
                             : "—"}
                         </td>
                         <td className="px-3 py-2.5">
+                          {acierto === true ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                              <CheckCircle2 className="size-3.5" /> Acierto
+                            </span>
+                          ) : acierto === false ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600">
+                              <XCircle className="size-3.5" /> Falló
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground/70">
+                              <MinusCircle className="size-3.5" /> Pendiente
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {ganador !== null ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className={cn(
+                                "tabular-nums font-black",
+                                acierto === true ? "text-emerald-700" : "text-foreground",
+                              )}>
+                                {String(ganador).padStart(2, "0")}
+                              </span>
+                              {posScore !== null && (
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                                  #{posScore}/25
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground/50">—</span>
+                          )}
+                        </td>
+                        <td className={cn(
+                          "px-3 py-2.5 text-right tabular-nums font-black",
+                          pnlRow === null ? "text-muted-foreground/50" :
+                          pnlRow > 0 ? "text-emerald-700" : "text-rose-600",
+                        )}>
+                          {pnlRow === null ? "—" : `${pnlRow > 0 ? "+" : ""}$${pnlRow}`}
+                        </td>
+                        <td className="px-3 py-2.5">
                           <button
                             onClick={() => setHora(c.hora)}
                             className="h-7 px-3 rounded-lg bg-muted hover:bg-muted/70 text-[11px] font-bold transition"
@@ -282,6 +399,7 @@ function CarteraPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 
