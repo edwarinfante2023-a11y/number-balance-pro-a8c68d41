@@ -1,65 +1,92 @@
 ## Objetivo
-Saber **qué señal del motor está aportando más aciertos reales** — frecuencia por hora, balance, reglas o patrones — para poder subir/bajar pesos de forma informada.
+Que el sistema sepa cuándo un número de la cartera salió en **2do** o **3er** lugar (no solo 1ro), para ver cobros adicionales (pagos 10x y 4x). **La lógica de generación y evaluación principal sigue basada solo en el 1er premio** — los otros dos son métricas extra, no afectan scoring, patrones, ni alertas.
 
-## Cómo funciona la atribución (concepto)
+Bonus: pagos editables desde Configuración (hoy hardcoded 70/25).
 
-Cuando una cartera acierta, el `numero_ganador` es uno de los 25 elegidos. Ese número tiene guardado en `carteras.contexto.reasons["N"]` un array tipo:
+---
 
+## 1. Datos: capturar los 3 premios
+
+El RSS ya trae los 3 (`: XX-YY-ZZ`) — solo extraemos el 1ro hoy.
+
+**Cambios:**
+- `supabase/functions/sync-web/index.ts`: nueva función `extractAllPrizes(title) → {primero, segundo, tercero}`. Sigue insertando `draws.numero = primero` (sin tocar la lógica), pero guarda los 3 en `draws.extra: { segundo, tercero }`.
+- Migración mínima: ninguna en `draws` (ya tiene `extra: jsonb`).
+
+## 2. Schema: ampliar `cartera_resultados`
+
+Migración idempotente:
+```sql
+ALTER TABLE public.cartera_resultados
+  ADD COLUMN IF NOT EXISTS numero_segundo INTEGER,
+  ADD COLUMN IF NOT EXISTS numero_tercero INTEGER,
+  ADD COLUMN IF NOT EXISTS acierto_segundo BOOLEAN,
+  ADD COLUMN IF NOT EXISTS acierto_tercero BOOLEAN;
 ```
-["+freq hora ×7", "+balance BAJO", "+regla X", "+patrón Y"]
-```
+Nullables → backfill no requerido. `acierto` (1ro) sigue igual.
 
-Cada string empieza con un **prefijo identificable** (`+freq`, `+balance`, `+regla`, `+patrón`). Agrupando por prefijo a través de todos los aciertos históricos, se puede calcular:
+## 3. Evaluador
 
-- **Aciertos atribuidos por señal** — cuántas veces cada señal "tocó" un número ganador
-- **Peso de score atribuido** — qué % del score del ganador venía de cada señal
-- **Hit-rate por señal** — de las veces que una señal estaba presente en el top 25, cuántas pegó
+`src/routes/api/public/hooks/evaluate-results.ts`:
+- Leer `draws.extra` además de `numero`.
+- Para cada cartera, calcular `acierto_segundo` y `acierto_tercero` (numeros incluye el segundo/tercero respectivamente).
+- Upsert con las 4 columnas nuevas.
+- **No cambia** ningún cálculo de patrones, scoring, ni el `acierto` principal.
 
-Esto NO requiere cambiar el motor — solo leer datos ya guardados.
+## 4. Configuración de pagos
 
-## Cambios
-
-### 1. Hook nuevo `useAttributionStats`
-Archivo: `src/hooks/useAttributionStats.ts`
-
-Query que cruza `cartera_resultados` (acierto=true) con `carteras.contexto.reasons` y `carteras.scores`. Por cada acierto:
-- Lee `reasons[String(numero_ganador)]`
-- Clasifica cada string por prefijo en una de 4 categorías: `freq | balance | regla | patron`
-- Acumula contadores
-
-Devuelve:
-```ts
-{
-  totalAciertos: number,
-  porSenal: Array<{
-    senal: 'freq'|'balance'|'regla'|'patron',
-    aciertosTocados: number,    // # aciertos donde esta señal contribuyó
-    pctAciertos: number,         // % de aciertos donde estaba presente
-    presenciasEnTop: number,     // # veces que estaba en algún número del top 25 (denominador)
-    hitRateSenal: number,        // aciertosTocados / presenciasEnTop
-  }>,
-  topPatrones: Array<{ nombre: string, aciertos: number }>,  // patrones específicos más efectivos
-  topReglas:   Array<{ nombre: string, aciertos: number }>,
-}
+Nueva clave en `settings`: `payouts` con shape:
+```json
+{ "apuesta": 25, "pago1": 70, "pago2": 10, "pago3": 4 }
 ```
 
-### 2. Componente nuevo `AttributionSection`
-Archivo: `src/components/AttributionSection.tsx`
+- Hook `useSettings` ya lee/escribe `settings`. Agregar getter `usePayouts()`.
+- `src/routes/configuracion.tsx`: nueva sección "Pagos por posición" con 4 inputs numéricos.
+- Reemplazar las constantes hardcoded `APUESTA = 25 / PAYOUT = 70` en:
+  - `src/routes/cartera.tsx`
+  - `src/components/BankrollSimSection.tsx`
+  - `src/hooks/useBankrollSim.ts`
 
-Sección visual con:
-- **4 cards tipo KPI** (una por señal): icono + nombre + `% aciertos` + barra de progreso + hit-rate vs baseline 25%
-- **Mini-leaderboard**: top 5 patrones y top 5 reglas que más aciertos tocaron (con su nombre real desde DB)
-- **Insight automático**: una línea tipo *"La señal que más está aportando es **frecuencia por hora** (presente en 80% de tus aciertos, hit-rate 32%)"*
+## 5. UI: mostrar 2do/3ro
 
-Usa solo tokens semánticos (`bg-card`, `text-primary`, etc.) — sin colores hardcodeados.
+**`src/routes/cartera.tsx`** (tabla del día por hora):
+- Nuevas columnas chiquitas: `2do` y `3ro` con badge ✓/✗ + número ganador en cada posición.
+- KPI extra arriba: "Cobrado extra (2do+3ro): $X" usando los pagos configurados.
 
-### 3. Integración
-Agregar `<AttributionSection />` en `/cartera`, debajo de las KPIs de rentabilidad que ya existen. Banner sutil si `totalAciertos < 5`: *"Necesitamos más aciertos evaluados para que estos números sean estables."*
+**`src/components/BankrollSimSection.tsx`**:
+- En el desglose, agregar:
+  - `Aciertos 2do: N × pago2 = $X`
+  - `Aciertos 3ro: N × pago3 = $X`
+  - `P&L total = (cobro1 + cobro2 + cobro3) − costo`
+- En la tabla "ver una por una", agregar 2 columnas (2do, 3ro) con ✓/✗.
+- Filtro tabla: agregar opciones "✓ 2do" y "✓ 3ro".
 
-## Lo que NO incluye este plan
-- Cambiar pesos del motor (lo dejamos como paso 2 cuando ya veas qué señal manda)
-- Cambios al schema de DB (todo se calcula desde campos existentes)
-- Backfill de carteras viejas
+**`src/hooks/useBankrollSim.ts`**:
+- Traer `acierto_segundo` y `acierto_tercero`.
+- Calcular `cobrado_total = a1*pago1 + a2*pago2 + a3*pago3`, `pl` por fila combinando los 3.
 
-## Resultado esperado
-En `/cartera` vas a ver de un vistazo: *"de los 2 aciertos de hoy, el ganador venía con score alto principalmente por **freq hora + patrón [Auto: 3x ALTO -> BAJO]**"*. Cuando lleguen 20-30 aciertos, tendrás señal estadística clara de qué subir y qué bajar.
+## 6. Backfill (opcional, recomendado)
+
+Script one-off: para draws de los últimos 30 días, re-fetch RSS o (más simple) dejar que se llenen hacia adelante. Para evaluaciones existentes, correr el evaluador una vez con la nueva lógica → re-evalúa todo (es upsert). Las carteras viejas tendrán `numero_segundo/tercero = null` hasta que llegue nueva data — eso está bien, aparecen como "—" en la UI.
+
+---
+
+## Lo que NO cambia (importante)
+- `carteraEngine.ts` — generación intacta.
+- Patrones, reglas, alertas, oportunidades — siguen leyendo solo `acierto` (1ro).
+- `cartera_resultados.acierto` sigue siendo el "acierto real" para todo el sistema.
+
+## Archivos tocados
+- `supabase/migrations/<nuevo>.sql` (4 columnas nuevas)
+- `supabase/functions/sync-web/index.ts` (extraer 3)
+- `src/routes/api/public/hooks/evaluate-results.ts` (evaluar 3)
+- `src/hooks/useSettings.ts` (helper payouts)
+- `src/routes/configuracion.tsx` (UI pagos)
+- `src/hooks/useBankrollSim.ts` (P&L combinado)
+- `src/components/BankrollSimSection.tsx` (UI desglose + tabla)
+- `src/routes/cartera.tsx` (columnas 2do/3ro + KPI)
+
+## Riesgos / edge cases
+- RSS sin 2do/3ro → guardamos null, UI muestra "—".
+- Patterns/cron viejos → no tocados, siguen funcionando igual.
+- Pagos viejos (eventos ya evaluados) se recalculan en frontend con los pagos actuales — si cambias pagos, los KPI históricos cambian. Aceptable para MVP.

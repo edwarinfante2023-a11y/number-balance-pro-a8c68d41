@@ -59,24 +59,36 @@ export type Database = {
       cartera_resultados: {
         Row: {
           acierto: boolean
+          acierto_segundo: boolean | null
+          acierto_tercero: boolean | null
           cartera_id: string
           evaluated_at: string
           id: string
           numero_ganador: number
+          numero_segundo: number | null
+          numero_tercero: number | null
         }
         Insert: {
           acierto: boolean
+          acierto_segundo?: boolean | null
+          acierto_tercero?: boolean | null
           cartera_id: string
           evaluated_at?: string
           id?: string
           numero_ganador: number
+          numero_segundo?: number | null
+          numero_tercero?: number | null
         }
         Update: {
           acierto?: boolean
+          acierto_segundo?: boolean | null
+          acierto_tercero?: boolean | null
           cartera_id?: string
           evaluated_at?: string
           id?: string
           numero_ganador?: number
+          numero_segundo?: number | null
+          numero_tercero?: number | null
         }
         Relationships: [
           {
