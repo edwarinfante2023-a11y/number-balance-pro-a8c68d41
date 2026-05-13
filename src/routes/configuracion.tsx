@@ -37,6 +37,10 @@ import {
   useUpdateBalanceAlertsConfig,
   defaultBalanceAlerts,
   type BalanceAlertsConfig,
+  usePayouts,
+  useUpdatePayouts,
+  defaultPayouts,
+  type PayoutsConfig,
 } from "@/hooks/useSettings";
 import {
   useLotteries,
