@@ -223,6 +223,7 @@ function CarteraPage() {
                   <th className="px-3 py-2">Top μ</th>
                   <th className="px-3 py-2">Gap</th>
                   <th className="px-3 py-2">Sorteos hora</th>
+                  <th className="px-3 py-2">Generada</th>
                   <th className="px-3 py-2">Acción</th>
                 </tr>
               </thead>
@@ -259,6 +260,13 @@ function CarteraPage() {
                         </td>
                         <td className="px-3 py-2.5 tabular-nums text-muted-foreground">
                           {c.contexto?.totalDrawsHora ?? 0}
+                        </td>
+                        <td className="px-3 py-2.5 tabular-nums text-muted-foreground text-[11px]">
+                          {c.created_at
+                            ? new Date(c.created_at).toLocaleString("es-AR", {
+                                day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
+                              })
+                            : "—"}
                         </td>
                         <td className="px-3 py-2.5">
                           <button
