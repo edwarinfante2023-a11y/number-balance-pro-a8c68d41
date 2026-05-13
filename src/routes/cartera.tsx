@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, XCircle, MinusCircle, Flame, Gauge, RefreshCw } from "lucide-react";
+import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, XCircle, MinusCircle, Flame, Gauge, RefreshCw, Copy } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useGenerateCartera, useCarteraDelDia, useCarteraStats, useCarterasDelDia } from "@/hooks/useCartera";
 import { useLotteryDraws } from "@/hooks/useLotteries";
@@ -218,6 +218,22 @@ function CarteraPage() {
         {/* Grid de números */}
         {cartera.data ? (
           <div className="mt-6">
+            <div className="flex justify-end mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const txt = numeros.map((n) => String(n).padStart(2, "0")).join(", ");
+                  navigator.clipboard.writeText(txt).then(
+                    () => toast.success(`${numeros.length} números copiados`),
+                    () => toast.error("No se pudo copiar"),
+                  );
+                }}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-muted hover:bg-muted/70 text-foreground text-[12px] font-bold transition"
+              >
+                <Copy className="size-3.5" />
+                Copiar números
+              </button>
+            </div>
             <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-[repeat(13,minmax(0,1fr))] gap-2">
               {numeros.map((n) => {
                 const s = scoresMap[String(n)] ?? 0;
