@@ -439,10 +439,19 @@ function SimCard({
       )}
 
       {sim.rows.length > 0 && (
-        <details className="mt-1 group">
-          <summary className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none">
+        <details
+          className="mt-1 group"
+          open={tablaAbierta}
+          id={`tabla-${title}`}
+        >
+          <summary
+            onClick={(e) => { e.preventDefault(); setTablaAbierta((v) => !v); }}
+            className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none"
+          >
             <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
-            Ver las {fmt(sim.rows.length)} jugadas una por una ({fmt(sim.aciertos)} ✓ · {fmt(fallos)} ✗)
+            {filtroFecha
+              ? `Jugadas del ${filtroFecha} (${filas.length})`
+              : `Ver las ${fmt(sim.rows.length)} jugadas una por una (${fmt(sim.aciertos)} ✓ · ${fmt(fallos)} ✗)`}
           </summary>
           <div className="flex items-center gap-1.5 mt-2 mb-1 flex-wrap">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mr-1">Mostrar:</span>
@@ -485,6 +494,7 @@ function SimCard({
                     saldo += r.pl;
                     if (filtroTabla === "aciertos" && !r.acierto) return null;
                     if (filtroTabla === "fallos" && r.acierto) return null;
+                    if (filtroFecha && r.fecha !== filtroFecha) return null;
                     return (
                       <tr key={i} className={`border-t border-border/50 ${r.acierto ? "bg-emerald-50/40 dark:bg-emerald-950/20" : ""}`}>
                         <td className="px-2 py-1">{r.fecha}</td>
