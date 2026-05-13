@@ -60,18 +60,36 @@ function CarteraPage() {
   const carterasHoy = useCarterasDelDia(fechaTabla);
 
   const [reevalLoading, setReevalLoading] = useState(false);
+  const [reevalStep, setReevalStep] = useState(0);
+  const [reevalElapsed, setReevalElapsed] = useState(0);
+  const reevalSteps = ["Iniciando", "Evaluando carteras vs sorteos", "Recalculando 2do/3ro", "Refrescando tabla"];
+
+  useEffect(() => {
+    if (!reevalLoading) return;
+    const start = Date.now();
+    const t = setInterval(() => setReevalElapsed(Math.floor((Date.now() - start) / 1000)), 200);
+    return () => clearInterval(t);
+  }, [reevalLoading]);
+
   const onReevaluate = async () => {
     setReevalLoading(true);
+    setReevalStep(0);
+    setReevalElapsed(0);
+    const stepTimer = setTimeout(() => setReevalStep(1), 200);
+    const stepTimer2 = setTimeout(() => setReevalStep(2), 1500);
     try {
       const res = await fetch("/api/public/hooks/evaluate-results", { method: "POST" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
       const evaluadas = json?.evaluadas ?? json?.updated ?? 0;
-      toast.success(`Evaluación re-ejecutada · ${evaluadas} carteras actualizadas`);
+      setReevalStep(3);
       await Promise.all([cartera.refetch?.(), stats.refetch?.(), carterasHoy.refetch?.()]);
+      toast.success(`Evaluación re-ejecutada · ${evaluadas} carteras actualizadas`);
     } catch (e: any) {
       toast.error(e?.message ?? "Error re-evaluando");
     } finally {
+      clearTimeout(stepTimer);
+      clearTimeout(stepTimer2);
       setReevalLoading(false);
     }
   };
@@ -144,6 +162,24 @@ function CarteraPage() {
             </div>
           )}
         </div>
+
+        {reevalLoading && (
+          <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-center justify-between text-[12px] font-bold mb-2">
+              <span className="inline-flex items-center gap-2 text-primary">
+                <Loader2 className="size-3.5 animate-spin" />
+                Paso {Math.min(reevalStep + 1, reevalSteps.length)}/{reevalSteps.length} · {reevalSteps[Math.min(reevalStep, reevalSteps.length - 1)]}
+              </span>
+              <span className="text-muted-foreground tabular-nums">{reevalElapsed}s</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-primary/10 overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500 ease-out"
+                style={{ width: `${Math.round(((reevalStep + 1) / reevalSteps.length) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Metadata de generación */}
         {cartera.data && (
