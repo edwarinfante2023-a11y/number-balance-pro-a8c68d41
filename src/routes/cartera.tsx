@@ -113,6 +113,40 @@ function CarteraPage() {
           )}
         </div>
 
+        {/* Metadata de generación */}
+        {cartera.data && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-primary/10 text-primary font-bold">
+              <Sparkles className="size-3" />
+              Generada {new Date((cartera.data as any).created_at).toLocaleString("es-AR", {
+                day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
+              })}
+            </span>
+            <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-muted text-muted-foreground font-bold">
+              Sorteo {(cartera.data as any).hora} · {new Date((cartera.data as any).fecha + "T00:00:00").toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" })}
+            </span>
+            {(() => {
+              const created = new Date((cartera.data as any).created_at);
+              const [hh, mm] = String((cartera.data as any).hora).split(":").map(Number);
+              const draw = new Date((cartera.data as any).fecha + "T00:00:00");
+              draw.setHours(hh ?? 0, mm ?? 0, 0, 0);
+              const diffMin = Math.round((draw.getTime() - created.getTime()) / 60000);
+              if (diffMin >= 0) {
+                return (
+                  <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">
+                    {diffMin} min antes del sorteo
+                  </span>
+                );
+              }
+              return (
+                <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-amber-50 text-amber-700 font-bold">
+                  {Math.abs(diffMin)} min después del sorteo
+                </span>
+              );
+            })()}
+          </div>
+        )}
+
         {/* Grid de números */}
         {cartera.data ? (
           <div className="mt-6">
