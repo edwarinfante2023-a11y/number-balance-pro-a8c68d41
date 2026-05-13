@@ -60,18 +60,36 @@ function CarteraPage() {
   const carterasHoy = useCarterasDelDia(fechaTabla);
 
   const [reevalLoading, setReevalLoading] = useState(false);
+  const [reevalStep, setReevalStep] = useState(0);
+  const [reevalElapsed, setReevalElapsed] = useState(0);
+  const reevalSteps = ["Iniciando", "Evaluando carteras vs sorteos", "Recalculando 2do/3ro", "Refrescando tabla"];
+
+  useEffect(() => {
+    if (!reevalLoading) return;
+    const start = Date.now();
+    const t = setInterval(() => setReevalElapsed(Math.floor((Date.now() - start) / 1000)), 200);
+    return () => clearInterval(t);
+  }, [reevalLoading]);
+
   const onReevaluate = async () => {
     setReevalLoading(true);
+    setReevalStep(0);
+    setReevalElapsed(0);
+    const stepTimer = setTimeout(() => setReevalStep(1), 200);
+    const stepTimer2 = setTimeout(() => setReevalStep(2), 1500);
     try {
       const res = await fetch("/api/public/hooks/evaluate-results", { method: "POST" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
       const evaluadas = json?.evaluadas ?? json?.updated ?? 0;
-      toast.success(`Evaluación re-ejecutada · ${evaluadas} carteras actualizadas`);
+      setReevalStep(3);
       await Promise.all([cartera.refetch?.(), stats.refetch?.(), carterasHoy.refetch?.()]);
+      toast.success(`Evaluación re-ejecutada · ${evaluadas} carteras actualizadas`);
     } catch (e: any) {
       toast.error(e?.message ?? "Error re-evaluando");
     } finally {
+      clearTimeout(stepTimer);
+      clearTimeout(stepTimer2);
       setReevalLoading(false);
     }
   };
