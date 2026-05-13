@@ -460,6 +460,7 @@ function SimCard({
           className="mt-1 group"
           open={tablaAbierta}
           id={`tabla-${title}`}
+          ref={tablaRef}
         >
           <summary
             onClick={(e) => { e.preventDefault(); setTablaAbierta((v) => !v); }}
