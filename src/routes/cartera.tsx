@@ -55,7 +55,7 @@ function CarteraPage() {
   const [fechaTabla, setFechaTabla] = useState<string>(todayStr);
 
   const generate = useGenerateCartera();
-  const cartera = useCarteraDelDia(hora);
+  const cartera = useCarteraDelDia(hora, fechaTabla);
   const stats = useCarteraStats(windowDays);
   const carterasHoy = useCarterasDelDia(fechaTabla);
 
@@ -411,7 +411,14 @@ function CarteraPage() {
                         </td>
                         <td className="px-3 py-2.5">
                           <button
-                            onClick={() => setHora(c.hora)}
+                            onClick={() => {
+                              setHora(c.hora);
+                              if (typeof window !== "undefined") {
+                                requestAnimationFrame(() =>
+                                  window.scrollTo({ top: 0, behavior: "smooth" }),
+                                );
+                              }
+                            }}
                             className="h-7 px-3 rounded-lg bg-muted hover:bg-muted/70 text-[11px] font-bold transition"
                           >
                             Ver
