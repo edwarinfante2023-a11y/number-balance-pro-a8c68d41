@@ -296,6 +296,39 @@ export type Database = {
           },
         ]
       }
+      lottery_stats: {
+        Row: {
+          dias_vencido: number | null
+          frecuencia: number
+          hora: string
+          id: string
+          numero: number
+          periodo: number
+          total_sorteos: number | null
+          updated_at: string
+        }
+        Insert: {
+          dias_vencido?: number | null
+          frecuencia?: number
+          hora: string
+          id?: string
+          numero: number
+          periodo: number
+          total_sorteos?: number | null
+          updated_at?: string
+        }
+        Update: {
+          dias_vencido?: number | null
+          frecuencia?: number
+          hora?: string
+          id?: string
+          numero?: number
+          periodo?: number
+          total_sorteos?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       opportunity_alerts: {
         Row: {
           cartera_id: string
