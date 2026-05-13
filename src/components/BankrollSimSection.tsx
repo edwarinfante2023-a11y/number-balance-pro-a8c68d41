@@ -60,36 +60,49 @@ export function BankrollSimSection() {
       <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
         <div>
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <Wallet className="w-5 h-5" /> Simulación de banca
+            <Wallet className="w-5 h-5" /> ¿Cuánto dinero ganaría?
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            ¿Esto da plata? — backtest sobre carteras ya evaluadas (últimos 90 días).
+            Simulamos cómo te habría ido jugando estas carteras los últimos 90 días.
           </p>
         </div>
         <div className="text-xs text-right">
-          <div>Costo por jugada: <span className="font-semibold">{money(costoPorJugada)}</span></div>
-          <div>Premio por acierto: <span className="font-semibold">{money(premio)}</span></div>
+          <div>Gastas por sorteo: <span className="font-semibold">{money(costoPorJugada)}</span></div>
+          <div>Cobras si aciertas: <span className="font-semibold">{money(premio)}</span></div>
           <div>
-            Break-even: <span className="font-semibold">{(breakEven * 100).toFixed(1)}%</span> hit rate
+            Para no perder: acertar <span className="font-semibold">{(breakEven * 100).toFixed(1)}%</span> de las veces
           </div>
         </div>
       </div>
 
       {/* Config */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 p-3 bg-muted/40 rounded-xl">
-        <Field label="Fondo inicial $" value={cfg.fondoInicial} onChange={upd("fondoInicial")} />
-        <Field label="Apuesta / número $" value={cfg.apuestaPorNumero} onChange={upd("apuestaPorNumero")} />
-        <Field label="Paga banca (×)" value={cfg.pago} onChange={upd("pago")} />
-        <Field label="Nums / cartera" value={cfg.numerosPorCartera} onChange={upd("numerosPorCartera")} />
-        <Field label="Score mínimo (filtradas)" value={cfg.scoreMin} onChange={upd("scoreMin")} />
+        <Field label="Dinero que tienes $" value={cfg.fondoInicial} onChange={upd("fondoInicial")} />
+        <Field label="Apuesta a cada número $" value={cfg.apuestaPorNumero} onChange={upd("apuestaPorNumero")} />
+        <Field label="La banca paga (×)" value={cfg.pago} onChange={upd("pago")} />
+        <Field label="Números por jugada" value={cfg.numerosPorCartera} onChange={upd("numerosPorCartera")} />
+        <Field label="Confianza mínima" value={cfg.scoreMin} onChange={upd("scoreMin")} />
       </div>
 
       {isLoading || !data ? (
         <div className="text-sm text-muted-foreground py-8 text-center">Calculando…</div>
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
-          <SimCard title="Todas las carteras" sub="Como si jugaras todo lo que el motor genera" sim={data.all} cfg={cfg} breakEven={breakEven} />
-          <SimCard title={`Solo confianza ≥ ${cfg.scoreMin}`} sub="Filtrando por internalScore (oportunidades)" sim={data.filtered} cfg={cfg} breakEven={breakEven} highlight />
+          <SimCard
+            title="Si juegas SIEMPRE"
+            sub="Apuestas en cada sorteo que el motor te arma"
+            sim={data.all}
+            cfg={cfg}
+            breakEven={breakEven}
+          />
+          <SimCard
+            title="Si juegas SOLO cuando hay buena señal"
+            sub={`Apuestas solo cuando la confianza es ${cfg.scoreMin} o más`}
+            sim={data.filtered}
+            cfg={cfg}
+            breakEven={breakEven}
+            highlight
+          />
         </div>
       )}
 
@@ -97,8 +110,8 @@ export function BankrollSimSection() {
         <div className="mt-4 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl text-xs">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <span>
-            Muestra chica ({data.all.jugadas} jugadas). Los números son orientativos — necesitás
-            ~50-100 jugadas para que el ROI sea estadísticamente confiable.
+            Pocas jugadas todavía ({data.all.jugadas}). Estos números son una estimación —
+            con 50-100 jugadas la ganancia real será mucho más confiable.
           </span>
         </div>
       )}
@@ -132,6 +145,13 @@ function SimCard({
 }) {
   const positive = sim.pl >= 0;
   const beatsBreakEven = sim.hitRate >= breakEven;
+  const veredicto = sim.jugadas === 0
+    ? "Sin datos"
+    : positive && beatsBreakEven
+      ? "Da ganancia 🟢"
+      : positive
+        ? "Apenas empata 🟡"
+        : "Pierde plata 🔴";
   return (
     <div className={`rounded-2xl p-4 border ${highlight ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
       <div className="flex items-center justify-between mb-3">
@@ -139,24 +159,45 @@ function SimCard({
           <div className="font-bold text-sm">{title}</div>
           <div className="text-[11px] text-muted-foreground">{sub}</div>
         </div>
-        <div className={`flex items-center gap-1 text-sm font-bold ${positive ? "text-emerald-600" : "text-red-600"}`}>
-          {positive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-          {positive ? "+" : ""}{money(sim.pl)}
+        <div className="text-right">
+          <div className={`flex items-center justify-end gap-1 text-base font-bold ${positive ? "text-emerald-600" : "text-red-600"}`}>
+            {positive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            {positive ? "Ganas " : "Pierdes "}{money(Math.abs(sim.pl))}
+          </div>
+          <div className="text-[10px] text-muted-foreground">{veredicto}</div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <Stat label="Balance final" value={money(sim.balanceFinal)} hint={`de ${money(cfg.fondoInicial)}`} />
-        <Stat label="ROI" value={`${(sim.roi * 100).toFixed(1)}%`} positive={sim.roi >= 0} />
-        <Stat label="Jugadas" value={fmt(sim.jugadas)} hint={`${fmt(sim.aciertos)} aciertos`} />
         <Stat
-          label="Hit rate"
-          value={`${(sim.hitRate * 100).toFixed(1)}%`}
-          hint={`break-even ${(breakEven * 100).toFixed(1)}%`}
+          label="Te queda"
+          value={money(sim.balanceFinal)}
+          hint={`empezaste con ${money(cfg.fondoInicial)}`}
+          positive={sim.balanceFinal >= cfg.fondoInicial}
+        />
+        <Stat
+          label="Por cada $100 que apuestas"
+          value={`${sim.roi >= 0 ? "ganas" : "pierdes"} $${Math.abs(sim.roi * 100).toFixed(0)}`}
+          positive={sim.roi >= 0}
+        />
+        <Stat
+          label="Sorteos jugados"
+          value={fmt(sim.jugadas)}
+          hint={`acertaste ${fmt(sim.aciertos)} de ${fmt(sim.jugadas)}`}
+        />
+        <Stat
+          label="Aciertas"
+          value={`${(sim.hitRate * 100).toFixed(0)} de cada 100`}
+          hint={`necesitas ${(breakEven * 100).toFixed(0)} para no perder`}
           positive={beatsBreakEven}
         />
-        <Stat label="Invertido" value={money(sim.invertido)} />
-        <Stat label="Max drawdown" value={money(sim.maxDrawdown)} negative />
+        <Stat label="Total apostado" value={money(sim.invertido)} />
+        <Stat
+          label="Peor bajón"
+          value={money(sim.maxDrawdown)}
+          hint="cuánto llegaste a perder en racha"
+          negative
+        />
       </div>
 
       <Equity points={sim.equity} fondoInicial={cfg.fondoInicial} />
@@ -164,10 +205,10 @@ function SimCard({
       <div className="mt-2 text-[11px] text-muted-foreground flex items-center gap-1">
         <Target className="w-3 h-3" />
         {sim.jugadas === 0
-          ? "Sin jugadas en este filtro"
+          ? "Todavía no hay sorteos para mostrar"
           : beatsBreakEven
-            ? `Le saca ${((sim.hitRate - breakEven) * 100).toFixed(1)} pts al break-even`
-            : `Le falta ${((breakEven - sim.hitRate) * 100).toFixed(1)} pts para break-even`}
+            ? `Aciertas ${((sim.hitRate - breakEven) * 100).toFixed(1)}% más de lo necesario para ganar`
+            : `Te falta acertar ${((breakEven - sim.hitRate) * 100).toFixed(1)}% más para no perder`}
       </div>
     </div>
   );
