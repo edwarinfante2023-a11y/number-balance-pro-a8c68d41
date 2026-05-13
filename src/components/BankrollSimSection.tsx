@@ -305,13 +305,29 @@ function SimCard({
       {porDia.length > 0 && (
         <div className="mb-3 p-3 rounded-xl bg-background/60 border border-border">
           <div className="font-bold text-[10px] uppercase text-muted-foreground mb-2">
-            Aciertos por día ({fmt(sim.aciertos)} de {fmt(sim.jugadas)} en total)
+            Aciertos por día ({fmt(sim.aciertos)} de {fmt(sim.jugadas)} en total) — toca un día para ver sus jugadas
           </div>
           <div className="space-y-1.5">
             {porDia.map((d) => {
               const pct = d.jugadas > 0 ? (d.aciertos / d.jugadas) * 100 : 0;
+              const activo = filtroFecha === d.fecha;
               return (
-                <div key={d.fecha} className="flex items-center gap-2 text-[11px]">
+                <button
+                  key={d.fecha}
+                  type="button"
+                  onClick={() => {
+                    setFiltroFecha(activo ? null : d.fecha);
+                    setFiltroTabla("todos");
+                    setTablaAbierta(true);
+                    // scroll suave hacia la tabla
+                    setTimeout(() => {
+                      document.getElementById(`tabla-${title}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    }, 50);
+                  }}
+                  className={`w-full flex items-center gap-2 text-[11px] p-1.5 rounded-md transition text-left ${
+                    activo ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted/60"
+                  }`}
+                >
                   <span className="font-mono text-muted-foreground w-20 shrink-0">{d.fecha}</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
@@ -323,10 +339,22 @@ function SimCard({
                     <span className="text-emerald-600">{d.aciertos} ✓</span>
                     <span className="text-muted-foreground"> de {d.jugadas}</span>
                   </span>
-                </div>
+                  <span className={`text-[10px] shrink-0 ${activo ? "text-primary font-bold" : "text-muted-foreground/60"}`}>
+                    {activo ? "✕" : "›"}
+                  </span>
+                </button>
               );
             })}
           </div>
+          {filtroFecha && (
+            <button
+              type="button"
+              onClick={() => setFiltroFecha(null)}
+              className="mt-2 text-[10px] text-primary hover:underline"
+            >
+              ✕ Quitar filtro de fecha — ver todos los días
+            </button>
+          )}
         </div>
       )}
 
