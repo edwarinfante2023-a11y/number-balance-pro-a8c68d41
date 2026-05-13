@@ -339,10 +339,7 @@ function SimCard({
                     setFiltroFecha(activo ? null : d.fecha);
                     setFiltroTabla("todos");
                     setTablaAbierta(true);
-                    // scroll suave hacia la tabla
-                    setTimeout(() => {
-                      document.getElementById(`tabla-${title}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                    }, 50);
+                    // El scroll lo dispara el useEffect de [filtroFecha, tablaAbierta]
                   }}
                   className={`w-full flex items-center gap-2 text-[11px] p-1.5 rounded-md transition text-left ${
                     activo ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted/60"
