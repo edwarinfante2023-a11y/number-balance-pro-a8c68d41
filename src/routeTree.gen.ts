@@ -14,6 +14,7 @@ import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
 import { Route as ImportarRouteImport } from './routes/importar'
 import { Route as HistorialRouteImport } from './routes/historial'
+import { Route as EstadoSyncRouteImport } from './routes/estado-sync'
 import { Route as EquilibrioRouteImport } from './routes/equilibrio'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ComparativaRouteImport } from './routes/comparativa'
@@ -52,6 +53,11 @@ const ImportarRoute = ImportarRouteImport.update({
 const HistorialRoute = HistorialRouteImport.update({
   id: '/historial',
   path: '/historial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstadoSyncRoute = EstadoSyncRouteImport.update({
+  id: '/estado-sync',
+  path: '/estado-sync',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EquilibrioRoute = EquilibrioRouteImport.update({
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/equilibrio': typeof EquilibrioRoute
+  '/estado-sync': typeof EstadoSyncRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByTo {
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/equilibrio': typeof EquilibrioRoute
+  '/estado-sync': typeof EstadoSyncRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -183,6 +191,7 @@ export interface FileRoutesById {
   '/comparativa': typeof ComparativaRoute
   '/configuracion': typeof ConfiguracionRoute
   '/equilibrio': typeof EquilibrioRoute
+  '/estado-sync': typeof EstadoSyncRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
   '/oportunidades': typeof OportunidadesRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/comparativa'
     | '/configuracion'
     | '/equilibrio'
+    | '/estado-sync'
     | '/historial'
     | '/importar'
     | '/oportunidades'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/comparativa'
     | '/configuracion'
     | '/equilibrio'
+    | '/estado-sync'
     | '/historial'
     | '/importar'
     | '/oportunidades'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/comparativa'
     | '/configuracion'
     | '/equilibrio'
+    | '/estado-sync'
     | '/historial'
     | '/importar'
     | '/oportunidades'
@@ -270,6 +282,7 @@ export interface RootRouteChildren {
   ComparativaRoute: typeof ComparativaRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   EquilibrioRoute: typeof EquilibrioRoute
+  EstadoSyncRoute: typeof EstadoSyncRoute
   HistorialRoute: typeof HistorialRoute
   ImportarRoute: typeof ImportarRoute
   OportunidadesRoute: typeof OportunidadesRoute
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/historial'
       fullPath: '/historial'
       preLoaderRoute: typeof HistorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estado-sync': {
+      id: '/estado-sync'
+      path: '/estado-sync'
+      fullPath: '/estado-sync'
+      preLoaderRoute: typeof EstadoSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/equilibrio': {
@@ -430,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComparativaRoute: ComparativaRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   EquilibrioRoute: EquilibrioRoute,
+  EstadoSyncRoute: EstadoSyncRoute,
   HistorialRoute: HistorialRoute,
   ImportarRoute: ImportarRoute,
   OportunidadesRoute: OportunidadesRoute,
@@ -444,3 +465,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
