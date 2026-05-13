@@ -50,10 +50,14 @@ function CarteraPage() {
 
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(30);
 
+  // Fecha para tabla de carteras (winners). Por defecto: hoy.
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [fechaTabla, setFechaTabla] = useState<string>(todayStr);
+
   const generate = useGenerateCartera();
   const cartera = useCarteraDelDia(hora);
   const stats = useCarteraStats(windowDays);
-  const carterasHoy = useCarterasDelDia();
+  const carterasHoy = useCarterasDelDia(fechaTabla);
 
   const onGenerate = async () => {
     if (!hora) {
