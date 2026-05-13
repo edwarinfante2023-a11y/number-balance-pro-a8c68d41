@@ -195,18 +195,32 @@ function CarteraPage() {
       {/* ─── Dashboard rolling ─────────────────────── */}
       {/* ─── Confianza por hora (hoy) ──────────────── */}
       <section className="surface-raised rounded-[24px] p-6 bg-white/95 backdrop-blur-md shadow-sm border border-black/[0.04]">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-[18px] font-black tracking-tight text-foreground inline-flex items-center gap-2">
               <Gauge className="size-5 text-primary" />
-              Confianza por hora — hoy
+              Confianza por hora {fechaTabla === todayStr ? "— hoy" : `— ${fechaTabla}`}
             </h2>
             <p className="text-[12px] text-muted-foreground mt-0.5">
-              Score interno (0–100) de cada cartera generada hoy. Las marcadas <b>alta</b> son candidatas a oportunidad.
+              Score interno (0–100) de cada cartera del día seleccionado. Las marcadas <b>alta</b> son candidatas a oportunidad.
             </p>
           </div>
-          <div className="text-[11px] text-muted-foreground">
-            Umbrales provisorios · alta ≥ 70 · media 50–69 · baja &lt; 50
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={fechaTabla}
+              max={todayStr}
+              onChange={(e) => setFechaTabla(e.target.value || todayStr)}
+              className="h-9 px-3 rounded-xl border border-border bg-white text-[12px] font-mono font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+            {fechaTabla !== todayStr && (
+              <button
+                onClick={() => setFechaTabla(todayStr)}
+                className="h-9 px-3 rounded-xl bg-muted hover:bg-muted/70 text-[11px] font-bold uppercase tracking-wider transition"
+              >
+                Hoy
+              </button>
+            )}
           </div>
         </div>
 
