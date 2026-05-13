@@ -15,6 +15,8 @@ export type OpportunityHistoryRow = {
   acierto: boolean | null;
   numero_ganador: number | null;
   numeros: number[] | null;
+  cartera_created_at: string | null;
+  scores: Record<string, number> | null;
 };
 
 export function useOpportunityHistory(limit = 200) {
@@ -25,7 +27,7 @@ export function useOpportunityHistory(limit = 200) {
         .from("opportunity_alerts")
         .select(
           `id, fecha, hora, internal_score, gap, top_mean, cartera_id, created_at, notified_at, dismissed_at,
-           carteras:cartera_id ( numeros ),
+           carteras:cartera_id ( numeros, scores, created_at ),
            cartera_resultados:cartera_id ( acierto, numero_ganador )`,
         )
         .order("created_at", { ascending: false })
@@ -52,6 +54,8 @@ export function useOpportunityHistory(limit = 200) {
           acierto: res?.acierto ?? null,
           numero_ganador: res?.numero_ganador ?? null,
           numeros: cart?.numeros ?? null,
+          cartera_created_at: cart?.created_at ?? null,
+          scores: cart?.scores ?? null,
         };
       });
     },
