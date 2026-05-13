@@ -323,6 +323,20 @@ serve(async (req: Request) => {
       } catch (evalErr) {
         summary.detalle.push(`⚠ evaluate-results fallo: ${(evalErr as Error).message}`);
       }
+
+      // Regenerar carteras de horas futuras con la data fresca recién insertada.
+      try {
+        const genUrl = "https://project--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app/api/public/hooks/generate-carteras";
+        const genRes = await fetch(genUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+        const genJson = await genRes.json().catch(() => ({}));
+        summary.detalle.push(`↻ generate-carteras: ${JSON.stringify(genJson)}`);
+      } catch (genErr) {
+        summary.detalle.push(`⚠ generate-carteras fallo: ${(genErr as Error).message}`);
+      }
     }
 
     return new Response(JSON.stringify(summary), {

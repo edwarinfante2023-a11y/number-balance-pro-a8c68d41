@@ -15,8 +15,19 @@ import type { Draw } from "@/hooks/useDraws";
 export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
         const fecha = new Date().toISOString().slice(0, 10);
+        const url = new URL(request.url);
+        const force = url.searchParams.get("force") === "true";
+        const tz = url.searchParams.get("tz") ?? "America/Bogota";
+
+        // Hora actual "HH:mm" en la zona de las loterías (default Colombia).
+        const ahora = new Intl.DateTimeFormat("en-GB", {
+          timeZone: tz,
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(new Date());
 
         // 1. Horas activas (distinct) de lottery_draws activos
         const { data: sorteos, error: eS } = await supabaseAdmin
@@ -26,7 +37,10 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
         if (eS) {
           return Response.json({ ok: false, error: eS.message }, { status: 500 });
         }
-        const horas = Array.from(new Set((sorteos ?? []).map((s) => s.hora))).sort();
+        const horasTodas = Array.from(new Set((sorteos ?? []).map((s) => s.hora))).sort();
+        // Si force=true (cron diario 00:02), generar todo. Si no, solo futuras.
+        const horas = force ? horasTodas : horasTodas.filter((h) => h > ahora);
+        const skipped = horasTodas.length - horas.length;
 
         // 2. Inputs comunes (una sola lectura)
         const [{ data: rawDraws, error: e1 }, { data: rawRules, error: e2 }, { data: rawPatterns, error: e3 }] =
@@ -89,7 +103,11 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
         return Response.json({
           ok: true,
           fecha,
+          ahora,
+          tz,
+          force,
           horas: horas.length,
+          skipped,
           generated,
           errors,
         });
