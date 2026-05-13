@@ -3,7 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useBankrollSim, type BankrollConfig, type SimResult } from "@/hooks/useBankrollSim";
+import { useBankrollSim, type BankrollConfig, type SimResult, type SimRow } from "@/hooks/useBankrollSim";
 import { TrendingUp, TrendingDown, Wallet, Target, AlertTriangle } from "lucide-react";
 
 const STORAGE_KEY = "bankroll-cfg-v1";
@@ -36,6 +36,7 @@ function loadCfg(): BankrollConfig {
 export function BankrollSimSection() {
   const [cfg, setCfg] = useState<BankrollConfig>(DEFAULT_CFG);
   const [hydrated, setHydrated] = useState(false);
+  const [rango, setRango] = useState<number>(90); // días — 9999 = "Todo"
 
   useEffect(() => {
     setCfg(loadCfg());
@@ -45,7 +46,7 @@ export function BankrollSimSection() {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
   }, [cfg, hydrated]);
 
-  const { data, isLoading } = useBankrollSim(cfg, 90);
+  const { data, isLoading } = useBankrollSim(cfg, rango);
 
   const breakEven = useMemo(() => cfg.numerosPorCartera / cfg.pago, [cfg]);
   const costoPorJugada = cfg.numerosPorCartera * cfg.apuestaPorNumero;
@@ -64,7 +65,7 @@ export function BankrollSimSection() {
             <Wallet className="w-5 h-5" /> ¿Cuánto dinero ganaría?
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Simulamos cómo te habría ido jugando estas carteras los últimos 90 días.
+            Simulamos cómo te habría ido jugando estas carteras. <b>1 jugada = 1 sorteo</b> (apuestas a {cfg.numerosPorCartera} números a la vez).
           </p>
         </div>
         <div className="text-xs text-right">
@@ -74,6 +75,29 @@ export function BankrollSimSection() {
             Para no perder: acertar <span className="font-semibold">{(breakEven * 100).toFixed(1)}%</span> de las veces
           </div>
         </div>
+      </div>
+
+      {/* Filtro de rango */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">Rango:</span>
+        {[
+          { d: 7, label: "7 días" },
+          { d: 30, label: "30 días" },
+          { d: 90, label: "90 días" },
+          { d: 9999, label: "Todo" },
+        ].map((r) => (
+          <button
+            key={r.d}
+            onClick={() => setRango(r.d)}
+            className={`text-xs px-3 py-1 rounded-full font-semibold transition ${
+              rango === r.d
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/70"
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
       </div>
 
       {/* Config */}
