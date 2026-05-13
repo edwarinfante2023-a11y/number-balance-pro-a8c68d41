@@ -89,6 +89,17 @@ function extractFirstPrize(title: string): number | null {
   return parseInt(match[1], 10);
 }
 
+/** Extrae los 3 premios de un título "...: XX-YY-ZZ". */
+function extractAllPrizes(title: string): { primero: number | null; segundo: number | null; tercero: number | null } {
+  const match = title.match(/:\s*(\d{1,2})-(\d{1,2})-(\d{1,2})/);
+  if (!match) return { primero: null, segundo: null, tercero: null };
+  return {
+    primero: parseInt(match[1], 10),
+    segundo: parseInt(match[2], 10),
+    tercero: parseInt(match[3], 10),
+  };
+}
+
 function parseRSSItems(xml: string): Array<{ title: string; pubDate: string }> {
   const items: Array<{ title: string; pubDate: string }> = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -125,6 +136,19 @@ function extractTodayResult(items: Array<{ title: string; pubDate: string }>): n
     return extractFirstPrize(item.title);
   }
   return null;
+}
+
+/** Igual que extractTodayResult pero retorna los 3 premios del item "de hoy". */
+function extractTodayAllPrizes(
+  items: Array<{ title: string; pubDate: string }>,
+): { primero: number | null; segundo: number | null; tercero: number | null } {
+  for (const item of items) {
+    const lower = item.title.toLowerCase();
+    if (!lower.includes(" de hoy:")) continue;
+    if (lower.includes("pendiente")) return { primero: null, segundo: null, tercero: null };
+    return extractAllPrizes(item.title);
+  }
+  return { primero: null, segundo: null, tercero: null };
 }
 
 // ─── Servidor Edge Function ──────────────────────────────────────────────
