@@ -329,6 +329,51 @@ export type Database = {
         }
         Relationships: []
       }
+      lottery_stats_sync_runs: {
+        Row: {
+          by_slot: Json
+          combinaciones: number
+          created_at: string
+          detalle: Json
+          duration_ms: number
+          errores: number
+          id: string
+          ok: boolean
+          periodos_total: number
+          slots_total: number
+          triggered_by: string
+          upserts: number
+        }
+        Insert: {
+          by_slot?: Json
+          combinaciones?: number
+          created_at?: string
+          detalle?: Json
+          duration_ms?: number
+          errores?: number
+          id?: string
+          ok?: boolean
+          periodos_total?: number
+          slots_total?: number
+          triggered_by?: string
+          upserts?: number
+        }
+        Update: {
+          by_slot?: Json
+          combinaciones?: number
+          created_at?: string
+          detalle?: Json
+          duration_ms?: number
+          errores?: number
+          id?: string
+          ok?: boolean
+          periodos_total?: number
+          slots_total?: number
+          triggered_by?: string
+          upserts?: number
+        }
+        Relationships: []
+      }
       opportunity_alerts: {
         Row: {
           cartera_id: string
