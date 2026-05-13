@@ -403,7 +403,8 @@ function CarteraPage() {
                         <td className="px-3 py-2.5">
                           {acierto === true ? (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
-                              <CheckCircle2 className="size-3.5" /> Acierto
+                              <CheckCircle2 className="size-3.5" />
+                              Acierto{acierto2 ? " + 2da" : ""}{acierto3 ? " + 3ra" : ""}
                             </span>
                           ) : acierto === false && acierto2 ? (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
