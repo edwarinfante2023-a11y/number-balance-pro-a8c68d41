@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, XCircle, MinusCircle, Flame, Gauge, DollarSign } from "lucide-react";
+import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, XCircle, MinusCircle, Flame, Gauge } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useGenerateCartera, useCarteraDelDia, useCarteraStats, useCarterasDelDia } from "@/hooks/useCartera";
 import { useLotteryDraws } from "@/hooks/useLotteries";
