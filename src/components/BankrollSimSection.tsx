@@ -145,13 +145,37 @@ function SimCard({
 }) {
   const positive = sim.pl >= 0;
   const beatsBreakEven = sim.hitRate >= breakEven;
-  const veredicto = sim.jugadas === 0
-    ? "Sin datos"
-    : positive && beatsBreakEven
-      ? "Da ganancia 🟢"
-      : positive
-        ? "Apenas empata 🟡"
-        : "Pierde plata 🔴";
+  const aciertosNecesarios = Math.ceil(breakEven * sim.jugadas);
+  const diffAciertos = sim.aciertos - aciertosNecesarios;
+  const hitPct = (sim.hitRate * 100).toFixed(1);
+  const beEvenPct = (breakEven * 100).toFixed(1);
+
+  let veredictoIcon = "⚪️";
+  let veredictoTitulo = "Sin datos";
+  let veredictoDetalle = "Todavía no hay sorteos evaluados con este filtro.";
+
+  if (sim.jugadas > 0) {
+    if (positive && beatsBreakEven) {
+      veredictoIcon = "🟢";
+      veredictoTitulo = "Da ganancia";
+      veredictoDetalle = `Acertaste ${sim.aciertos} de ${sim.jugadas} (${hitPct}%) — ${diffAciertos} aciertos por encima del mínimo (${aciertosNecesarios} para no perder · ${beEvenPct}%).`;
+    } else if (positive && !beatsBreakEven) {
+      // Caso raro: saldo positivo pero hit rate por debajo (pagos altos en pocos aciertos)
+      veredictoIcon = "🟡";
+      veredictoTitulo = "Apenas empata";
+      veredictoDetalle = `Saldo positivo de chiripa: acertaste ${sim.aciertos} de ${sim.jugadas} (${hitPct}%), debajo del mínimo (${beEvenPct}%). En el largo plazo va a perder.`;
+    } else if (!positive && beatsBreakEven) {
+      veredictoIcon = "🟡";
+      veredictoTitulo = "Casi rentable";
+      veredictoDetalle = `Aciertas bien (${sim.aciertos} de ${sim.jugadas} = ${hitPct}%, encima de ${beEvenPct}%) pero las rachas malas te pasaron factura. Necesitas más jugadas para confirmar.`;
+    } else {
+      veredictoIcon = "🔴";
+      veredictoTitulo = "Pierde plata";
+      const faltan = Math.abs(diffAciertos);
+      veredictoDetalle = `Solo acertaste ${sim.aciertos} de ${sim.jugadas} (${hitPct}%). Te faltaron ${faltan} aciertos para llegar al mínimo de ${aciertosNecesarios} (${beEvenPct}%) que cubre los gastos.`;
+    }
+  }
+
   return (
     <div className={`rounded-2xl p-4 border ${highlight ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
       <div className="flex items-center justify-between mb-3">
@@ -164,8 +188,25 @@ function SimCard({
             {positive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             {positive ? "Ganas " : "Pierdes "}{money(Math.abs(sim.pl))}
           </div>
-          <div className="text-[10px] text-muted-foreground">{veredicto}</div>
         </div>
+      </div>
+
+      {/* Veredicto explícito */}
+      <div
+        className={`mb-3 p-2.5 rounded-xl border text-[11px] leading-relaxed ${
+          veredictoIcon === "🟢"
+            ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900"
+            : veredictoIcon === "🔴"
+              ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900"
+              : veredictoIcon === "🟡"
+                ? "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900"
+                : "bg-muted/40 border-border"
+        }`}
+      >
+        <div className="font-bold mb-0.5">
+          {veredictoIcon} {veredictoTitulo}
+        </div>
+        <div className="text-muted-foreground">{veredictoDetalle}</div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
