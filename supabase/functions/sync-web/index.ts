@@ -309,6 +309,22 @@ serve(async (req: Request) => {
       console.error("Failed to persist sync_logs:", (logErr as Error).message);
     }
 
+    // ─── Re-evaluar carteras si hubo nuevos sorteos ───────────────────────
+    if (summary.nuevasInsertadas > 0) {
+      try {
+        const evalUrl = "https://project--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app/api/public/hooks/evaluate-results";
+        const evalRes = await fetch(evalUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+        });
+        const evalJson = await evalRes.json().catch(() => ({}));
+        summary.detalle.push(`↻ evaluate-results: ${JSON.stringify(evalJson)}`);
+      } catch (evalErr) {
+        summary.detalle.push(`⚠ evaluate-results fallo: ${(evalErr as Error).message}`);
+      }
+    }
+
     return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
