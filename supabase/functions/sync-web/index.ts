@@ -244,7 +244,8 @@ serve(async (req: Request) => {
         summary.totalProcesadas++;
 
         // ─── Extraer SOLO el resultado de hoy ──────────────────────────
-        const numero = extractTodayResult(items);
+        const prizes = extractTodayAllPrizes(items);
+        const numero = prizes.primero;
 
         if (numero === null) {
           summary.sinResultado++;
@@ -274,6 +275,10 @@ serve(async (req: Request) => {
           fecha: todayISO,
           numero: numero,
           origen: "scraper",
+          extra: {
+            segundo: prizes.segundo,
+            tercero: prizes.tercero,
+          },
         });
 
         if (insertErr) {
