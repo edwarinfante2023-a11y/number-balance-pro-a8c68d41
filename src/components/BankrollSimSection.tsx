@@ -88,6 +88,18 @@ export function BankrollSimSection() {
       {isLoading || !data ? (
         <div className="text-sm text-muted-foreground py-8 text-center">Calculando…</div>
       ) : (
+        <>
+          <div className="mb-3 p-3 bg-muted/30 rounded-xl text-[11px] leading-relaxed">
+            <div className="font-bold text-foreground mb-1">¿Cómo se calcula?</div>
+            <div className="text-muted-foreground">
+              Tomamos cada cartera de los últimos 90 días que ya tiene resultado. Por cada
+              sorteo restamos <b>{money(costoPorJugada)}</b> (lo que apostarías a los {cfg.numerosPorCartera} números) y
+              si el ganador estaba en tu cartera te sumamos <b>{money(premio)}</b>.
+              <br />
+              <b>Izquierda</b>: cuenta los <b>{data.all.jugadas}</b> sorteos disponibles.{" "}
+              <b>Derecha</b>: solo los <b>{data.filtered.jugadas}</b> sorteos donde el motor marcó confianza ≥ {cfg.scoreMin}.
+            </div>
+          </div>
         <div className="grid md:grid-cols-2 gap-4">
           <SimCard
             title="Si juegas SIEMPRE"
@@ -105,6 +117,7 @@ export function BankrollSimSection() {
             highlight
           />
         </div>
+        </>
       )}
 
       {data && data.all.jugadas < 30 && (
