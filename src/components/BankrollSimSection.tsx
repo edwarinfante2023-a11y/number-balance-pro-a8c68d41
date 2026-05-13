@@ -326,6 +326,55 @@ function SimCard({
           </div>
         </details>
       )}
+
+      {sim.rows.length > 0 && (
+        <details className="mt-1 group">
+          <summary className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none">
+            <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+            Ver las {fmt(sim.rows.length)} jugadas una por una
+          </summary>
+          <div className="mt-2 max-h-72 overflow-y-auto rounded-lg border border-border">
+            <table className="w-full text-[11px]">
+              <thead className="bg-muted/60 sticky top-0">
+                <tr className="text-left">
+                  <th className="px-2 py-1.5">Fecha</th>
+                  <th className="px-2 py-1.5">Hora</th>
+                  <th className="px-2 py-1.5 text-center">Conf.</th>
+                  <th className="px-2 py-1.5 text-center">Resultado</th>
+                  <th className="px-2 py-1.5 text-right">$ Jugada</th>
+                  <th className="px-2 py-1.5 text-right">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  let saldo = cfg.fondoInicial;
+                  return sim.rows.map((r, i) => {
+                    saldo += r.pl;
+                    return (
+                      <tr key={i} className="border-t border-border/50">
+                        <td className="px-2 py-1">{r.fecha}</td>
+                        <td className="px-2 py-1">{r.hora}</td>
+                        <td className="px-2 py-1 text-center text-muted-foreground">{r.internalScore}</td>
+                        <td className="px-2 py-1 text-center">
+                          {r.acierto ? (
+                            <span className="text-emerald-600 font-bold">✓ acierto</span>
+                          ) : (
+                            <span className="text-red-500">✗ fallo</span>
+                          )}
+                        </td>
+                        <td className={`px-2 py-1 text-right font-mono font-semibold ${r.pl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                          {r.pl >= 0 ? "+" : ""}{money(r.pl)}
+                        </td>
+                        <td className="px-2 py-1 text-right font-mono text-muted-foreground">{money(saldo)}</td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
     </div>
   );
 }
