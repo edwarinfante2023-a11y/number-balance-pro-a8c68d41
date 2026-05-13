@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, XCircle, MinusCircle, Flame, Gauge } from "lucide-react";
+import { Briefcase, Sparkles, Target, TrendingUp, Loader2, CheckCircle2, XCircle, MinusCircle, Flame, Gauge, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useGenerateCartera, useCarteraDelDia, useCarteraStats, useCarterasDelDia } from "@/hooks/useCartera";
 import { useLotteryDraws } from "@/hooks/useLotteries";
@@ -59,6 +59,23 @@ function CarteraPage() {
   const stats = useCarteraStats(windowDays);
   const carterasHoy = useCarterasDelDia(fechaTabla);
 
+  const [reevalLoading, setReevalLoading] = useState(false);
+  const onReevaluate = async () => {
+    setReevalLoading(true);
+    try {
+      const res = await fetch("/api/public/hooks/evaluate-results", { method: "POST" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
+      const evaluadas = json?.evaluadas ?? json?.updated ?? 0;
+      toast.success(`Evaluación re-ejecutada · ${evaluadas} carteras actualizadas`);
+      await Promise.all([cartera.refetch?.(), stats.refetch?.(), carterasHoy.refetch?.()]);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error re-evaluando");
+    } finally {
+      setReevalLoading(false);
+    }
+  };
+
   const onGenerate = async () => {
     if (!hora) {
       toast.error("Elegí una hora primero");
@@ -109,6 +126,15 @@ function CarteraPage() {
           >
             {generate.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
             Generar cartera
+          </button>
+          <button
+            onClick={onReevaluate}
+            disabled={reevalLoading}
+            title="Re-evaluar todas las carteras contra los sorteos publicados (1ro, 2do, 3ro)"
+            className="h-11 px-5 rounded-xl bg-secondary text-secondary-foreground text-[13px] font-bold inline-flex items-center gap-2 hover:bg-secondary/80 transition disabled:opacity-50 disabled:cursor-not-allowed border border-border"
+          >
+            {reevalLoading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+            Re-evaluar P&L
           </button>
           {cartera.data && (
             <div className="text-[12px] text-muted-foreground ml-auto">
