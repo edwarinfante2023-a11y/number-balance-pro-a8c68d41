@@ -51,6 +51,7 @@ const NAV: NavItem[] = [
   { to: "/importar", label: "Ingestión de Datos", icon: FileSpreadsheet, section: "DATA" },
   { to: "/captura", label: "Captura Manual", icon: PencilLine, section: "DATA" },
   { to: "/reportes", label: "Exportar Reportes", icon: FileBarChart, section: "DATA" },
+  { to: "/estado-sync", label: "Estado del Sync", icon: Activity, section: "DATA" },
   { to: "/configuracion", label: "Configuración", icon: Settings, section: "GENERAL" },
 ];
 
