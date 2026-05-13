@@ -309,6 +309,8 @@ function CarteraPage() {
                   <th className="px-3 py-2">Generada</th>
                   <th className="px-3 py-2">Resultado</th>
                   <th className="px-3 py-2">Ganador</th>
+                  <th className="px-3 py-2 text-center">2do</th>
+                  <th className="px-3 py-2 text-center">3ro</th>
                   <th className="px-3 py-2 text-right">P&amp;L</th>
                   <th className="px-3 py-2">Acción</th>
                 </tr>
@@ -328,6 +330,10 @@ function CarteraPage() {
                     const res = Array.isArray(c.cartera_resultados) ? c.cartera_resultados[0] : c.cartera_resultados;
                     const acierto: boolean | null = res?.acierto ?? null;
                     const ganador: number | null = res?.numero_ganador ?? null;
+                    const ganador2: number | null = res?.numero_segundo ?? null;
+                    const ganador3: number | null = res?.numero_tercero ?? null;
+                    const acierto2: boolean | null = res?.acierto_segundo ?? null;
+                    const acierto3: boolean | null = res?.acierto_tercero ?? null;
                     // Posición del ganador rankeada por score
                     let posScore: number | null = null;
                     if (acierto === true && ganador !== null && c.scores) {
@@ -398,6 +404,30 @@ function CarteraPage() {
                                 </span>
                               )}
                             </div>
+                          ) : (
+                            <span className="text-muted-foreground/50">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          {ganador2 !== null ? (
+                            <span className={cn(
+                              "inline-flex items-center gap-1 text-[11px] font-bold tabular-nums",
+                              acierto2 ? "text-emerald-700" : "text-muted-foreground",
+                            )}>
+                              {acierto2 ? "✓" : "·"} {String(ganador2).padStart(2, "0")}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          {ganador3 !== null ? (
+                            <span className={cn(
+                              "inline-flex items-center gap-1 text-[11px] font-bold tabular-nums",
+                              acierto3 ? "text-emerald-700" : "text-muted-foreground",
+                            )}>
+                              {acierto3 ? "✓" : "·"} {String(ganador3).padStart(2, "0")}
+                            </span>
                           ) : (
                             <span className="text-muted-foreground/50">—</span>
                           )}

@@ -20,6 +20,7 @@ import {
   Scale,
   Monitor,
   X,
+  DollarSign,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { SyncLogsWidget } from "@/components/SyncLogsWidget";
@@ -36,6 +37,10 @@ import {
   useUpdateBalanceAlertsConfig,
   defaultBalanceAlerts,
   type BalanceAlertsConfig,
+  usePayouts,
+  useUpdatePayouts,
+  defaultPayouts,
+  type PayoutsConfig,
 } from "@/hooks/useSettings";
 import {
   useLotteries,
@@ -397,6 +402,11 @@ function Configuracion() {
         {/* Balance Alerts Settings */}
         <div className="lg:col-span-12">
           <BalanceAlertsSection />
+        </div>
+
+        {/* Pagos por posición */}
+        <div className="lg:col-span-12">
+          <PayoutsSection />
         </div>
 
         {/* AI Upcoming Banner */}
@@ -838,6 +848,129 @@ function SubscribedDevicesList({ currentEndpoint }: { currentEndpoint: string | 
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+// ─── Payouts Section ─────────────────────────────────────────────────────
+
+function PayoutsSection() {
+  const { data: cfg, isLoading } = usePayouts();
+  const updateMut = useUpdatePayouts();
+  const [draft, setDraft] = useState<PayoutsConfig | null>(null);
+
+  const current: PayoutsConfig = draft ?? cfg ?? defaultPayouts;
+  const dirty =
+    draft !== null && cfg !== undefined && JSON.stringify(draft) !== JSON.stringify(cfg);
+
+  function patch(p: Partial<PayoutsConfig>) {
+    setDraft({ ...current, ...p });
+  }
+
+  async function save() {
+    if (!draft) return;
+    try {
+      await updateMut.mutateAsync(draft);
+      toast.success("Pagos actualizados.");
+      setDraft(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al guardar.");
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-[24px] lg:rounded-[32px] border border-border shadow-sm p-5 lg:p-8 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-6 border-b border-border pb-6">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-emerald-100 border border-emerald-200 grid place-items-center">
+            <DollarSign className="size-5 text-emerald-600" />
+          </div>
+          <div>
+            <h3 className="text-[16px] font-bold text-foreground">Pagos por posición</h3>
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">
+              Apuesta y múltiplos de la banca
+            </p>
+          </div>
+        </div>
+        {dirty && (
+          <button
+            onClick={save}
+            disabled={updateMut.isPending}
+            className="inline-flex items-center gap-2 h-10 rounded-[12px] bg-primary text-white px-5 text-[13px] font-bold shadow-md disabled:opacity-50 hover:shadow-lg transition-all hover:-translate-y-0.5"
+          >
+            {updateMut.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            Guardar
+          </button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-10 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin mr-3" /> Cargando…
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <PayoutInput
+              label="Apuesta por número (DOP)"
+              value={current.apuesta}
+              onChange={(v) => patch({ apuesta: v })}
+              hint="Lo que apostás a CADA número de la cartera."
+            />
+            <PayoutInput
+              label="1er premio (×)"
+              value={current.pago1}
+              onChange={(v) => patch({ pago1: v })}
+              hint="Múltiplo si pega en 1er lugar."
+            />
+            <PayoutInput
+              label="2do premio (×)"
+              value={current.pago2}
+              onChange={(v) => patch({ pago2: v })}
+              hint="Múltiplo si pega en 2do lugar."
+            />
+            <PayoutInput
+              label="3er premio (×)"
+              value={current.pago3}
+              onChange={(v) => patch({ pago3: v })}
+              hint="Múltiplo si pega en 3er lugar."
+            />
+          </div>
+          <div className="mt-5 p-4 rounded-[16px] bg-muted/30 border border-border text-[12px] text-muted-foreground leading-relaxed">
+            <b className="text-foreground">Ejemplo con valores actuales:</b> apostando ${current.apuesta} a un número, si pega en 1ro cobrás <b className="text-foreground">${current.apuesta * current.pago1}</b>, en 2do <b className="text-foreground">${current.apuesta * current.pago2}</b>, en 3ro <b className="text-foreground">${current.apuesta * current.pago3}</b>. Estos valores se usan en la tabla de cartera y en el simulador de bankroll. La lógica de generación y evaluación principal sigue basada solo en el 1er premio.
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PayoutInput({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  hint?: string;
+}) {
+  return (
+    <div className="bg-muted/30 rounded-[20px] p-5 border border-border">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+        {label}
+      </div>
+      <input
+        type="number"
+        min={0}
+        value={value}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
+        className="w-full h-12 px-4 rounded-[12px] bg-white border border-border text-[18px] font-black text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary tabular-nums text-center"
+      />
+      {hint && (
+        <p className="text-[11px] text-muted-foreground font-medium mt-2 leading-relaxed">{hint}</p>
+      )}
     </div>
   );
 }

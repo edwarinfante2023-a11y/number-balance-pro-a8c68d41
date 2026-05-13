@@ -17,18 +17,23 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-results")({
         // 1. Draws recientes con su hora
         const { data: rawDraws, error: e1 } = await supabaseAdmin
           .from("draws")
-          .select("numero, fecha, lottery_draws!inner(hora)")
+          .select("numero, fecha, extra, lottery_draws!inner(hora)")
           .gte("fecha", since);
         if (e1) {
           return Response.json({ ok: false, error: e1.message }, { status: 500 });
         }
 
         // Index por (fecha, hora) → numero ganador (último gana en empate)
-        const ganadores = new Map<string, number>();
+        const ganadores = new Map<string, { primero: number; segundo: number | null; tercero: number | null }>();
         for (const d of (rawDraws ?? []) as any[]) {
           const hora = d.lottery_draws?.hora;
           if (!hora) continue;
-          ganadores.set(`${d.fecha}|${hora}`, d.numero);
+          const extra = (d.extra ?? {}) as { segundo?: number | null; tercero?: number | null };
+          ganadores.set(`${d.fecha}|${hora}`, {
+            primero: d.numero,
+            segundo: extra.segundo ?? null,
+            tercero: extra.tercero ?? null,
+          });
         }
         if (ganadores.size === 0) {
           return Response.json({ ok: true, evaluadas: 0, aciertos: 0, msg: "sin draws recientes" });
@@ -43,15 +48,27 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-results")({
           return Response.json({ ok: false, error: e2.message }, { status: 500 });
         }
 
-        const rows: Array<{ cartera_id: string; numero_ganador: number; acierto: boolean }> = [];
+        const rows: Array<{
+          cartera_id: string;
+          numero_ganador: number;
+          acierto: boolean;
+          numero_segundo: number | null;
+          numero_tercero: number | null;
+          acierto_segundo: boolean | null;
+          acierto_tercero: boolean | null;
+        }> = [];
         for (const c of (carteras ?? []) as any[]) {
-          const numero = ganadores.get(`${c.fecha}|${c.hora}`);
-          if (numero === undefined) continue;
+          const g = ganadores.get(`${c.fecha}|${c.hora}`);
+          if (!g) continue;
           const numeros: number[] = Array.isArray(c.numeros) ? c.numeros : [];
           rows.push({
             cartera_id: c.id,
-            numero_ganador: numero,
-            acierto: numeros.includes(numero),
+            numero_ganador: g.primero,
+            acierto: numeros.includes(g.primero),
+            numero_segundo: g.segundo,
+            numero_tercero: g.tercero,
+            acierto_segundo: g.segundo !== null ? numeros.includes(g.segundo) : null,
+            acierto_tercero: g.tercero !== null ? numeros.includes(g.tercero) : null,
           });
         }
 

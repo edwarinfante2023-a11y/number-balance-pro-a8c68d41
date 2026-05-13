@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBankrollSim, type BankrollConfig, type SimResult, type SimRow } from "@/hooks/useBankrollSim";
+import { usePayouts } from "@/hooks/useSettings";
 import { TrendingUp, TrendingDown, Wallet, Target, AlertTriangle } from "lucide-react";
 
 const STORAGE_KEY = "bankroll-cfg-v1";
@@ -37,6 +38,7 @@ export function BankrollSimSection() {
   const [cfg, setCfg] = useState<BankrollConfig>(DEFAULT_CFG);
   const [hydrated, setHydrated] = useState(false);
   const [rango, setRango] = useState<number>(90); // días — 9999 = "Todo"
+  const { data: payouts } = usePayouts();
 
   useEffect(() => {
     setCfg(loadCfg());
@@ -46,7 +48,16 @@ export function BankrollSimSection() {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
   }, [cfg, hydrated]);
 
-  const { data, isLoading } = useBankrollSim(cfg, rango);
+  // Mezclamos pagos 2do/3ro desde settings sin tocar el localStorage del usuario.
+  const cfgConPayouts: BankrollConfig = useMemo(
+    () => ({
+      ...cfg,
+      pago2: payouts?.pago2 ?? 0,
+      pago3: payouts?.pago3 ?? 0,
+    }),
+    [cfg, payouts],
+  );
+  const { data, isLoading } = useBankrollSim(cfgConPayouts, rango);
 
   const breakEven = useMemo(() => cfg.numerosPorCartera / cfg.pago, [cfg]);
   const costoPorJugada = cfg.numerosPorCartera * cfg.apuestaPorNumero;
@@ -301,6 +312,16 @@ function SimCard({
               <b>{fmt(sim.aciertos)}</b> aciertos × {money(cfg.apuestaPorNumero * cfg.pago)} ={" "}
               <b className="text-emerald-600">{money(sim.cobrado)}</b>
             </div>
+            {(sim.aciertos2 > 0 || sim.aciertos3 > 0) && (
+              <>
+                <div className="text-muted-foreground pl-3">
+                  + 2do: <b>{fmt(sim.aciertos2)}</b> × {money(cfg.apuestaPorNumero * (cfg.pago2 ?? 0))} = <b className="text-emerald-600">{money(sim.cobrado2)}</b>
+                </div>
+                <div className="text-muted-foreground pl-3">
+                  + 3ro: <b>{fmt(sim.aciertos3)}</b> × {money(cfg.apuestaPorNumero * (cfg.pago3 ?? 0))} = <b className="text-emerald-600">{money(sim.cobrado3)}</b>
+                </div>
+              </>
+            )}
             <div>
               <span className="text-muted-foreground">Apostaste:</span>{" "}
               <b>{fmt(sim.jugadas)}</b> sorteos × {money(cfg.numerosPorCartera * cfg.apuestaPorNumero)} ={" "}
