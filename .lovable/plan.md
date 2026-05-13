@@ -1,92 +1,61 @@
-## Objetivo
-Que el sistema sepa cuándo un número de la cartera salió en **2do** o **3er** lugar (no solo 1ro), para ver cobros adicionales (pagos 10x y 4x). **La lógica de generación y evaluación principal sigue basada solo en el 1er premio** — los otros dos son métricas extra, no afectan scoring, patrones, ni alertas.
+## Recomendación basada en datos reales
 
-Bonus: pagos editables desde Configuración (hoy hardcoded 70/25).
+**Hit rate últimos 30 días (40 carteras evaluadas):**
+- 1ro: **55%** (22/40) → muy por encima del 36% de break-even
+- 2do: 20% (8/40)
+- 3ro: 22.5% (9/40)
+
+**EV por jugada de cartera completa (25 nums × $25 = $625 costo):**
+
+```text
+Cobro esperado = 0.55×$1750 + 0.20×$250 + 0.225×$100
+               = $962 + $50 + $22 = ~$1.035
+EV neto        = $1.035 − $625 = +$410 por jugada
+ROI esperado   = +65%
+```
+
+El número está bien — la cartera completa es **EV positivo** con buen margen.
+
+**Caveat honesto:** muestra de 40 jugadas es chica. Para las 18:00 puntualmente solo hay 2 evaluaciones (las dos acertaron, pero estadísticamente irrelevante). El 55% global se sostiene cruzando todas las horas.
 
 ---
 
-## 1. Datos: capturar los 3 premios
+## Cartera 18:00 de hoy (13-may-2026) — lista para enviar
 
-El RSS ya trae los 3 (`: XX-YY-ZZ`) — solo extraemos el 1ro hoy.
-
-**Cambios:**
-- `supabase/functions/sync-web/index.ts`: nueva función `extractAllPrizes(title) → {primero, segundo, tercero}`. Sigue insertando `draws.numero = primero` (sin tocar la lógica), pero guarda los 3 en `draws.extra: { segundo, tercero }`.
-- Migración mínima: ninguna en `draws` (ya tiene `extra: jsonb`).
-
-## 2. Schema: ampliar `cartera_resultados`
-
-Migración idempotente:
-```sql
-ALTER TABLE public.cartera_resultados
-  ADD COLUMN IF NOT EXISTS numero_segundo INTEGER,
-  ADD COLUMN IF NOT EXISTS numero_tercero INTEGER,
-  ADD COLUMN IF NOT EXISTS acierto_segundo BOOLEAN,
-  ADD COLUMN IF NOT EXISTS acierto_tercero BOOLEAN;
-```
-Nullables → backfill no requerido. `acierto` (1ro) sigue igual.
-
-## 3. Evaluador
-
-`src/routes/api/public/hooks/evaluate-results.ts`:
-- Leer `draws.extra` además de `numero`.
-- Para cada cartera, calcular `acierto_segundo` y `acierto_tercero` (numeros incluye el segundo/tercero respectivamente).
-- Upsert con las 4 columnas nuevas.
-- **No cambia** ningún cálculo de patrones, scoring, ni el `acierto` principal.
-
-## 4. Configuración de pagos
-
-Nueva clave en `settings`: `payouts` con shape:
-```json
-{ "apuesta": 25, "pago1": 70, "pago2": 10, "pago3": 4 }
+```text
+03, 17, 23, 33, 37, 44, 45, 47, 50, 51, 56, 57, 62,
+65, 66, 67, 70, 75, 77, 80, 85, 88, 96, 98, 99
 ```
 
-- Hook `useSettings` ya lee/escribe `settings`. Agregar getter `usePayouts()`.
-- `src/routes/configuracion.tsx`: nueva sección "Pagos por posición" con 4 inputs numéricos.
-- Reemplazar las constantes hardcoded `APUESTA = 25 / PAYOUT = 70` en:
-  - `src/routes/cartera.tsx`
-  - `src/components/BankrollSimSection.tsx`
-  - `src/hooks/useBankrollSim.ts`
+25 números. Internal score: 65. Alta convicción (≥80): **77, 96, 98**.
 
-## 5. UI: mostrar 2do/3ro
-
-**`src/routes/cartera.tsx`** (tabla del día por hora):
-- Nuevas columnas chiquitas: `2do` y `3ro` con badge ✓/✗ + número ganador en cada posición.
-- KPI extra arriba: "Cobrado extra (2do+3ro): $X" usando los pagos configurados.
-
-**`src/components/BankrollSimSection.tsx`**:
-- En el desglose, agregar:
-  - `Aciertos 2do: N × pago2 = $X`
-  - `Aciertos 3ro: N × pago3 = $X`
-  - `P&L total = (cobro1 + cobro2 + cobro3) − costo`
-- En la tabla "ver una por una", agregar 2 columnas (2do, 3ro) con ✓/✗.
-- Filtro tabla: agregar opciones "✓ 2do" y "✓ 3ro".
-
-**`src/hooks/useBankrollSim.ts`**:
-- Traer `acierto_segundo` y `acierto_tercero`.
-- Calcular `cobrado_total = a1*pago1 + a2*pago2 + a3*pago3`, `pl` por fila combinando los 3.
-
-## 6. Backfill (opcional, recomendado)
-
-Script one-off: para draws de los últimos 30 días, re-fetch RSS o (más simple) dejar que se llenen hacia adelante. Para evaluaciones existentes, correr el evaluador una vez con la nueva lógica → re-evalúa todo (es upsert). Las carteras viejas tendrán `numero_segundo/tercero = null` hasta que llegue nueva data — eso está bien, aparecen como "—" en la UI.
+**Acción inmediata:** abrir `/cartera`, seleccionar hora 18:00, pulsar el botón **"Copiar números"** que ya está en el grid → pegar en WhatsApp.
 
 ---
 
-## Lo que NO cambia (importante)
-- `carteraEngine.ts` — generación intacta.
-- Patrones, reglas, alertas, oportunidades — siguen leyendo solo `acierto` (1ro).
-- `cartera_resultados.acierto` sigue siendo el "acierto real" para todo el sistema.
+## Plan técnico (opcional, para próximas veces)
 
-## Archivos tocados
-- `supabase/migrations/<nuevo>.sql` (4 columnas nuevas)
-- `supabase/functions/sync-web/index.ts` (extraer 3)
-- `src/routes/api/public/hooks/evaluate-results.ts` (evaluar 3)
-- `src/hooks/useSettings.ts` (helper payouts)
-- `src/routes/configuracion.tsx` (UI pagos)
-- `src/hooks/useBankrollSim.ts` (P&L combinado)
-- `src/components/BankrollSimSection.tsx` (UI desglose + tabla)
-- `src/routes/cartera.tsx` (columnas 2do/3ro + KPI)
+Si querés que el envío al cliente sea más rápido y profesional, propongo agregar:
 
-## Riesgos / edge cases
-- RSS sin 2do/3ro → guardamos null, UI muestra "—".
-- Patterns/cron viejos → no tocados, siguen funcionando igual.
-- Pagos viejos (eventos ya evaluados) se recalculan en frontend con los pagos actuales — si cambias pagos, los KPI históricos cambian. Aceptable para MVP.
+### Botón "Copiar para cliente" mejorado en `/cartera`
+
+En vez del copy actual (lista cruda), un botón secundario que copie un mensaje pre-formateado:
+
+```text
+🎯 Cartera 18:00 · 13 may
+
+03 - 17 - 23 - 33 - 37 - 44 - 45 - 47 - 50 - 51
+56 - 57 - 62 - 65 - 66 - 67 - 70 - 75 - 77 - 80
+85 - 88 - 96 - 98 - 99
+
+⭐ Alta convicción: 77, 96, 98
+```
+
+Solo frontend, 10 líneas en `src/routes/cartera.tsx` al lado del botón Copiar existente. Sin tocar backend ni schema.
+
+### Archivo a modificar
+- `src/routes/cartera.tsx` — agregar segundo botón `Copy → "Copiar para cliente"` que arme el string con header (hora + fecha), grilla 10 por línea, y línea de alta convicción.
+
+### Lo que NO se toca
+- Schema, evaluador, scraper, RLS — nada.
+- El botón "Copiar números" actual queda como está (formato técnico).
