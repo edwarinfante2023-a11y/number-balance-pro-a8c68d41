@@ -23,6 +23,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalisisHoraRouteImport } from './routes/analisis-hora'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicHooksSyncLotteryStatsRouteImport } from './routes/api/public/hooks/sync-lottery-stats'
 import { Route as ApiPublicHooksScanOpportunitiesRouteImport } from './routes/api/public/hooks/scan-opportunities'
 import { Route as ApiPublicHooksLearnPatternsRouteImport } from './routes/api/public/hooks/learn-patterns'
 import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
@@ -98,6 +99,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksSyncLotteryStatsRoute =
+  ApiPublicHooksSyncLotteryStatsRouteImport.update({
+    id: '/api/public/hooks/sync-lottery-stats',
+    path: '/api/public/hooks/sync-lottery-stats',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksScanOpportunitiesRoute =
   ApiPublicHooksScanOpportunitiesRouteImport.update({
     id: '/api/public/hooks/scan-opportunities',
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
+  '/api/public/hooks/sync-lottery-stats': typeof ApiPublicHooksSyncLotteryStatsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -162,6 +170,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
+  '/api/public/hooks/sync-lottery-stats': typeof ApiPublicHooksSyncLotteryStatsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -183,6 +192,7 @@ export interface FileRoutesById {
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
+  '/api/public/hooks/sync-lottery-stats': typeof ApiPublicHooksSyncLotteryStatsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
     | '/api/public/hooks/scan-opportunities'
+    | '/api/public/hooks/sync-lottery-stats'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
     | '/api/public/hooks/scan-opportunities'
+    | '/api/public/hooks/sync-lottery-stats'
   id:
     | '__root__'
     | '/'
@@ -245,6 +257,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
     | '/api/public/hooks/scan-opportunities'
+    | '/api/public/hooks/sync-lottery-stats'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -266,6 +279,7 @@ export interface RootRouteChildren {
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
   ApiPublicHooksLearnPatternsRoute: typeof ApiPublicHooksLearnPatternsRoute
   ApiPublicHooksScanOpportunitiesRoute: typeof ApiPublicHooksScanOpportunitiesRoute
+  ApiPublicHooksSyncLotteryStatsRoute: typeof ApiPublicHooksSyncLotteryStatsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -368,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/sync-lottery-stats': {
+      id: '/api/public/hooks/sync-lottery-stats'
+      path: '/api/public/hooks/sync-lottery-stats'
+      fullPath: '/api/public/hooks/sync-lottery-stats'
+      preLoaderRoute: typeof ApiPublicHooksSyncLotteryStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/scan-opportunities': {
       id: '/api/public/hooks/scan-opportunities'
       path: '/api/public/hooks/scan-opportunities'
@@ -418,6 +439,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
   ApiPublicHooksLearnPatternsRoute: ApiPublicHooksLearnPatternsRoute,
   ApiPublicHooksScanOpportunitiesRoute: ApiPublicHooksScanOpportunitiesRoute,
+  ApiPublicHooksSyncLotteryStatsRoute: ApiPublicHooksSyncLotteryStatsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
