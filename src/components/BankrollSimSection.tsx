@@ -188,8 +188,11 @@ function SimCard({
   const hitPct = (sim.hitRate * 100).toFixed(1);
   const beEvenPct = (breakEven * 100).toFixed(1);
   const [filtroTabla, setFiltroTabla] = useState<"todos" | "aciertos" | "fallos">("todos");
+  const [filtroFecha, setFiltroFecha] = useState<string | null>(null);
+  const [tablaAbierta, setTablaAbierta] = useState(false);
   const filas = sim.rows.filter((r) =>
-    filtroTabla === "todos" ? true : filtroTabla === "aciertos" ? r.acierto : !r.acierto
+    (filtroTabla === "todos" ? true : filtroTabla === "aciertos" ? r.acierto : !r.acierto) &&
+    (filtroFecha ? r.fecha === filtroFecha : true)
   );
   const fallos = sim.jugadas - sim.aciertos;
 
@@ -302,13 +305,29 @@ function SimCard({
       {porDia.length > 0 && (
         <div className="mb-3 p-3 rounded-xl bg-background/60 border border-border">
           <div className="font-bold text-[10px] uppercase text-muted-foreground mb-2">
-            Aciertos por día ({fmt(sim.aciertos)} de {fmt(sim.jugadas)} en total)
+            Aciertos por día ({fmt(sim.aciertos)} de {fmt(sim.jugadas)} en total) — toca un día para ver sus jugadas
           </div>
           <div className="space-y-1.5">
             {porDia.map((d) => {
               const pct = d.jugadas > 0 ? (d.aciertos / d.jugadas) * 100 : 0;
+              const activo = filtroFecha === d.fecha;
               return (
-                <div key={d.fecha} className="flex items-center gap-2 text-[11px]">
+                <button
+                  key={d.fecha}
+                  type="button"
+                  onClick={() => {
+                    setFiltroFecha(activo ? null : d.fecha);
+                    setFiltroTabla("todos");
+                    setTablaAbierta(true);
+                    // scroll suave hacia la tabla
+                    setTimeout(() => {
+                      document.getElementById(`tabla-${title}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    }, 50);
+                  }}
+                  className={`w-full flex items-center gap-2 text-[11px] p-1.5 rounded-md transition text-left ${
+                    activo ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted/60"
+                  }`}
+                >
                   <span className="font-mono text-muted-foreground w-20 shrink-0">{d.fecha}</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
@@ -320,10 +339,22 @@ function SimCard({
                     <span className="text-emerald-600">{d.aciertos} ✓</span>
                     <span className="text-muted-foreground"> de {d.jugadas}</span>
                   </span>
-                </div>
+                  <span className={`text-[10px] shrink-0 ${activo ? "text-primary font-bold" : "text-muted-foreground/60"}`}>
+                    {activo ? "✕" : "›"}
+                  </span>
+                </button>
               );
             })}
           </div>
+          {filtroFecha && (
+            <button
+              type="button"
+              onClick={() => setFiltroFecha(null)}
+              className="mt-2 text-[10px] text-primary hover:underline"
+            >
+              ✕ Quitar filtro de fecha — ver todos los días
+            </button>
+          )}
         </div>
       )}
 
@@ -408,10 +439,19 @@ function SimCard({
       )}
 
       {sim.rows.length > 0 && (
-        <details className="mt-1 group">
-          <summary className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none">
+        <details
+          className="mt-1 group"
+          open={tablaAbierta}
+          id={`tabla-${title}`}
+        >
+          <summary
+            onClick={(e) => { e.preventDefault(); setTablaAbierta((v) => !v); }}
+            className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none"
+          >
             <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
-            Ver las {fmt(sim.rows.length)} jugadas una por una ({fmt(sim.aciertos)} ✓ · {fmt(fallos)} ✗)
+            {filtroFecha
+              ? `Jugadas del ${filtroFecha} (${filas.length})`
+              : `Ver las ${fmt(sim.rows.length)} jugadas una por una (${fmt(sim.aciertos)} ✓ · ${fmt(fallos)} ✗)`}
           </summary>
           <div className="flex items-center gap-1.5 mt-2 mb-1 flex-wrap">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mr-1">Mostrar:</span>
@@ -454,6 +494,7 @@ function SimCard({
                     saldo += r.pl;
                     if (filtroTabla === "aciertos" && !r.acierto) return null;
                     if (filtroTabla === "fallos" && r.acierto) return null;
+                    if (filtroFecha && r.fecha !== filtroFecha) return null;
                     return (
                       <tr key={i} className={`border-t border-border/50 ${r.acierto ? "bg-emerald-50/40 dark:bg-emerald-950/20" : ""}`}>
                         <td className="px-2 py-1">{r.fecha}</td>
