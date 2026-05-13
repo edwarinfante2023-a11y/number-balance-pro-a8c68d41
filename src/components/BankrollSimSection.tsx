@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -190,6 +190,26 @@ function SimCard({
   const [filtroTabla, setFiltroTabla] = useState<"todos" | "aciertos" | "fallos">("todos");
   const [filtroFecha, setFiltroFecha] = useState<string | null>(null);
   const [tablaAbierta, setTablaAbierta] = useState(false);
+  const tablaRef = useRef<HTMLDetailsElement | null>(null);
+
+  // Auto-scroll perfecto: cuando se filtra por fecha y la tabla está abierta,
+  // hacemos scroll al <details> después de que el DOM repinte (doble rAF).
+  useEffect(() => {
+    if (!filtroFecha || !tablaAbierta) return;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = tablaRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const offset = 80; // separación del top (header sticky)
+        window.scrollTo({
+          top: window.scrollY + rect.top - offset,
+          behavior: "smooth",
+        });
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [filtroFecha, tablaAbierta]);
   const filas = sim.rows.filter((r) =>
     (filtroTabla === "todos" ? true : filtroTabla === "aciertos" ? r.acierto : !r.acierto) &&
     (filtroFecha ? r.fecha === filtroFecha : true)
