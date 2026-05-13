@@ -3,7 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useBankrollSim, type BankrollConfig, type SimResult } from "@/hooks/useBankrollSim";
+import { useBankrollSim, type BankrollConfig, type SimResult, type SimRow } from "@/hooks/useBankrollSim";
 import { TrendingUp, TrendingDown, Wallet, Target, AlertTriangle } from "lucide-react";
 
 const STORAGE_KEY = "bankroll-cfg-v1";
@@ -36,6 +36,7 @@ function loadCfg(): BankrollConfig {
 export function BankrollSimSection() {
   const [cfg, setCfg] = useState<BankrollConfig>(DEFAULT_CFG);
   const [hydrated, setHydrated] = useState(false);
+  const [rango, setRango] = useState<number>(90); // días — 9999 = "Todo"
 
   useEffect(() => {
     setCfg(loadCfg());
@@ -45,7 +46,7 @@ export function BankrollSimSection() {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
   }, [cfg, hydrated]);
 
-  const { data, isLoading } = useBankrollSim(cfg, 90);
+  const { data, isLoading } = useBankrollSim(cfg, rango);
 
   const breakEven = useMemo(() => cfg.numerosPorCartera / cfg.pago, [cfg]);
   const costoPorJugada = cfg.numerosPorCartera * cfg.apuestaPorNumero;
@@ -64,7 +65,7 @@ export function BankrollSimSection() {
             <Wallet className="w-5 h-5" /> ¿Cuánto dinero ganaría?
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Simulamos cómo te habría ido jugando estas carteras los últimos 90 días.
+            Simulamos cómo te habría ido jugando estas carteras. <b>1 jugada = 1 sorteo</b> (apuestas a {cfg.numerosPorCartera} números a la vez).
           </p>
         </div>
         <div className="text-xs text-right">
@@ -74,6 +75,29 @@ export function BankrollSimSection() {
             Para no perder: acertar <span className="font-semibold">{(breakEven * 100).toFixed(1)}%</span> de las veces
           </div>
         </div>
+      </div>
+
+      {/* Filtro de rango */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-bold">Rango:</span>
+        {[
+          { d: 7, label: "7 días" },
+          { d: 30, label: "30 días" },
+          { d: 90, label: "90 días" },
+          { d: 9999, label: "Todo" },
+        ].map((r) => (
+          <button
+            key={r.d}
+            onClick={() => setRango(r.d)}
+            className={`text-xs px-3 py-1 rounded-full font-semibold transition ${
+              rango === r.d
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/70"
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
       </div>
 
       {/* Config */}
@@ -299,6 +323,55 @@ function SimCard({
               Saldo: {money(cfg.fondoInicial)} {positive ? "+" : "−"} {money(Math.abs(sim.pl))} ={" "}
               <b>{money(sim.balanceFinal)}</b>
             </div>
+          </div>
+        </details>
+      )}
+
+      {sim.rows.length > 0 && (
+        <details className="mt-1 group">
+          <summary className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none">
+            <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+            Ver las {fmt(sim.rows.length)} jugadas una por una
+          </summary>
+          <div className="mt-2 max-h-72 overflow-y-auto rounded-lg border border-border">
+            <table className="w-full text-[11px]">
+              <thead className="bg-muted/60 sticky top-0">
+                <tr className="text-left">
+                  <th className="px-2 py-1.5">Fecha</th>
+                  <th className="px-2 py-1.5">Hora</th>
+                  <th className="px-2 py-1.5 text-center">Conf.</th>
+                  <th className="px-2 py-1.5 text-center">Resultado</th>
+                  <th className="px-2 py-1.5 text-right">$ Jugada</th>
+                  <th className="px-2 py-1.5 text-right">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  let saldo = cfg.fondoInicial;
+                  return sim.rows.map((r, i) => {
+                    saldo += r.pl;
+                    return (
+                      <tr key={i} className="border-t border-border/50">
+                        <td className="px-2 py-1">{r.fecha}</td>
+                        <td className="px-2 py-1">{r.hora}</td>
+                        <td className="px-2 py-1 text-center text-muted-foreground">{r.internalScore}</td>
+                        <td className="px-2 py-1 text-center">
+                          {r.acierto ? (
+                            <span className="text-emerald-600 font-bold">✓ acierto</span>
+                          ) : (
+                            <span className="text-red-500">✗ fallo</span>
+                          )}
+                        </td>
+                        <td className={`px-2 py-1 text-right font-mono font-semibold ${r.pl >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                          {r.pl >= 0 ? "+" : ""}{money(r.pl)}
+                        </td>
+                        <td className="px-2 py-1 text-right font-mono text-muted-foreground">{money(saldo)}</td>
+                      </tr>
+                    );
+                  });
+                })()}
+              </tbody>
+            </table>
           </div>
         </details>
       )}
