@@ -152,11 +152,54 @@ function HistoryRow({ row }: { row: OpportunityHistoryRow }) {
   const statusLabel =
     row.acierto === true ? "Acierto" : row.acierto === false ? "Falló" : "Pendiente";
 
+  // Hora real de generación de la cartera (timestamp) → HH:mm
+  const genTime = row.cartera_created_at
+    ? new Date(row.cartera_created_at).toLocaleTimeString("es-AR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : null;
+
+  // Lead time: minutos entre generación y la hora del sorteo
+  let leadMin: number | null = null;
+  if (row.cartera_created_at && row.hora) {
+    const gen = new Date(row.cartera_created_at);
+    const [hh, mm] = row.hora.split(":").map(Number);
+    const draw = new Date(row.fecha + "T00:00:00");
+    draw.setHours(hh ?? 0, mm ?? 0, 0, 0);
+    leadMin = Math.round((draw.getTime() - gen.getTime()) / 60000);
+  }
+
+  // Posición del número ganador entre los 25, ordenados por score desc
+  let posScore: number | null = null;
+  if (
+    row.acierto === true &&
+    row.numero_ganador !== null &&
+    row.scores &&
+    Object.keys(row.scores).length > 0
+  ) {
+    const ranked = Object.entries(row.scores)
+      .map(([n, s]) => ({ n: Number(n), s: Number(s) }))
+      .sort((a, b) => b.s - a.s || a.n - b.n);
+    const idx = ranked.findIndex((x) => x.n === row.numero_ganador);
+    if (idx >= 0) posScore = idx + 1;
+  }
+
   return (
     <div className="grid grid-cols-12 gap-3 items-center py-3 px-1">
       <div className="col-span-3 sm:col-span-2">
-        <div className="text-[13px] font-bold text-foreground">{row.hora}</div>
+        <div className="text-[13px] font-bold text-foreground">
+          Sorteo {row.hora}
+        </div>
         <div className="text-[11px] text-muted-foreground font-medium">{fecha}</div>
+        {genTime && (
+          <div className="text-[10px] text-muted-foreground/80 font-medium mt-0.5">
+            gen. {genTime}
+            {leadMin !== null && leadMin >= 0 && ` · −${leadMin}m`}
+            {leadMin !== null && leadMin < 0 && ` · +${Math.abs(leadMin)}m`}
+          </div>
+        )}
       </div>
       <div className="col-span-2 sm:col-span-1 text-center">
         <div className="text-[16px] font-extrabold tabular-nums text-primary">
@@ -174,9 +217,21 @@ function HistoryRow({ row }: { row: OpportunityHistoryRow }) {
       </div>
       <div className="col-span-2 sm:col-span-1 text-center">
         {row.numero_ganador !== null ? (
-          <span className="text-[14px] font-extrabold tabular-nums text-foreground">
-            {row.numero_ganador}
-          </span>
+          <div className="flex flex-col items-center">
+            <span
+              className={cn(
+                "text-[14px] font-extrabold tabular-nums",
+                row.acierto === true ? "text-emerald-600" : "text-foreground",
+              )}
+            >
+              {row.numero_ganador}
+            </span>
+            {posScore !== null && (
+              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                #{posScore}/25
+              </span>
+            )}
+          </div>
         ) : (
           <span className="text-[12px] text-muted-foreground/50">—</span>
         )}
