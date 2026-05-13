@@ -187,6 +187,11 @@ function SimCard({
   const diffAciertos = sim.aciertos - aciertosNecesarios;
   const hitPct = (sim.hitRate * 100).toFixed(1);
   const beEvenPct = (breakEven * 100).toFixed(1);
+  const [filtroTabla, setFiltroTabla] = useState<"todos" | "aciertos" | "fallos">("todos");
+  const filas = sim.rows.filter((r) =>
+    filtroTabla === "todos" ? true : filtroTabla === "aciertos" ? r.acierto : !r.acierto
+  );
+  const fallos = sim.jugadas - sim.aciertos;
 
   let veredictoIcon = "⚪️";
   let veredictoTitulo = "Sin datos";
@@ -363,8 +368,28 @@ function SimCard({
         <details className="mt-1 group">
           <summary className="cursor-pointer text-[11px] text-primary font-medium flex items-center gap-1 hover:underline list-none">
             <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
-            Ver las {fmt(sim.rows.length)} jugadas una por una
+            Ver las {fmt(sim.rows.length)} jugadas una por una ({fmt(sim.aciertos)} ✓ · {fmt(fallos)} ✗)
           </summary>
+          <div className="flex items-center gap-1.5 mt-2 mb-1 flex-wrap">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mr-1">Mostrar:</span>
+            {[
+              { k: "todos" as const, label: `Todos (${sim.jugadas})` },
+              { k: "aciertos" as const, label: `Solo ✓ aciertos (${sim.aciertos})` },
+              { k: "fallos" as const, label: `Solo ✗ fallos (${fallos})` },
+            ].map((f) => (
+              <button
+                key={f.k}
+                onClick={(e) => { e.preventDefault(); setFiltroTabla(f.k); }}
+                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition ${
+                  filtroTabla === f.k
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/70"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
           <div className="mt-2 max-h-72 overflow-y-auto rounded-lg border border-border">
             <table className="w-full text-[11px]">
               <thead className="bg-muted/60 sticky top-0">
@@ -380,10 +405,14 @@ function SimCard({
               <tbody>
                 {(() => {
                   let saldo = cfg.fondoInicial;
+                  // recorre TODAS las filas para mantener el saldo correcto,
+                  // pero solo renderiza las que matchean el filtro
                   return sim.rows.map((r, i) => {
                     saldo += r.pl;
+                    if (filtroTabla === "aciertos" && !r.acierto) return null;
+                    if (filtroTabla === "fallos" && r.acierto) return null;
                     return (
-                      <tr key={i} className="border-t border-border/50">
+                      <tr key={i} className={`border-t border-border/50 ${r.acierto ? "bg-emerald-50/40 dark:bg-emerald-950/20" : ""}`}>
                         <td className="px-2 py-1">{r.fecha}</td>
                         <td className="px-2 py-1">{r.hora}</td>
                         <td className="px-2 py-1 text-center text-muted-foreground">{r.internalScore}</td>
@@ -404,6 +433,9 @@ function SimCard({
                 })()}
               </tbody>
             </table>
+            {filas.length === 0 && (
+              <div className="p-3 text-center text-xs text-muted-foreground">No hay jugadas con este filtro.</div>
+            )}
           </div>
         </details>
       )}
