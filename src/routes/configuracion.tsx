@@ -404,6 +404,11 @@ function Configuracion() {
           <BalanceAlertsSection />
         </div>
 
+        {/* Pagos por posición */}
+        <div className="lg:col-span-12">
+          <PayoutsSection />
+        </div>
+
         {/* AI Upcoming Banner */}
         <div className="lg:col-span-12 surface-hero-green rounded-[32px] p-8 lg:p-10 relative overflow-hidden shadow-[0_12px_40px_oklch(0.42_0.09_155/0.2)]">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
