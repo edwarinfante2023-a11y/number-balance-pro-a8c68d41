@@ -146,6 +146,17 @@ export function AppLayout() {
               LOTTERY
             </span>
           </div>
+          {/* Logout fast-access (always visible, no scroll needed) */}
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              toast.success("Conexión terminada");
+            }}
+            title="Cerrar sesión"
+            className="ml-auto size-9 hidden lg:flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors outline-none cursor-pointer"
+          >
+            <LogOut className="size-4" />
+          </button>
           {/* Close on mobile */}
           <button
             onClick={() => setOpen(false)}
@@ -207,25 +218,17 @@ export function AppLayout() {
           })}
         </nav>
 
-        {/* Ad Block Fake Footer */}
-        <div className="p-5 mt-auto">
-           <div className="surface-hero-green rounded-[24px] p-5 text-center relative overflow-hidden shadow-xl shadow-primary/20">
-              <div className="absolute -top-10 -right-10 size-32 bg-white/10 rounded-full blur-2xl" />
-              <div className="flex size-10 mx-auto items-center justify-center rounded-full bg-white/20 backdrop-blur-md mb-3 border border-white/10">
-                 <ShieldAlert className="size-5 text-white" />
-              </div>
-              <div className="font-bold text-white text-[14px]">Sistema Premium</div>
-              <div className="text-white/80 text-[11px] mt-1 mb-4 leading-snug">Algoritmo en máxima capacidad analítica.</div>
-              <button 
-                 className="w-full py-2.5 rounded-[12px] bg-white text-primary text-[12px] font-bold shadow-sm hover:shadow-md transition-shadow"
-                 onClick={async () => {
-                   await supabase.auth.signOut();
-                   toast.success("Conexión terminada");
-                 }}
-               >
-                 Cerrar sesión
-              </button>
-           </div>
+        {/* Compact footer with logout */}
+        <div className="p-4 mt-auto border-t border-black/[0.04]">
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              toast.success("Conexión terminada");
+            }}
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-[14px] bg-foreground text-white text-[13px] font-bold hover:bg-foreground/90 transition-colors"
+          >
+            <LogOut className="size-4" /> Cerrar sesión
+          </button>
         </div>
       </aside>
 
