@@ -188,8 +188,11 @@ function SimCard({
   const hitPct = (sim.hitRate * 100).toFixed(1);
   const beEvenPct = (breakEven * 100).toFixed(1);
   const [filtroTabla, setFiltroTabla] = useState<"todos" | "aciertos" | "fallos">("todos");
+  const [filtroFecha, setFiltroFecha] = useState<string | null>(null);
+  const [tablaAbierta, setTablaAbierta] = useState(false);
   const filas = sim.rows.filter((r) =>
-    filtroTabla === "todos" ? true : filtroTabla === "aciertos" ? r.acierto : !r.acierto
+    (filtroTabla === "todos" ? true : filtroTabla === "aciertos" ? r.acierto : !r.acierto) &&
+    (filtroFecha ? r.fecha === filtroFecha : true)
   );
   const fallos = sim.jugadas - sim.aciertos;
 
