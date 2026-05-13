@@ -128,6 +128,8 @@ export const Route = createFileRoute("/api/public/hooks/sync-lottery-stats")({
         // Filtros opcionales: ?slug=8am&periodo=30 para debugging.
         const onlySlug = url.searchParams.get("slug");
         const onlyPeriodo = url.searchParams.get("periodo");
+        const triggeredBy = url.searchParams.get("triggered_by") ?? "manual";
+        const startedAt = Date.now();
 
         const slots = onlySlug ? SLOTS.filter((s) => s.slug === onlySlug) : SLOTS;
         const periodos = onlyPeriodo
@@ -143,9 +145,26 @@ export const Route = createFileRoute("/api/public/hooks/sync-lottery-stats")({
           errores: 0,
           detalle: [] as string[],
         };
+        const bySlot: Record<string, {
+          slug: string;
+          hora: string;
+          upserts: number;
+          errores: number;
+          periodos_ok: number;
+          periodos_total: number;
+        }> = {};
 
         // Concurrencia simple: procesar slots en serie, periodos en paralelo (6 a la vez)
         for (const slot of slots) {
+          const slotStat = {
+            slug: slot.slug,
+            hora: slot.hora,
+            upserts: 0,
+            errores: 0,
+            periodos_ok: 0,
+            periodos_total: periodos.length,
+          };
+          bySlot[slot.hora] = slotStat;
           const results = await Promise.allSettled(
             periodos.map((periodo) => fetchStats(slot.slug, periodo).then((p) => ({ periodo, p }))),
           );
@@ -162,9 +181,11 @@ export const Route = createFileRoute("/api/public/hooks/sync-lottery-stats")({
           for (const r of results) {
             if (r.status === "rejected") {
               summary.errores++;
+              slotStat.errores++;
               summary.detalle.push(`✗ ${slot.slug}: ${(r.reason as Error).message}`);
               continue;
             }
+            slotStat.periodos_ok++;
             const { periodo, p } = r.value;
             // Para cada número 0-99 que aparezca en frecuencias, guardamos
             // (los que no aparecen en frecuencias se omiten — frecuencia 0 puede
@@ -187,13 +208,31 @@ export const Route = createFileRoute("/api/public/hooks/sync-lottery-stats")({
               .upsert(rows, { onConflict: "hora,periodo,numero" });
             if (error) {
               summary.errores++;
+              slotStat.errores++;
               summary.detalle.push(`✗ upsert ${slot.slug}: ${error.message}`);
             } else {
               summary.upserts += rows.length;
+              slotStat.upserts += rows.length;
               summary.detalle.push(`✓ ${slot.slug} → ${rows.length} filas`);
             }
           }
         }
+
+        // Persistir bitácora
+        const durationMs = Date.now() - startedAt;
+        const ok = summary.errores === 0;
+        await supabaseAdmin.from("lottery_stats_sync_runs").insert({
+          ok,
+          duration_ms: durationMs,
+          slots_total: slots.length,
+          periodos_total: periodos.length,
+          combinaciones: slots.length * periodos.length,
+          upserts: summary.upserts,
+          errores: summary.errores,
+          detalle: summary.detalle,
+          by_slot: bySlot,
+          triggered_by: triggeredBy,
+        });
 
         return Response.json(summary);
       },
