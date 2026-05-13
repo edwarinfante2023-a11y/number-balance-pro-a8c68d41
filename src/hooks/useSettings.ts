@@ -191,3 +191,63 @@ export function usePatternLearningLastRun() {
     refetchInterval: 60_000,
   });
 }
+
+// ─── Payouts (pagos por posición) ──────────────────────────────────────
+
+export interface PayoutsConfig {
+  /** Apuesta por número (DOP) */
+  apuesta: number;
+  /** Múltiplo pagado por 1er premio */
+  pago1: number;
+  /** Múltiplo pagado por 2do premio */
+  pago2: number;
+  /** Múltiplo pagado por 3er premio */
+  pago3: number;
+}
+
+export const defaultPayouts: PayoutsConfig = {
+  apuesta: 25,
+  pago1: 70,
+  pago2: 10,
+  pago3: 4,
+};
+
+export function usePayouts() {
+  return useQuery({
+    queryKey: ["settings", "payouts"],
+    queryFn: async (): Promise<PayoutsConfig> => {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("valor")
+        .eq("clave", "payouts")
+        .maybeSingle();
+      if (error) throw error;
+      const v = (data?.valor as Partial<PayoutsConfig> | null) ?? null;
+      return {
+        apuesta: Number(v?.apuesta ?? defaultPayouts.apuesta),
+        pago1: Number(v?.pago1 ?? defaultPayouts.pago1),
+        pago2: Number(v?.pago2 ?? defaultPayouts.pago2),
+        pago3: Number(v?.pago3 ?? defaultPayouts.pago3),
+      };
+    },
+  });
+}
+
+export function useUpdatePayouts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (cfg: PayoutsConfig) => {
+      const { error } = await supabase
+        .from("settings")
+        .upsert(
+          [{ clave: "payouts", valor: cfg as unknown as Json }],
+          { onConflict: "clave" },
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["settings", "payouts"] });
+      qc.invalidateQueries({ queryKey: ["bankroll-sim"] });
+    },
+  });
+}
