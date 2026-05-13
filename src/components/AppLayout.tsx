@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Scale,
   Briefcase,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
