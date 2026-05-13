@@ -31,6 +31,15 @@ export interface CarteraPattern {
   estado: string;
 }
 
+/** Stats agregadas scrapeadas (lottery_stats) para una hora dada. */
+export interface CarteraHistoricalStats {
+  /** numero (0-99) -> frecuencia histórica en esa hora */
+  frecuencias: Record<number, number>;
+  /** numero -> días sin salir */
+  vencidos: Record<number, number>;
+  totalSorteos: number;
+}
+
 export interface CarteraResult {
   numeros: number[];                    // 25 elegidos
   scores: Record<string, number>;       // "23" -> 87
@@ -45,6 +54,7 @@ export interface CarteraResult {
     reglasActivas: number;
     patronesHora: number;
     estrategia: string;
+    historicalSorteos?: number;
     confidence: {
       topMean: number;       // promedio de score del top 25
       nextMean: number;      // promedio de score de los siguientes 25 (26-50)
@@ -77,6 +87,7 @@ export function buildCartera(
   rules: CarteraRule[],
   patterns: CarteraPattern[],
   hora: string,
+  historicalStats?: CarteraHistoricalStats,
 ): CarteraResult {
   // Pool de números 0-99
   const scores = new Map<number, number>();
@@ -158,6 +169,30 @@ export function buildCartera(
     }
   }
 
+  // ─── 5. Histórico agregado (lottery_stats) ────────────────────
+  // Aporta señal robusta basada en cientos de sorteos previos:
+  //   • Boost por frecuencia histórica normalizada (0-30)
+  //   • Boost por número "vencido" (regresión a la media): si lleva muchos
+  //     días sin salir relativo al promedio, sube su score (0-15).
+  if (historicalStats && historicalStats.totalSorteos > 0) {
+    const freqValues = Object.values(historicalStats.frecuencias);
+    const maxHistFreq = Math.max(1, ...freqValues);
+    for (const [nStr, f] of Object.entries(historicalStats.frecuencias)) {
+      const n = parseInt(nStr, 10);
+      const delta = Math.round((f / maxHistFreq) * 30);
+      if (delta > 0) addScore(n, delta, `+hist ×${f}`);
+    }
+    const vencValues = Object.values(historicalStats.vencidos);
+    if (vencValues.length > 0) {
+      const maxVenc = Math.max(1, ...vencValues);
+      for (const [nStr, d] of Object.entries(historicalStats.vencidos)) {
+        const n = parseInt(nStr, 10);
+        const delta = Math.round((d / maxVenc) * 15);
+        if (delta > 0) addScore(n, delta, `+vencido ${d}d`);
+      }
+    }
+  }
+
   // ─── Selección Top 25 ───────────────────────────────────────
   const all = Array.from(scores.entries())
     .map(([n, s]) => ({ n, s: Math.max(0, Math.min(100, s)) }))
@@ -204,6 +239,7 @@ export function buildCartera(
       reglasActivas: reglasAct.length,
       patronesHora: patronesHora.length,
       estrategia: "composite_v1",
+      historicalSorteos: historicalStats?.totalSorteos,
       confidence: {
         topMean: Math.round(topMean * 10) / 10,
         nextMean: Math.round(nextMean * 10) / 10,
