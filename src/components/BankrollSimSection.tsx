@@ -312,6 +312,16 @@ function SimCard({
               <b>{fmt(sim.aciertos)}</b> aciertos × {money(cfg.apuestaPorNumero * cfg.pago)} ={" "}
               <b className="text-emerald-600">{money(sim.cobrado)}</b>
             </div>
+            {(sim.aciertos2 > 0 || sim.aciertos3 > 0) && (
+              <>
+                <div className="text-muted-foreground pl-3">
+                  + 2do: <b>{fmt(sim.aciertos2)}</b> × {money(cfg.apuestaPorNumero * (cfg.pago2 ?? 0))} = <b className="text-emerald-600">{money(sim.cobrado2)}</b>
+                </div>
+                <div className="text-muted-foreground pl-3">
+                  + 3ro: <b>{fmt(sim.aciertos3)}</b> × {money(cfg.apuestaPorNumero * (cfg.pago3 ?? 0))} = <b className="text-emerald-600">{money(sim.cobrado3)}</b>
+                </div>
+              </>
+            )}
             <div>
               <span className="text-muted-foreground">Apostaste:</span>{" "}
               <b>{fmt(sim.jugadas)}</b> sorteos × {money(cfg.numerosPorCartera * cfg.apuestaPorNumero)} ={" "}
