@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
         const fecha = new Date().toISOString().slice(0, 10);
         const url = new URL(request.url);
         const force = url.searchParams.get("force") === "true";
-        const tz = url.searchParams.get("tz") ?? "America/Bogota";
+        const tz = url.searchParams.get("tz") ?? "America/Santo_Domingo";
 
         // Hora actual "HH:mm" en la zona de las loterías (default Colombia).
         const ahora = new Intl.DateTimeFormat("en-GB", {
