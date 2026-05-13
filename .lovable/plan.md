@@ -1,61 +1,94 @@
-## Recomendación basada en datos reales
+## Objetivo
 
-**Hit rate últimos 30 días (40 carteras evaluadas):**
-- 1ro: **55%** (22/40) → muy por encima del 36% de break-even
-- 2do: 20% (8/40)
-- 3ro: 22.5% (9/40)
-
-**EV por jugada de cartera completa (25 nums × $25 = $625 costo):**
-
-```text
-Cobro esperado = 0.55×$1750 + 0.20×$250 + 0.225×$100
-               = $962 + $50 + $22 = ~$1.035
-EV neto        = $1.035 − $625 = +$410 por jugada
-ROI esperado   = +65%
-```
-
-El número está bien — la cartera completa es **EV positivo** con buen margen.
-
-**Caveat honesto:** muestra de 40 jugadas es chica. Para las 18:00 puntualmente solo hay 2 evaluaciones (las dos acertaron, pero estadísticamente irrelevante). El 55% global se sostiene cruzando todas las horas.
+Hacer que las carteras se **regeneren automáticamente cada vez que sale un sorteo nuevo**, para que las próximas horas del día siempre jueguen con la data más fresca posible.
 
 ---
 
-## Cartera 18:00 de hoy (13-may-2026) — lista para enviar
+## Cómo funciona hoy (problema)
 
-```text
-03, 17, 23, 33, 37, 44, 45, 47, 50, 51, 56, 57, 62,
-65, 66, 67, 70, 75, 77, 80, 85, 88, 96, 98, 99
+```
+00:02 → cron genera TODAS las carteras del día (con data de ayer)
+12:00 → sale sorteo → scraper lo guarda → llama evaluate-results
+15:00 → juega cartera generada a las 00:02 (NO sabe que salió el de las 12:00)
 ```
 
-25 números. Internal score: 65. Alta convicción (≥80): **77, 96, 98**.
-
-**Acción inmediata:** abrir `/cartera`, seleccionar hora 18:00, pulsar el botón **"Copiar números"** que ya está en el grid → pegar en WhatsApp.
+Las 4 señales del motor (frecuencia por hora, balance ALTO/BAJO, balance PAR/IMPAR, patrones) **no se actualizan** durante el día.
 
 ---
 
-## Plan técnico (opcional, para próximas veces)
+## Cómo va a funcionar (solución)
 
-Si querés que el envío al cliente sea más rápido y profesional, propongo agregar:
-
-### Botón "Copiar para cliente" mejorado en `/cartera`
-
-En vez del copy actual (lista cruda), un botón secundario que copie un mensaje pre-formateado:
-
-```text
-🎯 Cartera 18:00 · 13 may
-
-03 - 17 - 23 - 33 - 37 - 44 - 45 - 47 - 50 - 51
-56 - 57 - 62 - 65 - 66 - 67 - 70 - 75 - 77 - 80
-85 - 88 - 96 - 98 - 99
-
-⭐ Alta convicción: 77, 96, 98
+```
+12:00 → sale sorteo → scraper lo guarda
+12:00:05 → scraper llama evaluate-results (ya lo hace hoy)
+12:00:06 → scraper llama generate-carteras  ← NUEVO
+         → recalcula SOLO las horas futuras (15:00, 18:00, 21:00…)
+         → upsert idempotente sobre carteras existentes
+15:00 → juega cartera FRESCA con data hasta las 12:00
 ```
 
-Solo frontend, 10 líneas en `src/routes/cartera.tsx` al lado del botón Copiar existente. Sin tocar backend ni schema.
+---
 
-### Archivo a modificar
-- `src/routes/cartera.tsx` — agregar segundo botón `Copy → "Copiar para cliente"` que arme el string con header (hora + fecha), grilla 10 por línea, y línea de alta convicción.
+## Cambios concretos (2 archivos)
 
-### Lo que NO se toca
-- Schema, evaluador, scraper, RLS — nada.
-- El botón "Copiar números" actual queda como está (formato técnico).
+### 1. `src/routes/api/public/hooks/generate-carteras.ts`
+
+Agregar filtro de horas futuras antes del loop de generación:
+
+- Calcular `ahora` en formato `HH:mm` (zona horaria del servidor — confirmar con vos cuál usar).
+- Filtrar `horas` para quedarse solo con `h > ahora`.
+- Aceptar un parámetro opcional `?force=true` para que el cron de las 00:02 siga generando TODO el día (caso inicial).
+- Devolver en la respuesta cuántas horas se saltaron por ser pasadas (para debugging).
+
+**No cambia:** la lógica de `buildCartera`, el upsert idempotente sobre `(fecha, hora, estrategia)`, ni el manejo de errores por hora.
+
+### 2. `supabase/functions/sync-web/index.ts`
+
+Después del bloque que llama a `evaluate-results` (línea ~326), agregar un bloque gemelo que llame a `generate-carteras`:
+
+```ts
+if (summary.nuevasInsertadas > 0) {
+  // ... evaluate-results existente ...
+
+  // NUEVO: regenerar carteras de horas futuras
+  try {
+    const genUrl = "https://project--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app/api/public/hooks/generate-carteras";
+    const genRes = await fetch(genUrl, { method: "POST", headers: {...}, body: "{}" });
+    summary.detalle.push(`↻ generate-carteras: ${...}`);
+  } catch (err) { ... }
+}
+```
+
+**No cambia:** el resto del scraper, la inserción de draws, el sync_logs.
+
+---
+
+## Garantías de seguridad
+
+- **Idempotente:** la tabla `carteras` tiene `unique(fecha, hora, estrategia)`. El upsert sobreescribe la futura, nunca la pasada.
+- **Cero riesgo de pisar resultados ya evaluados:** filtramos por `hora > ahora`, así que carteras ya jugadas no se tocan.
+- **El cron diario de las 00:02 sigue funcionando** (con `?force=true` para generar el día entero al arrancar).
+- **Si el scraper falla:** el cron diario de las 00:02 + el de cada hora siguen siendo red de seguridad.
+
+---
+
+## Lo que NO incluye este plan
+
+- Cron extra de "seguridad cada 15min" → lo dejamos para después si vemos que el scraper falla seguido. Hoy con el trigger del scraper alcanza.
+- Cambios en `buildCartera` ni en los pesos de las 4 señales → eso sería otra optimización aparte (la mencioné antes).
+- UI nueva → todo invisible para el usuario, solo mejora la calidad de las carteras.
+
+---
+
+## Validación post-deploy
+
+1. Esperar a que salga el próximo sorteo del día.
+2. Verificar en `sync_logs.detalle` que aparece la línea `↻ generate-carteras: ...`.
+3. Ver en `/cartera` que la cartera de la próxima hora tiene un `created_at` reciente (no de las 00:02).
+4. Trackear el hit rate durante 2 semanas y comparar con el 55% actual.
+
+---
+
+## Pregunta antes de implementar
+
+**Zona horaria:** ¿el servidor corre en UTC o en hora local? Si las horas en `lottery_draws.hora` están en hora local Argentina/Colombia/etc, necesito calcular `ahora` en esa misma zona para que el filtro `hora > ahora` funcione bien. Decime qué zona usás y arranco.
