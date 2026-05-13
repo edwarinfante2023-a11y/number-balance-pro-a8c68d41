@@ -218,7 +218,33 @@ function CarteraPage() {
         {/* Grid de números */}
         {cartera.data ? (
           <div className="mt-6">
-            <div className="flex justify-end mb-3">
+            <div className="flex justify-end gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  const sorted = [...numeros].sort((a, b) => a - b);
+                  const altos = sorted.filter((n) => (scoresMap[String(n)] ?? 0) >= 80).map(pad);
+                  const fecha = new Date((cartera.data as any).fecha + "T00:00:00")
+                    .toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
+                  const filas: string[] = [];
+                  for (let i = 0; i < sorted.length; i += 10) {
+                    filas.push(sorted.slice(i, i + 10).map(pad).join(" - "));
+                  }
+                  const msg =
+                    `🎯 Cartera ${(cartera.data as any).hora} · ${fecha}\n\n` +
+                    filas.join("\n") +
+                    (altos.length ? `\n\n⭐ Alta convicción: ${altos.join(", ")}` : "");
+                  navigator.clipboard.writeText(msg).then(
+                    () => toast.success("Mensaje listo para WhatsApp"),
+                    () => toast.error("No se pudo copiar"),
+                  );
+                }}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-[12px] font-bold transition"
+              >
+                <Copy className="size-3.5" />
+                Copiar para cliente
+              </button>
               <button
                 type="button"
                 onClick={() => {
