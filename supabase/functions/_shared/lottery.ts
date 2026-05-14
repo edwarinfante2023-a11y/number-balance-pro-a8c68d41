@@ -319,67 +319,73 @@ export function computeEscenarioProbablePorHora(
   distribucion: Record<Subcuadrante, number>,
   tendencia: { rango: AltoBajo; paridad: ParImpar; cuadrante: Subcuadrante }
 ): EscenarioPorHora {
+  // ─── Momentum puro: seguimos la racha actual, NO la compensamos ─────
+  // El cliente pidió que el motor refleje el comportamiento real del sorteo:
+  // si viene corriendo BAJO_IMPAR, la "expectativa" debe ser BAJO_IMPAR
+  // mientras esa racha se mantenga.
+  const VENTANA = 5;
+  const ordered = [...subset].sort((a, b) =>
+    `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`),
+  );
+  const ventana = ordered.slice(0, VENTANA);
+  const ventanaN = ventana.length;
+
+  let mAlto = 0, mPar = 0;
+  for (const s of ventana) {
+    if (s.altoBajo === "ALTO") mAlto++;
+    if (s.parImpar === "PAR") mPar++;
+  }
+  const mBajo = ventanaN - mAlto;
+  const mImpar = ventanaN - mPar;
+
+  const rangoMom: AltoBajo =
+    mAlto > mBajo ? "ALTO" : mBajo > mAlto ? "BAJO" : tendencia.rango;
+  const paridadMom: ParImpar =
+    mPar > mImpar ? "PAR" : mImpar > mPar ? "IMPAR" : tendencia.paridad;
+  const cuadranteMom = `${rangoMom}_${paridadMom}` as Subcuadrante;
+
+  const fuerzaRango = ventanaN > 0 ? Math.max(mAlto, mBajo) / ventanaN : 0;
+  const fuerzaParidad = ventanaN > 0 ? Math.max(mPar, mImpar) / ventanaN : 0;
+
   const razones: string[] = [];
-  let score = 50; 
+  // Confianza base: qué tan consistente viene la racha
+  let score = 30 + Math.round((fuerzaRango + fuerzaParidad) * 30); // 30-90
 
-  const isRangoDominant = Math.max(balance.pctAltos, balance.pctBajos) > 55;
-  if (isRangoDominant) {
-    score += 10;
+  if (ventanaN === 0) {
+    score = 30;
+    razones.push("Sin sorteos recientes en este bloque para leer momentum");
+  } else {
     razones.push(
-      `Rango ${tendencia.rango} domina históricamente en esta ventana (${Math.max(
-        balance.pctAltos,
-        balance.pctBajos
-      ).toFixed(0)}%)`
+      `Últimos ${ventanaN} sorteos: ${Math.max(mAlto, mBajo)}/${ventanaN} ${rangoMom}, ${Math.max(mPar, mImpar)}/${ventanaN} ${paridadMom}`,
     );
-  }
-
-  const isParidadDominant = Math.max(balance.pctPares, balance.pctImpares) > 55;
-  if (isParidadDominant) {
-    score += 10;
-    razones.push(
-      `Polaridad orientada a ${tendencia.paridad} de manera constante (${Math.max(
-        balance.pctPares,
-        balance.pctImpares
-      ).toFixed(0)}%)`
-    );
-  }
-
-  const cuadranteVal = distribucion[tendencia.cuadrante];
-  const cuadrantePct = subset.length ? (cuadranteVal / subset.length) * 100 : 0;
-  if (cuadrantePct > 30) {
-    score += 15;
-    razones.push(
-      `Concentración principal en el cuadrante ${subcuadranteLabel[tendencia.cuadrante]} (${cuadrantePct.toFixed(0)}%)`
-    );
-  }
-
-  const rachasActivas = rachas.map((r) => `${r.longitud}x ${r.valor}`);
-  if (rachas.length > 0) {
-    const rachaCritica = rachas.find(r => r.longitud >= 3);
-    if (rachaCritica) {
-        score -= 8; 
-        razones.push(`Advertencia: Racha activa de ${rachaCritica.longitud}x ${rachaCritica.valor} implica alta probabilidad de reversión inminente`);
-    } else {
-        score += 5;
-        razones.push(`Micro-tendencias actuales no muestran fricción atípica`);
+    if (fuerzaRango >= 0.8 || fuerzaParidad >= 0.8) {
+      razones.push(`Racha consistente — el motor sigue el comportamiento actual`);
+    } else if (fuerzaRango <= 0.6 && fuerzaParidad <= 0.6) {
+      razones.push(`Momentum débil: el bloque no muestra una racha clara`);
     }
   }
 
-  score = Math.min(Math.max(score, 30), 92);
-
-  if (razones.length === 0) {
-    razones.push("Mercado neutral para este bloque; la estadística muestra varianza uniforme");
+  // Reconocer rachas largas como confirmación del momentum (no reversión)
+  const rachasActivas = rachas.map((r) => `${r.longitud}x ${r.valor}`);
+  const rachaCritica = rachas.find((r) => r.longitud >= 3);
+  if (rachaCritica) {
+    score = Math.min(score + 6, 95);
+    razones.push(
+      `Racha activa de ${rachaCritica.longitud}x ${rachaCritica.valor} — el motor la respeta y la sigue`,
+    );
   }
 
+  score = Math.min(Math.max(score, 25), 95);
+
   return {
-    escenario: subcuadranteLabel[tendencia.cuadrante],
+    escenario: subcuadranteLabel[cuadranteMom],
     confianza: score,
     razones,
     soporte: {
-      rangoDominante: tendencia.rango,
-      paridadDominante: tendencia.paridad,
-      cuadranteDominante: subcuadranteLabel[tendencia.cuadrante],
-      rachasActivas
-    }
+      rangoDominante: rangoMom,
+      paridadDominante: paridadMom,
+      cuadranteDominante: subcuadranteLabel[cuadranteMom],
+      rachasActivas,
+    },
   };
 }
