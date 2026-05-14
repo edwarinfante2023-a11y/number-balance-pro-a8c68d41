@@ -15,7 +15,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
  *   - estado='observacion' + ocurrencias >= promote.minOcurrencias
  *     + efectividad >= promote.minEfectividad → estado='activo'
  *   - estado='activo' + ocurrencias >= descarte.minOcurrencias
- *     + efectividad <= descarte.maxEfectividad → estado='descartado'
+ *     + efectividad <= descarte.maxEfectividad → estado='hibernando'
+ *   - estado='hibernando' 
+ *     + efectividad >= promote.minEfectividad → estado='activo'
  *
  * Idempotente: si nada cumple las condiciones no toca la tabla.
  */
@@ -49,7 +51,8 @@ export const Route = createFileRoute("/api/public/hooks/learn-patterns")({
         }
 
         const promoted: string[] = [];
-        const descarted: string[] = [];
+        const hibernated: string[] = [];
+        const awoken: string[] = [];
         const log: Array<{ id: string; nombre: string; from: string; to: string; ocurrencias: number; efectividad: number }> = [];
 
         for (const p of patterns ?? []) {
@@ -76,11 +79,23 @@ export const Route = createFileRoute("/api/public/hooks/learn-patterns")({
           ) {
             const { error: ue } = await supabaseAdmin
               .from("patterns")
-              .update({ estado: "descartado" })
+              .update({ estado: "hibernando" })
               .eq("id", p.id);
             if (!ue) {
-              descarted.push(p.id);
-              log.push({ id: p.id, nombre: p.nombre, from: "activo", to: "descartado", ocurrencias: oc, efectividad: ef });
+              hibernated.push(p.id);
+              log.push({ id: p.id, nombre: p.nombre, from: "activo", to: "hibernando", ocurrencias: oc, efectividad: ef });
+            }
+          } else if (
+            p.estado === "hibernando" &&
+            ef >= cfg.promote.minEfectividad
+          ) {
+            const { error: ue } = await supabaseAdmin
+              .from("patterns")
+              .update({ estado: "activo" })
+              .eq("id", p.id);
+            if (!ue) {
+              awoken.push(p.id);
+              log.push({ id: p.id, nombre: p.nombre, from: "hibernando", to: "activo", ocurrencias: oc, efectividad: ef });
             }
           }
         }
@@ -93,7 +108,8 @@ export const Route = createFileRoute("/api/public/hooks/learn-patterns")({
               valor: {
                 ranAt: new Date().toISOString(),
                 promoted: promoted.length,
-                descarted: descarted.length,
+                hibernated: hibernated.length,
+                awoken: awoken.length,
                 evaluated: patterns?.length ?? 0,
                 log: log.slice(0, 20),
               } as any,
@@ -106,7 +122,8 @@ export const Route = createFileRoute("/api/public/hooks/learn-patterns")({
           ok: true,
           evaluated: patterns?.length ?? 0,
           promoted: promoted.length,
-          descarted: descarted.length,
+          hibernated: hibernated.length,
+          awoken: awoken.length,
           log,
         });
       },
