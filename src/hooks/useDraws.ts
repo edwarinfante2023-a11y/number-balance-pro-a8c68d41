@@ -94,8 +94,15 @@ export function useCreateDraw() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       qc.invalidateQueries({ queryKey: ["draws"] });
+      // Forzar evaluación de cartera al insertar manualmente
+      try {
+        await fetch("/api/public/hooks/evaluate-results", { method: "POST" });
+        qc.invalidateQueries({ queryKey: ["carteras"] });
+      } catch (e) {
+        console.error("Error triggering evaluation:", e);
+      }
     },
   });
 }
