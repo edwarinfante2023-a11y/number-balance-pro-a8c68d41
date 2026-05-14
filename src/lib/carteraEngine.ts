@@ -19,6 +19,8 @@ export interface CarteraRule {
   resultado_esperado: string | null;
   efectividad: number | string | null;
   activo: boolean;
+  /** rules.tipo del enum rule_tipo: 'racha' | 'compensacion' | 'patron' | 'bloqueo' | 'otro' */
+  tipo?: string | null;
 }
 
 export interface CarteraPattern {
@@ -29,6 +31,7 @@ export interface CarteraPattern {
   hora: string | null;
   activa: boolean;
   estado: string;
+  tipo?: string | null;
 }
 
 /** Stats agregadas scrapeadas (lottery_stats) para una hora dada. */
@@ -55,6 +58,13 @@ export interface CarteraResult {
     patronesHora: number;
     estrategia: string;
     historicalSorteos?: number;
+    momentum?: {
+      rango: "ALTO" | "BAJO" | null;
+      paridad: "PAR" | "IMPAR" | null;
+      fuerzaRango: number;       // 0-1
+      fuerzaParidad: number;     // 0-1
+      ventana: number;           // sorteos efectivamente usados
+    };
     confidence: {
       topMean: number;       // promedio de score del top 25
       nextMean: number;      // promedio de score de los siguientes 25 (26-50)
