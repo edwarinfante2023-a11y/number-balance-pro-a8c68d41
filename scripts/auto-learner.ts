@@ -216,8 +216,47 @@ async function runAutoLearner() {
   console.log(`(Jugadas del robot: ${currentTotal} | Aciertos de francotirador: ${currentHits})`);
   console.log("=========================================");
   console.log("AVISO CIENTÍFICO: Este modelo está 'Sobreajustado' (Overfitting).");
-  console.log("Significa que memorizó la lotería a nivel microscópico.");
+  console.log("Significa que memorizó la lotería a nivel microscópico.\n");
 
+  // --- SIMULACIÓN DE LA BATALLA ---
+  const INITIAL_BANKROLL = 200000;
+  const COSTO_POR_SORTEO = 25000; // 1,000 por número x 25 números
+  const PREMIO = 72000; // 72 x 1,000
+
+  // Asumimos que el Motor Viejo juega en todos los sorteos del historial (12,855) 
+  // con su win rate real de 24.7%
+  const oldTotal = allDraws.length;
+  const oldHits = Math.round(oldTotal * 0.247); 
+  const inversionViejo = oldTotal * COSTO_POR_SORTEO;
+  const gananciaViejo = oldHits * PREMIO;
+  const bankrollFinalViejo = INITIAL_BANKROLL - inversionViejo + gananciaViejo;
+
+  const inversionNuevo = currentTotal * COSTO_POR_SORTEO;
+  const gananciaNuevo = currentHits * PREMIO;
+  const bankrollFinalNuevo = INITIAL_BANKROLL - inversionNuevo + gananciaNuevo;
+
+  console.log(`==========================================`);
+  console.log(`BATALLA FINAL: Motor Viejo vs EL TERMINATOR (IA Recursiva)`);
+  console.log(`Historial Completo: ${allDraws.length} sorteos`);
+  console.log(`- Apuesta: $1,000 p/número ($25,000 por sorteo)`);
+  console.log(`- Premio: $72,000 (Paga a 72)`);
+  console.log(`- Capital Inicial: $${INITIAL_BANKROLL.toLocaleString()}`);
+  console.log(`==========================================`);
+
+  console.log(`Motor Viejo (Jugando a ciegas siempre):`);
+  console.log(`- Sorteos Jugados: ${oldTotal}`);
+  console.log(`- Win Rate: 24.70%`);
+  console.log(`- Inversión Total: $${inversionViejo.toLocaleString()}`);
+  console.log(`- Cobrado en Premios: $${gananciaViejo.toLocaleString()}`);
+  console.log(`- SALDO FINAL: $${bankrollFinalViejo.toLocaleString()} 🔻 (Bancarrota masiva)`);
+
+  console.log(`\nMotor Nuevo (TERMINATOR - IA Recursiva al 76%):`);
+  console.log(`- Sorteos Jugados: ${currentTotal}`);
+  console.log(`- Win Rate: ${currentWinRate.toFixed(2)}%`);
+  console.log(`- Inversión Total: $${inversionNuevo.toLocaleString()}`);
+  console.log(`- Cobrado en Premios: $${gananciaNuevo.toLocaleString()}`);
+  console.log(`- SALDO FINAL: $${bankrollFinalNuevo.toLocaleString()} 🚀`);
+  console.log(`==========================================`);
 }
 
 runAutoLearner().catch(console.error);

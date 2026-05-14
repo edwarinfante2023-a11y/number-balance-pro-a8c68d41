@@ -63,11 +63,11 @@ const ALGORITMOS_BASE = [
 
 async function run() {
   console.log("=========================================");
-  console.log("🎯 OPTIMIZADOR DE FRANCOTIRADOR (Fase 6)");
+  console.log("🎯 OPTIMIZADOR FRANCOTIRADOR (Enfoque Vida Real - 2026)");
   console.log("=========================================");
 
   // 1. Descargar historial
-  const allDraws: any[] = [];
+  const allDrawsData: any[] = [];
   let from = 0;
   const limit = 1000;
   process.stdout.write("Descargando base de datos ");
@@ -78,11 +78,14 @@ async function run() {
       .order("fecha", { ascending: true })
       .range(from, from + limit - 1);
     if (!chunk || chunk.length === 0) break;
-    allDraws.push(...chunk);
+    allDrawsData.push(...chunk);
     from += limit;
     process.stdout.write(".");
   }
-  console.log(`\n✅ Historial cargado: ${allDraws.length} sorteos.`);
+  
+  // FILTRO DE VIDA REAL: Solo el historial reciente (Este año 2026)
+  const allDraws = allDrawsData.filter(d => d.fecha.startsWith("2026"));
+  console.log(`\n✅ Historial reciente cargado: ${allDraws.length} sorteos del 2026.`);
 
   // 2. Agrupar por semanas
   const drawsByWeek = new Map<string, any[]>();
@@ -219,7 +222,7 @@ async function run() {
   const monthNames = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
   for (const [key, stats] of combinations.entries()) {
-    if (stats.total < 5) continue; // Reducimos muestra para encontrar diamantes súper profundos de 80%
+    if (stats.total < 4) continue; // Muestra reducida porque solo analizamos unos meses de este año
     for (const cuad of CUADRANTES) {
       const hits = stats.hits[cuad];
       const ef = Math.round((hits / stats.total) * 100);
