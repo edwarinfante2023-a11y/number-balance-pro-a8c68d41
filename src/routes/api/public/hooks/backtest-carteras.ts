@@ -130,6 +130,16 @@ function summarizeByHour(rows: BacktestEval[]) {
 export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
   server: {
     handlers: {
+      OPTIONS: async () => {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+          },
+        });
+      },
       POST: async ({ request }) => {
         const url = new URL(request.url);
         const limit = Math.min(1500, Math.max(100, Number(url.searchParams.get("limit") ?? 600)));
@@ -164,7 +174,10 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
         if (e1 || e2 || e3) {
           return Response.json(
             { ok: false, error: e1?.message ?? e2?.message ?? e3?.message },
-            { status: 500 },
+            { 
+              status: 500,
+              headers: { "Access-Control-Allow-Origin": "*" }
+            },
           );
         }
 
@@ -222,7 +235,7 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
               last: standardRows.slice(-20).reverse(),
             },
           },
-        });
+        }, { headers: { "Access-Control-Allow-Origin": "*" } });
       },
     },
   },
