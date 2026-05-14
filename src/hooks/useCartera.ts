@@ -85,6 +85,7 @@ export function useCarteraDelDia(hora: string | null, fecha?: string) {
     queryKey: ["carteras", f, hora],
     enabled: !!hora,
     queryFn: async () => {
+      // Primero buscar cartera con la estrategia adaptativa actual
       const { data, error } = await supabase
         .from("carteras")
         .select("*")
@@ -97,6 +98,7 @@ export function useCarteraDelDia(hora: string | null, fecha?: string) {
       if (error) throw error;
       if (data) return data;
 
+      // Fallback: buscar cualquier estrategia (para warm-up)
       const { data: fallback, error: fallbackError } = await supabase
         .from("carteras")
         .select("*")
@@ -106,7 +108,11 @@ export function useCarteraDelDia(hora: string | null, fecha?: string) {
         .limit(1)
         .maybeSingle();
       if (fallbackError) throw fallbackError;
-      return fallback;
+      // Validar que el fallback tenga la estructura mínima esperada
+      if (fallback && Array.isArray(fallback.numeros) && fallback.numeros.length > 0) {
+        return fallback;
+      }
+      return null;
     },
   });
 }
@@ -117,14 +123,25 @@ export function useCarterasDelDia(fecha?: string) {
   return useQuery({
     queryKey: ["carteras-dia", f],
     queryFn: async () => {
+      // Intentar primero solo con la estrategia adaptativa
       const { data, error } = await supabase
         .from("carteras")
-        .select("id, fecha, hora, numeros, scores, contexto, created_at, estrategia, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, numero_tercero, numero_tercero, evaluated_at )")
+        .select("id, fecha, hora, numeros, scores, contexto, created_at, estrategia, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, acierto_tercero, numero_tercero, evaluated_at )")
         .eq("fecha", f)
+        .eq("estrategia", ADAPTIVE_STRATEGY)
         .order("hora", { ascending: true });
       if (error) throw error;
+      if (data && data.length > 0) return data;
+
+      // Fallback: traer todas las estrategias, deduplicar por hora
+      const { data: allData, error: allError } = await supabase
+        .from("carteras")
+        .select("id, fecha, hora, numeros, scores, contexto, created_at, estrategia, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, acierto_tercero, numero_tercero, evaluated_at )")
+        .eq("fecha", f)
+        .order("hora", { ascending: true });
+      if (allError) throw allError;
       const byHour = new Map<string, any>();
-      for (const row of data ?? []) {
+      for (const row of allData ?? []) {
         const current = byHour.get(row.hora);
         if (!current || row.estrategia === ADAPTIVE_STRATEGY) {
           byHour.set(row.hora, row);
