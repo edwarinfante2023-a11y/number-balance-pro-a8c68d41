@@ -30,6 +30,7 @@ import { useDraws } from "@/hooks/useDraws";
 import { drawToSorteo } from "@/lib/drawAdapter";
 import { cn } from "@/lib/utils";
 import { getLotteryLogo } from "@/lib/lotteryLogos";
+import { WeekRadar } from "@/components/WeekRadar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -143,6 +144,9 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
           Motor algorítmico de clasificación, balances estocásticos y escenarios.
         </p>
       </div>
+
+      {/* ─── Radar AI (Sistema Dual) ─── */}
+      <WeekRadar />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* HERO GREEN CARD - Escenario Probable (Replaces Top Left Dark Card) */}

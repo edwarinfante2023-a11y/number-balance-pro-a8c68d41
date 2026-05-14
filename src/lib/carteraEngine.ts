@@ -111,6 +111,179 @@ export function getQuadrant(n: number) {
   return `${ab}_${pi}`;
 }
 
+// ─── SISTEMA DUAL AI (Fase 14) ──────────────────────────────────────────
+
+export type WeekClassification = "MATH" | "CHAOS";
+
+export interface DualSystemState {
+  weekType: WeekClassification;
+  activeMotor: "SNIPER" | "GOD_MODE";
+  godModePrediction: string | null;
+  confidence: number;
+  mathWinRate: number;
+  sampleSize: number;
+}
+
+/**
+ * RADAR: Clasifica la semana actual como Matemática o Caótica.
+ * Usa los últimos 5 sorteos para evaluar si las reglas simples de repetición
+ * están funcionando (>= 60% de Win Rate = Semana Matemática).
+ */
+export function classifyWeek(recentDraws: Array<{ numero: number }>): WeekClassification {
+  if (recentDraws.length < 5) return "CHAOS";
+
+  const last5 = recentDraws.slice(0, 5);
+  let hits = 0;
+  let evals = 0;
+
+  for (let i = 2; i < last5.length; i++) {
+    const h0 = last5[i - 1].numero;
+    const h1 = last5[i - 2].numero;
+    const target = last5[i].numero;
+
+    // Evaluar si hay continuación de racha (misma propiedad Alto/Bajo o Par/Impar)
+    const sameAlto = isAlto(h0) === isAlto(h1);
+    const samePar = isPar(h0) === isPar(h1);
+
+    if (sameAlto || samePar) {
+      evals++;
+      // Verificar si la repetición continuó
+      if (sameAlto && isAlto(target) === isAlto(h0)) hits++;
+      else if (samePar && isPar(target) === isPar(h0)) hits++;
+    }
+  }
+
+  if (evals >= 2 && (hits / evals) * 100 >= 60) return "MATH";
+  return "CHAOS";
+}
+
+/**
+ * MOTOR 2 (MODO DIOS): Predicción de Fuerza Bruta Nivel 4.
+ * Construye un Rulebook cruzando: Hora + Día de la Semana + Mes + 4 Cuadrantes Previos.
+ * Solo retorna una predicción si encuentra una regla con 100% de Win Rate histórico
+ * y al menos 2 apariciones (para evitar ruido de muestra única).
+ */
+export function godModePredict(
+  allDraws: Array<{ numero: number; fecha: string; hora?: string }>,
+  targetHora: string,
+  targetFecha: string,
+): { quadrant: string; confidence: number; ruleHits: number } | null {
+  const DEPTH = 4;
+  const CUADRANTES = ["ALTO_PAR", "ALTO_IMPAR", "BAJO_PAR", "BAJO_IMPAR"];
+
+  // Filtrar sorteos de la misma hora para construir la cadena temporal
+  const drawsForHora = allDraws
+    .filter(d => (d.hora ?? "") === targetHora)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  if (drawsForHora.length < DEPTH + 2) return null;
+
+  // Construir Rulebook (excluimos los últimos sorteos para no hacer trampa)
+  const ruleBook = new Map<string, { total: number; hits: Record<string, number> }>();
+
+  for (let i = DEPTH; i < drawsForHora.length; i++) {
+    const current = drawsForHora[i];
+    const d = new Date(current.fecha + "T12:00:00");
+    if (isNaN(d.getTime())) continue;
+
+    const keyObj: Record<string, unknown> = {
+      hora: targetHora,
+      day: d.getDay(),
+      month: d.getMonth() + 1,
+    };
+    for (let j = 1; j <= DEPTH; j++) {
+      keyObj[`p${j}`] = getQuadrant(drawsForHora[i - j].numero);
+    }
+    const key = JSON.stringify(keyObj);
+
+    let entry = ruleBook.get(key);
+    if (!entry) {
+      entry = { total: 0, hits: { ALTO_PAR: 0, ALTO_IMPAR: 0, BAJO_PAR: 0, BAJO_IMPAR: 0 } };
+      ruleBook.set(key, entry);
+    }
+    entry.total++;
+    entry.hits[getQuadrant(current.numero)]++;
+  }
+
+  // Evaluar si la configuración ACTUAL coincide con una regla de 100%
+  const targetDate = new Date(targetFecha + "T12:00:00");
+  if (isNaN(targetDate.getTime())) return null;
+
+  const lastN = drawsForHora.slice(-DEPTH);
+  if (lastN.length < DEPTH) return null;
+
+  const currentKeyObj: Record<string, unknown> = {
+    hora: targetHora,
+    day: targetDate.getDay(),
+    month: targetDate.getMonth() + 1,
+  };
+  for (let j = 1; j <= DEPTH; j++) {
+    currentKeyObj[`p${j}`] = getQuadrant(lastN[lastN.length - j].numero);
+  }
+  const currentKey = JSON.stringify(currentKeyObj);
+
+  const matchedRule = ruleBook.get(currentKey);
+  if (!matchedRule || matchedRule.total < 2) return null;
+
+  // Buscar si algún cuadrante tiene 100% de aciertos
+  for (const cuad of CUADRANTES) {
+    const winRate = (matchedRule.hits[cuad] / matchedRule.total) * 100;
+    if (winRate >= 100) {
+      return {
+        quadrant: cuad,
+        confidence: winRate,
+        ruleHits: matchedRule.total,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Evalúa el estado completo del Sistema Dual para una hora y fecha dada.
+ */
+export function evaluateDualSystem(
+  allDraws: Array<{ numero: number; fecha: string; hora?: string }>,
+  targetHora: string,
+  targetFecha: string,
+): DualSystemState {
+  // Filtrar los sorteos recientes de esta hora para el Radar
+  const drawsForHora = allDraws
+    .filter(d => (d.hora ?? "") === targetHora)
+    .sort((a, b) => `${b.fecha}`.localeCompare(`${a.fecha}`));
+
+  const recentForRadar = drawsForHora.slice(0, 5);
+  const weekType = classifyWeek(recentForRadar);
+
+  // Calcular Math Win Rate para el indicador visual
+  let mathHits = 0;
+  let mathEvals = 0;
+  for (let i = 2; i < Math.min(recentForRadar.length, 5); i++) {
+    const h0 = recentForRadar[i - 1].numero;
+    const h1 = recentForRadar[i - 2].numero;
+    if (isAlto(h0) === isAlto(h1) || isPar(h0) === isPar(h1)) {
+      mathEvals++;
+      if (isAlto(recentForRadar[i].numero) === isAlto(h0) || isPar(recentForRadar[i].numero) === isPar(h0)) {
+        mathHits++;
+      }
+    }
+  }
+  const mathWinRate = mathEvals > 0 ? (mathHits / mathEvals) * 100 : 0;
+
+  // Evaluar Modo Dios
+  const godResult = godModePredict(allDraws, targetHora, targetFecha);
+
+  return {
+    weekType,
+    activeMotor: weekType === "MATH" ? "SNIPER" : "GOD_MODE",
+    godModePrediction: godResult?.quadrant ?? null,
+    confidence: godResult?.confidence ?? mathWinRate,
+    mathWinRate,
+    sampleSize: drawsForHora.length,
+  };
+}
+
 function num(v: unknown, fallback = 0): number {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
   return Number.isFinite(n) ? n : fallback;
