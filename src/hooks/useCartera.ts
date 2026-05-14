@@ -123,26 +123,18 @@ export function useCarterasDelDia(fecha?: string) {
   return useQuery({
     queryKey: ["carteras-dia", f],
     queryFn: async () => {
-      // Intentar primero solo con la estrategia adaptativa
-      const { data, error } = await supabase
-        .from("carteras")
-        .select("id, fecha, hora, numeros, scores, contexto, created_at, estrategia, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, acierto_tercero, numero_tercero, evaluated_at )")
-        .eq("fecha", f)
-        .eq("estrategia", ADAPTIVE_STRATEGY)
-        .order("hora", { ascending: true });
-      if (error) throw error;
-      if (data && data.length > 0) return data;
-
-      // Fallback: traer todas las estrategias, deduplicar por hora
+      // Traer todas las estrategias y deduplicar por hora
       const { data: allData, error: allError } = await supabase
         .from("carteras")
         .select("id, fecha, hora, numeros, scores, contexto, created_at, estrategia, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, acierto_tercero, numero_tercero, evaluated_at )")
         .eq("fecha", f)
         .order("hora", { ascending: true });
       if (allError) throw allError;
+      
       const byHour = new Map<string, any>();
       for (const row of allData ?? []) {
         const current = byHour.get(row.hora);
+        // Si no hay cartera para esta hora, o si la actual es la estrategia adaptativa, la preferimos
         if (!current || row.estrategia === ADAPTIVE_STRATEGY) {
           byHour.set(row.hora, row);
         }
