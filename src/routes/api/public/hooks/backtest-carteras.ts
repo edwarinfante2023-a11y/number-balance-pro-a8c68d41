@@ -192,6 +192,7 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
           .reverse(); // Revertir para que queden cronológicos (oldest to newest)
 
         const adaptiveRows: BacktestEval[] = [];
+        const compensationRows: BacktestEval[] = [];
         const standardRows: BacktestEval[] = [];
 
         // Evaluamos solo los últimos `limit` draws, asegurando que tienen al menos `minTrain` de historia
@@ -209,7 +210,15 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
             (rawPatterns ?? []) as CarteraPattern[],
             target.hora,
             stats,
-            { allowCompact: true },
+            { allowCompact: true, momentumMode: "follow" },
+          );
+          const compensation = buildCartera(
+            train,
+            (rawRules ?? []) as CarteraRule[],
+            (rawPatterns ?? []) as CarteraPattern[],
+            target.hora,
+            stats,
+            { allowCompact: true, momentumMode: "compensate" },
           );
           const standard = buildCartera(
             train,
@@ -217,10 +226,11 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
             (rawPatterns ?? []) as CarteraPattern[],
             target.hora,
             stats,
-            { allowCompact: false },
+            { allowCompact: false, momentumMode: "follow" },
           );
 
           adaptiveRows.push(evaluateStrategy("adaptive_v2", adaptive, target, payoutPerHit));
+          compensationRows.push(evaluateStrategy("adaptive_compensation", compensation, target, payoutPerHit));
           standardRows.push(evaluateStrategy("standard_25", standard, target, payoutPerHit));
         }
 
@@ -233,6 +243,11 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
               summary: summarize(adaptiveRows),
               byHour: summarizeByHour(adaptiveRows),
               last: adaptiveRows.slice(-20).reverse(),
+            },
+            adaptive_compensation: {
+              summary: summarize(compensationRows),
+              byHour: summarizeByHour(compensationRows),
+              last: compensationRows.slice(-20).reverse(),
             },
             standard_25: {
               summary: summarize(standardRows),

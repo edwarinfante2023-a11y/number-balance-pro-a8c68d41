@@ -28,10 +28,17 @@ export type BacktestResult = {
     adaptive_v2: {
       summary: BacktestSummary;
       byHour: BacktestHour[];
+      last?: any[];
+    };
+    adaptive_compensation: {
+      summary: BacktestSummary;
+      byHour: BacktestHour[];
+      last?: any[];
     };
     standard_25: {
       summary: BacktestSummary;
       byHour: BacktestHour[];
+      last?: any[];
     };
   };
 };

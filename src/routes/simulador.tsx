@@ -47,8 +47,12 @@ function SimuladorPage() {
   );
 
   const adaptive = data?.strategies.adaptive_v2.summary;
+  const compensation = data?.strategies.adaptive_compensation.summary;
   const standard = data?.strategies.standard_25.summary;
-  const deltaRoi = adaptive && standard ? adaptive.roi - standard.roi : null;
+  
+  const deltaRoiAdaptive = adaptive && standard ? adaptive.roi - standard.roi : null;
+  const deltaRoiComp = compensation && standard ? compensation.roi - standard.roi : null;
+  
   const bestHours = data?.strategies.adaptive_v2.byHour.slice(0, 8) ?? [];
   const lastDraws = data?.strategies.adaptive_v2.last ?? [];
 
@@ -157,34 +161,45 @@ function SimuladorPage() {
       )}
 
       {/* Results Area */}
-      {adaptive && standard && (
+      {adaptive && compensation && standard && (
         <div className="space-y-6 animate-fade-up">
           {/* Top Level Comparison */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-            <BacktestCard title="Estrategia: Adaptativo 25/15" summary={adaptive} accent />
-            <BacktestCard title="Estrategia: 25 Fijo Clásico" summary={standard} />
-            <div className="rounded-[24px] bg-white border border-border p-6 lg:p-8 flex flex-col justify-between shadow-sm">
-              <div>
-                <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-muted-foreground">
-                  <TrendingUp className="size-4" />
-                  Ventaja Adaptativa (Delta ROI)
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+            <BacktestCard title="Adaptativo (Momentum)" summary={adaptive} accent />
+            <BacktestCard title="Adaptativo (Compensación)" summary={compensation} accent />
+            <BacktestCard title="25 Fijo Clásico" summary={standard} />
+            
+            <div className="rounded-[24px] bg-white border border-border p-6 shadow-sm flex flex-col justify-between">
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <TrendingUp className="size-3.5" />
+                    Delta ROI (Momentum)
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-1 text-[24px] font-black tabular-nums",
+                      deltaRoiAdaptive !== null && deltaRoiAdaptive >= 0 ? "text-emerald-600" : "text-rose-600",
+                    )}
+                  >
+                    {deltaRoiAdaptive !== null ? pct(deltaRoiAdaptive) : "—"}
+                  </div>
                 </div>
-                <div
-                  className={cn(
-                    "mt-3 text-[36px] font-black tabular-nums",
-                    deltaRoi !== null && deltaRoi >= 0 ? "text-emerald-600" : "text-rose-600",
-                  )}
-                >
-                  {deltaRoi !== null ? pct(deltaRoi) : "—"}
+                
+                <div className="pt-3 border-t border-border">
+                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <TrendingUp className="size-3.5" />
+                    Delta ROI (Compensación)
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-1 text-[24px] font-black tabular-nums",
+                      deltaRoiComp !== null && deltaRoiComp >= 0 ? "text-emerald-600" : "text-rose-600",
+                    )}
+                  >
+                    {deltaRoiComp !== null ? pct(deltaRoiComp) : "—"}
+                  </div>
                 </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-[12px] font-medium text-muted-foreground leading-relaxed">
-                  El algoritmo adaptativo redujo la cartera a 15 números en{" "}
-                  <strong className="text-foreground">{adaptive.compact}</strong> de las{" "}
-                  <strong className="text-foreground">{adaptive.total}</strong> simulaciones
-                  evaluadas.
-                </p>
               </div>
             </div>
           </div>

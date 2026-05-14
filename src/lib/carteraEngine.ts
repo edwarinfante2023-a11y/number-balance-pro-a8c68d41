@@ -49,6 +49,7 @@ export const ADAPTIVE_STRATEGY = "adaptive_v2";
 export interface CarteraBuildOptions {
   allowCompact?: boolean;
   strategy?: typeof ADAPTIVE_STRATEGY;
+  momentumMode?: "follow" | "compensate";
 }
 
 export interface CarteraRankedNumber {
@@ -207,11 +208,23 @@ export function buildCartera(
   for (let n = RANGE_MIN; n <= RANGE_MAX; n++) {
     const ab = isAlto(n) ? "ALTO" : "BAJO";
     const pi = isPar(n) ? "PAR" : "IMPAR";
-    if (rangoDom && ab === rangoDom && boostMomAB > 0) {
-      addScore(n, boostMomAB, `+momentum ${rangoDom} (${Math.max(mAlto, mBajo)}/${ventanaN})`);
+    
+    // Si estamos en modo compensación, buscamos el cuadrante OPUESTO a la racha
+    const targetRango = options.momentumMode === "compensate" 
+      ? (rangoDom === "ALTO" ? "BAJO" : rangoDom === "BAJO" ? "ALTO" : null)
+      : rangoDom;
+      
+    const targetParidad = options.momentumMode === "compensate"
+      ? (paridadDom === "PAR" ? "IMPAR" : paridadDom === "IMPAR" ? "PAR" : null)
+      : paridadDom;
+
+    if (targetRango && ab === targetRango && boostMomAB > 0) {
+      const modeText = options.momentumMode === "compensate" ? "compensación" : "momentum";
+      addScore(n, boostMomAB, `+${modeText} ${targetRango} (contra ${Math.max(mAlto, mBajo)}/${ventanaN})`);
     }
-    if (paridadDom && pi === paridadDom && boostMomPI > 0) {
-      addScore(n, boostMomPI, `+momentum ${paridadDom} (${Math.max(mPar, mImpar)}/${ventanaN})`);
+    if (targetParidad && pi === targetParidad && boostMomPI > 0) {
+      const modeText = options.momentumMode === "compensate" ? "compensación" : "momentum";
+      addScore(n, boostMomPI, `+${modeText} ${targetParidad} (contra ${Math.max(mPar, mImpar)}/${ventanaN})`);
     }
   }
 
