@@ -229,17 +229,19 @@ function SimCard({
 
   // Aciertos agrupados por día (siempre visible)
   const porDia = useMemo(() => {
-    const m = new Map<string, { aciertos: number; jugadas: number }>();
+    const m = new Map<string, { aciertos: number; aciertos2: number; aciertos3: number; jugadas: number }>();
     sim.rows.forEach((r) => {
       const k = r.fecha;
-      const cur = m.get(k) ?? { aciertos: 0, jugadas: 0 };
+      const cur = m.get(k) ?? { aciertos: 0, aciertos2: 0, aciertos3: 0, jugadas: 0 };
       cur.jugadas++;
       if (r.acierto) cur.aciertos++;
+      if (r.acierto2) cur.aciertos2++;
+      if (r.acierto3) cur.aciertos3++;
       m.set(k, cur);
     });
     return Array.from(m.entries())
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([fecha, v]) => ({ fecha, ...v }));
+      .map(([fecha, v]) => ({ fecha, ...v, totalAciertos: v.aciertos + v.aciertos2 + v.aciertos3 }));
   }, [sim.rows]);
 
   let veredictoIcon = "⚪️";
@@ -346,7 +348,7 @@ function SimCard({
       {porDia.length > 0 && (
         <div className="mb-3 p-3 rounded-xl bg-background/60 border border-border">
           <div className="font-bold text-[10px] uppercase text-muted-foreground mb-2">
-            Aciertos por día ({fmt(sim.aciertos)} de {fmt(sim.jugadas)} en total) — toca un día para ver sus jugadas
+            Aciertos por día ({fmt(sim.aciertos + sim.aciertos2 + sim.aciertos3)} de {fmt(sim.jugadas)} en total · 1ra: {fmt(sim.aciertos)}, 2da: {fmt(sim.aciertos2)}, 3ra: {fmt(sim.aciertos3)}) — toca un día para ver sus jugadas
           </div>
           <div className="space-y-1.5">
             {porDia.map((d) => {
@@ -374,7 +376,7 @@ function SimCard({
                     />
                   </div>
                   <span className="font-mono font-semibold w-24 text-right shrink-0">
-                    <span className="text-emerald-600">{d.aciertos} ✓</span>
+                    <span className="text-emerald-600">{d.totalAciertos} ✓</span>
                     <span className="text-muted-foreground"> de {d.jugadas}</span>
                   </span>
                   <span className={`text-[10px] shrink-0 ${activo ? "text-primary font-bold" : "text-muted-foreground/60"}`}>
