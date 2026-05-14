@@ -58,9 +58,12 @@ async function runInfiniteLoop() {
     process.stdout.write(".");
   }
 
-  // 2. Extraer solo el CAOS
+  // 2. Extraer solo el CAOS (Filtrado para la Vida Real: Año 2026)
+  const draws2026 = allDraws.filter(d => d.fecha.startsWith("2026"));
+  console.log(`[SYS] Dataset reducido a la Vida Real: ${draws2026.length} sorteos del 2026.`);
+
   const drawsByWeek = new Map<string, any[]>();
-  for (const d of allDraws) {
+  for (const d of draws2026) {
     const date = new Date(d.fecha + "T12:00:00");
     const year = date.getFullYear();
     const firstDay = new Date(year, 0, 1);
