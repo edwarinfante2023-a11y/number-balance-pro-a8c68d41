@@ -40,9 +40,6 @@ export const Route = createFileRoute("/historial")({
 });
 
 function Historial() {
-  const { data: draws = [], isLoading } = useDraws({ limit: 5000 });
-  const { data: lotteries = [] } = useLotteries();
-  const deleteDraw = useDeleteDraw();
   const queryClient = useQueryClient();
 
   // ─── Filtros ─────────────────────────────────────────────────────
@@ -55,6 +52,14 @@ function Historial() {
   const [datePreset, setDatePreset] = useState<DatePreset>("hoy");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+
+  const { data: draws = [], isLoading } = useDraws({ 
+    limit: 5000,
+    fechaDesde: fechaDesde || undefined,
+    fechaHasta: fechaHasta || undefined,
+  });
+  const { data: lotteries = [] } = useLotteries();
+  const deleteDraw = useDeleteDraw();
 
   useEffect(() => {
     const today = new Date();

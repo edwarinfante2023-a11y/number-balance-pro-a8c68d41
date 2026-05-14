@@ -43,6 +43,8 @@ export function useDraws(opts?: {
   loteriaId?: string;
   sorteoId?: string;
   fecha?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
 }) {
   return useQuery({
     queryKey: ["draws", opts],
@@ -54,6 +56,8 @@ export function useDraws(opts?: {
       if (opts?.sorteoId) q = q.eq("sorteo_id", opts.sorteoId);
       if (opts?.loteriaId) q = q.eq("lottery_draws.loteria_id", opts.loteriaId);
       if (opts?.fecha) q = q.eq("fecha", opts.fecha);
+      if (opts?.fechaDesde) q = q.gte("fecha", opts.fechaDesde);
+      if (opts?.fechaHasta) q = q.lte("fecha", opts.fechaHasta);
       if (opts?.limit) q = q.limit(opts.limit);
       const { data, error } = await q;
       if (error) throw error;
