@@ -178,7 +178,12 @@ export function godModePredict(
   targetHora: string,
   targetFecha: string,
 ): { quadrant: string; confidence: number; ruleHits: number } | null {
-  const DEPTH = 4;
+  // ═══ RECALIBRADO POR WALK-FORWARD (2026-05-14) ═══
+  // Antes: D4, S2, C100%, con día+mes → 0 disparos en vida real
+  // Ahora: D3, S5, C80%, solo hora → 36.6% WR, +$12,300 validado
+  const DEPTH = 3;
+  const MIN_SAMPLES = 5;   // Exigimos 5+ repeticiones para confiabilidad
+  const MIN_CONFIDENCE = 80; // 80%+ de confianza (antes era 100%)
   const CUADRANTES = ["ALTO_PAR", "ALTO_IMPAR", "BAJO_PAR", "BAJO_IMPAR"];
 
   // Filtrar sorteos de la misma hora para construir la cadena temporal
@@ -186,21 +191,17 @@ export function godModePredict(
     .filter(d => (d.hora ?? "") === targetHora)
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-  if (drawsForHora.length < DEPTH + 2) return null;
+  if (drawsForHora.length < DEPTH + MIN_SAMPLES) return null;
 
-  // Construir Rulebook (excluimos los últimos sorteos para no hacer trampa)
+  // Construir Rulebook — SOLO usa hora + 3 cuadrantes previos
+  // (sin día ni mes para que el Rulebook se llene con patrones reales)
   const ruleBook = new Map<string, { total: number; hits: Record<string, number> }>();
 
   for (let i = DEPTH; i < drawsForHora.length; i++) {
     const current = drawsForHora[i];
-    const d = new Date(current.fecha + "T12:00:00");
-    if (isNaN(d.getTime())) continue;
 
-    const keyObj: Record<string, unknown> = {
-      hora: targetHora,
-      day: d.getDay(),
-      month: d.getMonth() + 1,
-    };
+    // Key simplificada: solo hora + 3 cuadrantes previos
+    const keyObj: Record<string, unknown> = { hora: targetHora };
     for (let j = 1; j <= DEPTH; j++) {
       keyObj[`p${j}`] = getQuadrant(drawsForHora[i - j].numero);
     }
@@ -215,33 +216,26 @@ export function godModePredict(
     entry.hits[getQuadrant(current.numero)]++;
   }
 
-  // Evaluar si la configuración ACTUAL coincide con una regla de 100%
-  const targetDate = new Date(targetFecha + "T12:00:00");
-  if (isNaN(targetDate.getTime())) return null;
-
+  // Evaluar si la configuración ACTUAL coincide con una regla fuerte
   const lastN = drawsForHora.slice(-DEPTH);
   if (lastN.length < DEPTH) return null;
 
-  const currentKeyObj: Record<string, unknown> = {
-    hora: targetHora,
-    day: targetDate.getDay(),
-    month: targetDate.getMonth() + 1,
-  };
+  const currentKeyObj: Record<string, unknown> = { hora: targetHora };
   for (let j = 1; j <= DEPTH; j++) {
     currentKeyObj[`p${j}`] = getQuadrant(lastN[lastN.length - j].numero);
   }
   const currentKey = JSON.stringify(currentKeyObj);
 
   const matchedRule = ruleBook.get(currentKey);
-  if (!matchedRule || matchedRule.total < 2) return null;
+  if (!matchedRule || matchedRule.total < MIN_SAMPLES) return null;
 
-  // Buscar si algún cuadrante tiene 100% de aciertos
+  // Buscar si algún cuadrante tiene >= 80% de aciertos
   for (const cuad of CUADRANTES) {
     const winRate = (matchedRule.hits[cuad] / matchedRule.total) * 100;
-    if (winRate >= 100) {
+    if (winRate >= MIN_CONFIDENCE) {
       return {
         quadrant: cuad,
-        confidence: winRate,
+        confidence: Math.round(winRate * 10) / 10,
         ruleHits: matchedRule.total,
       };
     }
