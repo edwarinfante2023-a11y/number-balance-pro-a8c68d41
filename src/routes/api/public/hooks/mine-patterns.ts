@@ -299,6 +299,82 @@ function mineDayHour(draws: MinedDraw[]): Discovery[] {
   return results.sort((a, b) => b.efectividad - a.efectividad).slice(0, 4);
 }
 
+// ─── ALGORITMO 6: Estacionalidad Mensual ────────────────────────
+// "¿Hay cuadrantes que dominan solo en ciertos meses del año?"
+// Analiza todos los sorteos agrupados por mes+hora y detecta cuadrantes
+// con efectividad ≥70% solo en un subconjunto de meses.
+function mineSeasonalMonthly(draws: MinedDraw[]): Discovery[] {
+  const results: Discovery[] = [];
+  const horas = [...new Set(draws.map((d) => d.hora))];
+  const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+  for (const hora of horas) {
+    const drawsHora = draws.filter((d) => d.hora === hora);
+    if (drawsHora.length < 100) continue; // necesitamos suficiente data
+
+    // Agrupar por mes
+    const byMonth = new Map<number, MinedDraw[]>();
+    for (const d of drawsHora) {
+      const month = parseInt(d.fecha.split("-")[1], 10);
+      if (!byMonth.has(month)) byMonth.set(month, []);
+      byMonth.get(month)!.push(d);
+    }
+
+    // Para cada cuadrante, calcular efectividad por mes
+    const cuadrantes = ["ALTO_PAR", "ALTO_IMPAR", "BAJO_PAR", "BAJO_IMPAR"];
+    for (const q of cuadrantes) {
+      const monthlyEf: Array<{ month: number; ef: number; count: number; total: number }> = [];
+
+      for (const [month, monthDraws] of byMonth) {
+        if (monthDraws.length < 10) continue; // mínimo por mes
+        const hits = monthDraws.filter((d) => cuadrante(d.numero) === q).length;
+        const ef = Math.round((hits / monthDraws.length) * 100);
+        monthlyEf.push({ month, ef, count: hits, total: monthDraws.length });
+      }
+
+      if (monthlyEf.length < 3) continue; // al menos 3 meses con datos
+
+      // Detectar "meses calientes": meses donde este cuadrante domina (≥40%)
+      // vs el promedio global. Nota: con 4 cuadrantes, el baseline es ~25%.
+      const avgEf = monthlyEf.reduce((s, m) => s + m.ef, 0) / monthlyEf.length;
+      const hotMonths = monthlyEf.filter((m) => m.ef >= 40 && m.ef >= avgEf + 10);
+      const coldMonths = monthlyEf.filter((m) => m.ef < avgEf - 5);
+
+      // Solo crear patrón si hay una estacionalidad clara
+      // (algunos meses calientes Y algunos meses fríos)
+      if (hotMonths.length >= 2 && coldMonths.length >= 2 && hotMonths.length <= 6) {
+        const activeMonthNums = hotMonths.map((m) => m.month).sort((a, b) => a - b);
+        const totalOc = hotMonths.reduce((s, m) => s + m.total, 0);
+        const totalHits = hotMonths.reduce((s, m) => s + m.count, 0);
+        const ef = Math.round((totalHits / totalOc) * 100);
+
+        if (ef >= MIN_EFECTIVIDAD && totalOc >= MIN_OCURRENCIAS) {
+          const monthLabels = activeMonthNums.map((m) => monthNames[m - 1]).join(", ");
+          results.push({
+            nombre: `Estacional ${q} ${hora} (${monthLabels})`,
+            descripcion: `El cuadrante ${q} domina a las ${hora} durante ${monthLabels} con ${ef}% de efectividad (${totalOc} sorteos). Fuera de esos meses cae significativamente.`,
+            tipo: "patron",
+            condiciones: {
+              algorithm: "seasonal_monthly",
+              hora,
+              cuadrante: q,
+              active_months: activeMonthNums,
+              monthly_breakdown: monthlyEf,
+            },
+            resultado_esperado: q,
+            ocurrencias: totalOc,
+            aciertos: totalHits,
+            efectividad: ef,
+            hora,
+          });
+        }
+      }
+    }
+  }
+
+  return results.sort((a, b) => b.efectividad - a.efectividad).slice(0, 5);
+}
+
 // ─── ENDPOINT ────────────────────────────────────────────────────
 export const Route = createFileRoute("/api/public/hooks/mine-patterns")({
   server: {
@@ -358,6 +434,7 @@ export const Route = createFileRoute("/api/public/hooks/mine-patterns")({
           ...mineQuadrantStreak(draws),
           ...mineGap(draws),
           ...mineDayHour(draws),
+          ...mineSeasonalMonthly(draws),
         ];
 
         // 4. Filtrar duplicados y limitar

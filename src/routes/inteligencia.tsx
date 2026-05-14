@@ -13,6 +13,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
+  Shield,
+  ShieldAlert,
+  ShieldX,
+  Skull,
+  CalendarClock,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,11 +40,16 @@ interface Pattern {
 interface LearningLog {
   ranAt: string;
   mes?: string;
+  quarter?: string;
   promoted: number;
   hibernated: number;
   awoken: number;
+  expired?: number;
+  revived?: number;
+  offSeason?: number;
+  inSeason?: number;
   evaluated: number;
-  log: Array<{ nombre: string; from: string; to: string; efectividad_mes?: number; source?: string }>;
+  log: Array<{ nombre: string; from: string; to: string; efectividad_mes?: number; source?: string; reason?: string; decay_trend?: string }>;
 }
 
 interface MiningLog {
@@ -48,6 +59,17 @@ interface MiningLog {
   newInserted: number;
   elapsedMs: number;
   discoveries: Array<{ nombre: string; efectividad: number; ocurrencias: number }>;
+}
+
+interface AuditLog {
+  ranAt: string;
+  drawsAnalyzed: number;
+  rulesEvaluated: number;
+  vetoed: number;
+  corrected: number;
+  validated: number;
+  elapsedMs: number;
+  log: Array<{ nombre: string; action: string; declared_ef: number; real_ef: number; total_evaluated: number; reason: string }>;
 }
 
 // ─── Data hooks ──────────────────────────────────────────────────
@@ -73,14 +95,16 @@ function useAILogs() {
       const { data } = await supabase
         .from("settings")
         .select("clave, valor")
-        .in("clave", ["pattern_learning_last_run", "pattern_mining_last_run"]);
+        .in("clave", ["pattern_learning_last_run", "pattern_mining_last_run", "rule_audit_last_run"]);
 
       const learning = (data ?? []).find((r: any) => r.clave === "pattern_learning_last_run");
       const mining = (data ?? []).find((r: any) => r.clave === "pattern_mining_last_run");
+      const audit = (data ?? []).find((r: any) => r.clave === "rule_audit_last_run");
 
       return {
         learning: learning?.valor as unknown as LearningLog | null,
         mining: mining?.valor as unknown as MiningLog | null,
+        audit: audit?.valor as unknown as AuditLog | null,
       };
     },
     refetchInterval: 60_000,
@@ -96,6 +120,7 @@ function estadoBadge(estado: string) {
     observacion: { bg: "bg-amber-100", text: "text-amber-700", icon: Eye },
     hibernando: { bg: "bg-blue-100", text: "text-blue-700", icon: Moon },
     descartado: { bg: "bg-rose-100", text: "text-rose-700", icon: AlertTriangle },
+    caducado: { bg: "bg-slate-100", text: "text-slate-700", icon: Skull },
   };
   const style = map[estado] ?? map.observacion;
   const Icon = style.icon;
@@ -141,6 +166,7 @@ function InteligenciaPage() {
   const activos = patterns?.filter((p) => p.estado === "activo") ?? [];
   const observacion = patterns?.filter((p) => p.estado === "observacion") ?? [];
   const hibernando = patterns?.filter((p) => p.estado === "hibernando") ?? [];
+  const caducados = patterns?.filter((p) => p.estado === "caducado") ?? [];
   const mined = patterns?.filter((p) => p.source === "mined") ?? [];
   const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
 
@@ -169,11 +195,13 @@ function InteligenciaPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <SummaryCard icon={Sun} label="Activos" value={activos.length} color="emerald" />
         <SummaryCard icon={Eye} label="En Observación" value={observacion.length} color="amber" />
         <SummaryCard icon={Moon} label="Hibernando" value={hibernando.length} color="blue" />
+        <SummaryCard icon={Skull} label="Caducados" value={caducados.length} color="slate" />
         <SummaryCard icon={Pickaxe} label="Auto-Descubiertos" value={mined.length} color="purple" />
+        <SummaryCard icon={ShieldAlert} label="Vetadas por Robot" value={logs?.audit?.vetoed ?? 0} color="rose" />
       </div>
 
       {/* Robot Logs */}
@@ -273,6 +301,125 @@ function InteligenciaPage() {
           </div>
         </div>
       </div>
+
+      {/* Robot Audit Section */}
+      <div className="rounded-[24px] bg-slate-950 border border-slate-800 overflow-hidden shadow-lg relative">
+        <div className="absolute right-0 top-0 translate-x-1/4 -translate-y-1/4 size-40 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-2 relative z-10">
+          <Shield className="size-4 text-red-400" />
+          <h3 className="text-[14px] font-bold uppercase tracking-widest text-slate-200">
+            🤖 Auditoría del Robot Jefe
+          </h3>
+        </div>
+        <div className="p-5 space-y-4 relative z-10">
+          {logs?.audit ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-xl bg-slate-900 border border-slate-800 p-3 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Reglas Evaluadas</div>
+                  <div className="text-xl font-extrabold text-white tabular-nums">{logs.audit.rulesEvaluated}</div>
+                </div>
+                <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1 flex items-center justify-center gap-1"><ShieldX className="size-3" /> Vetadas</div>
+                  <div className="text-xl font-extrabold text-red-400 tabular-nums">{logs.audit.vetoed}</div>
+                </div>
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1 flex items-center justify-center gap-1"><Wrench className="size-3" /> Corregidas</div>
+                  <div className="text-xl font-extrabold text-amber-400 tabular-nums">{logs.audit.corrected}</div>
+                </div>
+                <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-center">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-1 flex items-center justify-center gap-1"><CheckCircle2 className="size-3" /> Validadas</div>
+                  <div className="text-xl font-extrabold text-emerald-400 tabular-nums">{logs.audit.validated}</div>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-500">
+                Última auditoría: {new Date(logs.audit.ranAt).toLocaleString("es-DO")} · {logs.audit.drawsAnalyzed.toLocaleString()} sorteos analizados en {(logs.audit.elapsedMs / 1000).toFixed(1)}s
+              </div>
+
+              {logs.audit.log && logs.audit.log.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Decisiones del Robot</p>
+                  {logs.audit.log.map((entry, i) => (
+                    <div key={i} className={cn(
+                      "rounded-xl p-3 text-[12px] border",
+                      entry.action === "vetoed" ? "bg-red-500/5 border-red-500/20" :
+                      entry.action === "corrected" ? "bg-amber-500/5 border-amber-500/20" :
+                      "bg-emerald-500/5 border-emerald-500/20",
+                    )}>
+                      <div className="flex items-center gap-2 mb-1">
+                        {entry.action === "vetoed" && <ShieldX className="size-4 text-red-400" />}
+                        {entry.action === "corrected" && <Wrench className="size-4 text-amber-400" />}
+                        {entry.action === "validated" && <CheckCircle2 className="size-4 text-emerald-400" />}
+                        <span className="font-bold text-white">{entry.nombre}</span>
+                        <span className={cn(
+                          "ml-auto px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest",
+                          entry.action === "vetoed" ? "bg-red-500/20 text-red-400" :
+                          entry.action === "corrected" ? "bg-amber-500/20 text-amber-400" :
+                          "bg-emerald-500/20 text-emerald-400",
+                        )}>
+                          {entry.action === "vetoed" ? "VETADA" : entry.action === "corrected" ? "CORREGIDA" : "OK"}
+                        </span>
+                      </div>
+                      <p className="text-slate-400">{entry.reason}</p>
+                      {entry.declared_ef !== entry.real_ef && (
+                        <div className="flex items-center gap-2 mt-1 text-[11px]">
+                          <span className="text-slate-500">Declarada: <span className="text-white font-bold">{entry.declared_ef}%</span></span>
+                          <span className="text-slate-600">→</span>
+                          <span className="text-slate-500">Real: <span className={cn("font-bold", entry.real_ef >= 50 ? "text-emerald-400" : "text-red-400")}>{entry.real_ef}%</span></span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-[13px] text-slate-500 py-4 text-center">
+              El Robot Jefe aún no ha ejecutado su primera auditoría. Se ejecutará el próximo Lunes a las 4:00 AM.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Time-Decay Alerts */}
+      {logs?.learning?.log && logs.learning.log.some((e: any) => e.decay_trend === "dead" || e.decay_trend === "declining" || e.reason === "algorithm_shift" || e.reason === "off_season") && (
+        <div className="rounded-[24px] bg-white border border-border overflow-hidden shadow-sm">
+          <div className="px-5 py-4 border-b border-border bg-muted/5 flex items-center gap-2">
+            <CalendarClock className="size-4 text-amber-600" />
+            <h3 className="text-[14px] font-bold uppercase tracking-widest text-foreground">
+              Alertas de Cambio de Algoritmo
+            </h3>
+          </div>
+          <div className="p-5 space-y-2">
+            {logs.learning.log
+              .filter((e: any) => e.reason === "algorithm_shift" || e.reason === "off_season" || e.decay_trend === "declining")
+              .map((entry: any, i: number) => (
+                <div key={i} className={cn(
+                  "rounded-xl p-3 border flex items-center gap-3",
+                  entry.reason === "algorithm_shift" ? "bg-rose-50 border-rose-200" : "bg-amber-50 border-amber-200",
+                )}>
+                  {entry.reason === "algorithm_shift" ? (
+                    <Skull className="size-5 text-rose-600 shrink-0" />
+                  ) : (
+                    <CalendarClock className="size-5 text-amber-600 shrink-0" />
+                  )}
+                  <div>
+                    <span className="text-[13px] font-bold text-foreground">{entry.nombre}</span>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {entry.reason === "algorithm_shift"
+                        ? `Caducado: efectividad en declive sostenido por ${entry.quarters?.length ?? "varios"} trimestres.`
+                        : entry.reason === "off_season"
+                          ? "Fuera de temporada activa. Se reactivará cuando entre en su ventana de meses."
+                          : `Tendencia en declive (${entry.decay_trend}). Bajo vigilancia del robot.`
+                      }
+                    </p>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Patterns Table */}
       <div className="rounded-[24px] bg-white border border-border overflow-hidden shadow-sm">
@@ -443,12 +590,16 @@ function SummaryCard({
     amber: "bg-amber-50 border-amber-200 text-amber-700",
     blue: "bg-blue-50 border-blue-200 text-blue-700",
     purple: "bg-purple-50 border-purple-200 text-purple-700",
+    slate: "bg-slate-50 border-slate-200 text-slate-700",
+    rose: "bg-rose-50 border-rose-200 text-rose-700",
   };
   const iconColors: Record<string, string> = {
     emerald: "text-emerald-600",
     amber: "text-amber-600",
     blue: "text-blue-600",
     purple: "text-purple-600",
+    slate: "text-slate-600",
+    rose: "text-rose-600",
   };
   return (
     <div className={cn("rounded-[20px] border p-5 shadow-sm", colors[color])}>

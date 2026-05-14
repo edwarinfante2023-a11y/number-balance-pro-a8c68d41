@@ -21,6 +21,8 @@ export interface CarteraRule {
   activo: boolean;
   /** rules.tipo del enum rule_tipo: 'racha' | 'compensacion' | 'patron' | 'bloqueo' | 'otro' */
   tipo?: string | null;
+  /** true si el Robot Jefe vetó esta regla por ser perdedora históricamente */
+  vetada_por_robot?: boolean;
 }
 
 export interface CarteraPattern {
@@ -75,6 +77,7 @@ export interface CarteraResult {
     pctPares: number;
     pctImpares: number;
     reglasActivas: number;
+    reglasVetadas: number;
     patronesHora: number;
     estrategia: string;
     historicalSorteos?: number;
@@ -228,8 +231,9 @@ export function buildCartera(
     }
   }
 
-  // ─── 3. Reglas activas ──────────────────────────────────────
-  const reglasAct = rules.filter((r) => r.activo && r.resultado_esperado);
+  // ─── 3. Reglas activas (excluyendo vetadas por el Robot Jefe) ──
+  const reglasVetadas = rules.filter((r) => r.vetada_por_robot === true);
+  const reglasAct = rules.filter((r) => r.activo && r.resultado_esperado && !r.vetada_por_robot);
   for (const r of reglasAct) {
     const target = (r.resultado_esperado ?? "").toUpperCase();
     const eff = num(r.efectividad, 50) / 100;
@@ -368,6 +372,7 @@ export function buildCartera(
       pctPares: Math.round(pctPares * 10) / 10,
       pctImpares: Math.round(pctImpares * 10) / 10,
       reglasActivas: reglasAct.length,
+      reglasVetadas: reglasVetadas.length,
       patronesHora: patronesHora.length,
       estrategia: options.strategy ?? ADAPTIVE_STRATEGY,
       historicalSorteos: historicalStats?.totalSorteos,

@@ -34,6 +34,7 @@ import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api
 import { Route as ApiPublicHooksEvaluateResultsRouteImport } from './routes/api/public/hooks/evaluate-results'
 import { Route as ApiPublicHooksBacktestCarterasRouteImport } from './routes/api/public/hooks/backtest-carteras'
 import { Route as ApiPublicHooksBackfillHistoryRouteImport } from './routes/api/public/hooks/backfill-history'
+import { Route as ApiPublicHooksAuditRulesRouteImport } from './routes/api/public/hooks/audit-rules'
 
 const SimuladorRoute = SimuladorRouteImport.update({
   id: '/simulador',
@@ -168,6 +169,12 @@ const ApiPublicHooksBackfillHistoryRoute =
     path: '/api/public/hooks/backfill-history',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksAuditRulesRoute =
+  ApiPublicHooksAuditRulesRouteImport.update({
+    id: '/api/public/hooks/audit-rules',
+    path: '/api/public/hooks/audit-rules',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/simulador': typeof SimuladorRoute
+  '/api/public/hooks/audit-rules': typeof ApiPublicHooksAuditRulesRoute
   '/api/public/hooks/backfill-history': typeof ApiPublicHooksBackfillHistoryRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
@@ -214,6 +222,7 @@ export interface FileRoutesByTo {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/simulador': typeof SimuladorRoute
+  '/api/public/hooks/audit-rules': typeof ApiPublicHooksAuditRulesRoute
   '/api/public/hooks/backfill-history': typeof ApiPublicHooksBackfillHistoryRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
@@ -242,6 +251,7 @@ export interface FileRoutesById {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/simulador': typeof SimuladorRoute
+  '/api/public/hooks/audit-rules': typeof ApiPublicHooksAuditRulesRoute
   '/api/public/hooks/backfill-history': typeof ApiPublicHooksBackfillHistoryRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/simulador'
+    | '/api/public/hooks/audit-rules'
     | '/api/public/hooks/backfill-history'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/simulador'
+    | '/api/public/hooks/audit-rules'
     | '/api/public/hooks/backfill-history'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
@@ -325,6 +337,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/simulador'
+    | '/api/public/hooks/audit-rules'
     | '/api/public/hooks/backfill-history'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
@@ -353,6 +366,7 @@ export interface RootRouteChildren {
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
   SimuladorRoute: typeof SimuladorRoute
+  ApiPublicHooksAuditRulesRoute: typeof ApiPublicHooksAuditRulesRoute
   ApiPublicHooksBackfillHistoryRoute: typeof ApiPublicHooksBackfillHistoryRoute
   ApiPublicHooksBacktestCarterasRoute: typeof ApiPublicHooksBacktestCarterasRoute
   ApiPublicHooksEvaluateResultsRoute: typeof ApiPublicHooksEvaluateResultsRoute
@@ -540,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBackfillHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/audit-rules': {
+      id: '/api/public/hooks/audit-rules'
+      path: '/api/public/hooks/audit-rules'
+      fullPath: '/api/public/hooks/audit-rules'
+      preLoaderRoute: typeof ApiPublicHooksAuditRulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -561,6 +582,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
   SimuladorRoute: SimuladorRoute,
+  ApiPublicHooksAuditRulesRoute: ApiPublicHooksAuditRulesRoute,
   ApiPublicHooksBackfillHistoryRoute: ApiPublicHooksBackfillHistoryRoute,
   ApiPublicHooksBacktestCarterasRoute: ApiPublicHooksBacktestCarterasRoute,
   ApiPublicHooksEvaluateResultsRoute: ApiPublicHooksEvaluateResultsRoute,
