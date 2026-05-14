@@ -86,7 +86,10 @@ async function runBacktest() {
     return;
   }
   
-  const draws = allDrawsData.map(d => ({
+  // Filtrar SOLAMENTE los sorteos de "este año" (2026)
+  const drawsThisYear = allDrawsData.filter(d => d.fecha.startsWith("2026"));
+  
+  const draws = drawsThisYear.map(d => ({
     numero: d.numero,
     fecha: d.fecha,
     hora: d.lottery_draws?.hora || "00:00"
@@ -161,7 +164,7 @@ async function runBacktest() {
     for (const cuad of CUADRANTES) {
       const hits = stats.hits[cuad];
       const ef = Math.round((hits / stats.total) * 100);
-      if (ef >= 42) { // MODO FRANCOTIRADOR BALANCEADO: Diamantes > 42%
+      if (ef >= 58) { // MODO FRANCOTIRADOR EXTREMO: Diamantes > 58%
         const conds = JSON.parse(key);
         discoveries.push({
           nombre: `D-Miner [${cuad}]`,
@@ -180,7 +183,7 @@ async function runBacktest() {
   }
 
   discoveries.sort((a, b) => b.efectividad - a.efectividad);
-  const patterns = discoveries.slice(0, 150); // Los 150 mejores francotiradores para más volumen
+  const patterns = discoveries.slice(0, 15); // Solo los 15 mejores francotiradores
   console.log(`IA armó su arsenal con los ${patterns.length} mejores patrones (efectividad entre ${patterns[patterns.length-1]?.efectividad || 0}% y ${patterns[0]?.efectividad || 0}%).`);
   
   const rules = [];
@@ -248,15 +251,34 @@ async function runBacktest() {
   
   console.log("\n==========================================");
   
-  const roiViejo = (oldHits * 70) - (totalEvaluatedOld * 25);
-  const roiNuevo = (newHits * 70) - (totalEvaluatedNew * 25);
+  const INITIAL_BANKROLL = 200000;
+  const COSTO_POR_SORTEO = 25000; // 1,000 por número x 25 números
+  const PREMIO = 72000; // 72 x 1,000
   
-  console.log(`Simulación de Bankroll (Premio 70$, Costo 25$):`);
-  console.log(`Inversión Motor Viejo: $${(totalEvaluatedOld * 25).toLocaleString()}`);
-  console.log(`Beneficio Viejo: $${roiViejo.toLocaleString()}`);
+  const inversionViejo = totalEvaluatedOld * COSTO_POR_SORTEO;
+  const gananciaViejo = oldHits * PREMIO;
+  const bankrollFinalViejo = INITIAL_BANKROLL - inversionViejo + gananciaViejo;
   
-  console.log(`\nInversión Motor Nuevo: $${(totalEvaluatedNew * 25).toLocaleString()}`);
-  console.log(`Beneficio Nuevo: $${roiNuevo.toLocaleString()}`);
+  const inversionNuevo = totalEvaluatedNew * COSTO_POR_SORTEO;
+  const gananciaNuevo = newHits * PREMIO;
+  const bankrollFinalNuevo = INITIAL_BANKROLL - inversionNuevo + gananciaNuevo;
+  
+  console.log(`\n==========================================`);
+  console.log(`Simulación de Bankroll (Este Año - 2026)`);
+  console.log(`- Apuesta: $1,000 p/número ($25,000 por sorteo)`);
+  console.log(`- Premio: $72,000 (Paga a 72)`);
+  console.log(`- Capital Inicial: $${INITIAL_BANKROLL.toLocaleString()}`);
+  console.log(`==========================================`);
+  
+  console.log(`Motor Viejo (Jugando Todos los Días):`);
+  console.log(`- Inversión Total: $${inversionViejo.toLocaleString()}`);
+  console.log(`- Cobrado en Premios: $${gananciaViejo.toLocaleString()}`);
+  console.log(`- SALDO FINAL: $${bankrollFinalViejo.toLocaleString()} ${bankrollFinalViejo > INITIAL_BANKROLL ? '🚀' : '🔻'}`);
+  
+  console.log(`\nMotor Nuevo (Francotirador IA):`);
+  console.log(`- Inversión Total: $${inversionNuevo.toLocaleString()}`);
+  console.log(`- Cobrado en Premios: $${gananciaNuevo.toLocaleString()}`);
+  console.log(`- SALDO FINAL: $${bankrollFinalNuevo.toLocaleString()} ${bankrollFinalNuevo > INITIAL_BANKROLL ? '🚀' : '🔻'}`);
   
 }
 
