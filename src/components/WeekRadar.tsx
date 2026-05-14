@@ -4,8 +4,8 @@ import { Shield, Crosshair, Zap, Loader2, Eye } from "lucide-react";
 
 /**
  * WeekRadar — Semáforo Semanal del Sistema Dual AI.
- * Muestra en tiempo real si la semana es Matemática (Verde/Francotirador)
- * o Caótica (Rojo/Modo Dios), con el estado del Motor activo.
+ * Muestra en tiempo real si la semana es favorable o desfavorable,
+ * con el estado del motor activo en lenguaje amigable para el usuario.
  */
 export function WeekRadar() {
   const { data: state, isLoading } = useDualSystemGlobal();
@@ -15,7 +15,7 @@ export function WeekRadar() {
       <div className="rounded-[24px] bg-white/95 backdrop-blur-md border border-black/[0.04] p-6 shadow-sm animate-pulse">
         <div className="flex items-center gap-3">
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
-          <span className="text-[13px] font-bold text-muted-foreground">Inicializando Radar AI...</span>
+          <span className="text-[13px] font-bold text-muted-foreground">Analizando comportamiento de la lotería...</span>
         </div>
       </div>
     );
@@ -25,6 +25,14 @@ export function WeekRadar() {
 
   const isMath = state.weekType === "MATH";
   const hasGodShot = !!state.godModePrediction;
+
+  // Mapeo amigable del cuadrante
+  const quadrantLabel: Record<string, string> = {
+    ALTO_PAR: "Altos Pares (50-98)",
+    ALTO_IMPAR: "Altos Impares (51-99)",
+    BAJO_PAR: "Bajos Pares (00-48)",
+    BAJO_IMPAR: "Bajos Impares (01-49)",
+  };
 
   return (
     <div
@@ -73,10 +81,10 @@ export function WeekRadar() {
             </div>
             <div>
               <h3 className="text-[15px] font-black tracking-tight text-foreground">
-                RADAR AI — SISTEMA DUAL
+                🧠 Inteligencia Artificial
               </h3>
               <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-0.5">
-                Última hora analizada: {state.hora}
+                Análisis en tiempo real · Hora {state.hora}
               </p>
             </div>
           </div>
@@ -93,11 +101,11 @@ export function WeekRadar() {
             )}
           >
             {isMath ? (
-              <><Crosshair className="size-3.5" /> FRANCOTIRADOR</>
+              <><Crosshair className="size-3.5" /> Oportunidad</>
             ) : hasGodShot ? (
-              <><Zap className="size-3.5" /> MODO DIOS</>
+              <><Zap className="size-3.5" /> ¡Alerta Especial!</>
             ) : (
-              <><Eye className="size-3.5" /> VIGILANCIA</>
+              <><Eye className="size-3.5" /> En Espera</>
             )}
           </div>
         </div>
@@ -107,7 +115,7 @@ export function WeekRadar() {
           {/* Week Type */}
           <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-black/[0.04] p-3.5">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Estado de la Semana
+              ¿Cómo está la semana?
             </div>
             <div
               className={cn(
@@ -115,27 +123,29 @@ export function WeekRadar() {
                 isMath ? "text-emerald-700" : "text-rose-700",
               )}
             >
-              {isMath ? "MATEMÁTICA" : "CAÓTICA"}
+              {isMath ? "🟢 Favorable" : "🔴 Difícil"}
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
               {isMath
-                ? "La lotería está predecible. Dispare."
-                : "El PRNG está en modo aleatorio."}
+                ? "La lotería tiene un patrón. Buen momento."
+                : "La lotería está impredecible. Precaución."}
             </div>
           </div>
 
           {/* Motor Activo */}
           <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-black/[0.04] p-3.5">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Motor Activo
+              ¿Qué está haciendo el Robot?
             </div>
             <div className="mt-1.5 text-[18px] font-black tracking-tight text-foreground">
-              {isMath ? "Motor 1" : "Motor 2"}
+              {isMath ? "🎯 Disparando" : hasGodShot ? "⚡ Atacando" : "👁️ Vigilando"}
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
               {isMath
-                ? "Francotirador de Alta Frecuencia"
-                : "Súper Francotirador (Modo Dios)"}
+                ? "Apostando con confianza alta."
+                : hasGodShot
+                  ? "Detectó una falla. ¡Oportunidad única!"
+                  : "Esperando el momento perfecto para atacar."}
             </div>
           </div>
 
@@ -149,27 +159,27 @@ export function WeekRadar() {
             )}
           >
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Señal Modo Dios
+              Recomendación del Robot
             </div>
             {hasGodShot ? (
               <>
                 <div className="mt-1.5 flex items-center gap-2">
                   <Zap className="size-4 text-violet-600" />
-                  <span className="text-[18px] font-black tracking-tight text-violet-700">
-                    {state.godModePrediction}
+                  <span className="text-[16px] font-black tracking-tight text-violet-700">
+                    {quadrantLabel[state.godModePrediction!] ?? state.godModePrediction}
                   </span>
                 </div>
                 <div className="text-[11px] font-bold text-violet-600 mt-0.5">
-                  ¡Alerta de Disparo! Confianza {state.confidence}%
+                  ¡Zona caliente detectada! Confianza máxima.
                 </div>
               </>
             ) : (
               <>
                 <div className="mt-1.5 text-[18px] font-black tracking-tight text-muted-foreground/50">
-                  —
+                  Sin señal
                 </div>
                 <div className="text-[11px] text-muted-foreground mt-0.5">
-                  Sin señal. Robot en las sombras.
+                  No hay oportunidad clara ahora. Proteja su capital.
                 </div>
               </>
             )}
@@ -179,7 +189,7 @@ export function WeekRadar() {
         {/* Confidence bar */}
         <div className="mt-4 pt-3 border-t border-black/[0.04]">
           <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground mb-1.5">
-            <span>Confianza del Radar</span>
+            <span>Nivel de Confianza</span>
             <span className="tabular-nums">{Math.round(state.confidence)}%</span>
           </div>
           <div className="h-2 rounded-full bg-black/[0.04] overflow-hidden">
@@ -197,7 +207,7 @@ export function WeekRadar() {
           </div>
           <div className="flex items-center gap-1.5 mt-2 text-[10px] text-muted-foreground">
             <Shield className="size-3" />
-            <span>{state.sampleSize} sorteos analizados en esta hora</span>
+            <span>Basado en el análisis de {state.sampleSize} sorteos de esta hora</span>
           </div>
         </div>
       </div>
