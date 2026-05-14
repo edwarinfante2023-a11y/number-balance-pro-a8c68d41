@@ -123,7 +123,7 @@ async function runUltimateBattle() {
     if (evals >= 2 && (hits / evals) * 100 >= 60) isHackeada = true;
 
     if (isHackeada) {
-      semanasMatematicas++;
+      if (weekKey.startsWith("2026")) semanasMatematicas++;
       // 🔥 EJECUTAR MOTOR 1 (FRANCOTIRADOR RÁPIDO)
       const playDraws = weekDraws.slice(5);
       for (let i = 2; i < playDraws.length; i++) {
@@ -131,12 +131,14 @@ async function runUltimateBattle() {
         let aposto = false;
         if (isAlto(history[0].numero) === isAlto(history[1].numero) || isPar(history[0].numero) === isPar(history[1].numero)) aposto = true;
         if (aposto) {
-            motor1_jugadas++;
-            if (ALGORITMOS_BASE[0].eval(history, playDraws[i])) motor1_aciertos++;
+            if (weekKey.startsWith("2026")) {
+                motor1_jugadas++;
+                if (ALGORITMOS_BASE[0].eval(history, playDraws[i])) motor1_aciertos++;
+            }
         }
       }
     } else {
-      semanasCaoticas++;
+      if (weekKey.startsWith("2026")) semanasCaoticas++;
       // 🌌 EJECUTAR MOTOR 2 (MODO DIOS - SÚPER FRANCOTIRADOR NIVEL 4)
       const ruleBook = new Map<string, { total: number, hits: Record<string, number> }>();
       
@@ -211,15 +213,17 @@ async function runUltimateBattle() {
 
             const prediction = trustedRules.get(key);
             if (prediction) {
-              motor2_jugadas++;
-              if (prediction === arr[currIdx].cuad) motor2_aciertos++;
+              if (weekKey.startsWith("2026")) {
+                  motor2_jugadas++;
+                  if (prediction === arr[currIdx].cuad) motor2_aciertos++;
+              }
             }
           }
         }
     }
   }
 
-  // REPORTE FINANCIERO FINAL
+  // REPORTE FINANCIERO FINAL (SÓLO 2026)
   const COSTO_POR_SORTEO = 25000;
   const PREMIO = 72000;
   const INITIAL_BANKROLL = 200000;
@@ -240,9 +244,9 @@ async function runUltimateBattle() {
   const bancoFinal = INITIAL_BANKROLL + granTotalNeto;
 
   console.log(`\n\n=========================================`);
-  console.log(`⚔️ REPORTE DE LA BATALLA DEFINITIVA (MODO DUAL)`);
+  console.log(`⚔️ REPORTE DE LA BATALLA DEFINITIVA EN LA VIDA REAL (SÓLO AÑO 2026)`);
   console.log(`=========================================`);
-  console.log(`Radar Inicial:`);
+  console.log(`Radar Inicial (Semanas del 2026):`);
   console.log(`- Semanas Matemáticas (Francotirador): ${semanasMatematicas}`);
   console.log(`- Semanas Caóticas (Modo Dios): ${semanasCaoticas}\n`);
 
