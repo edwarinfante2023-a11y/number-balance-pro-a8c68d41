@@ -116,18 +116,26 @@ export function useBankrollSim(cfg: BankrollConfig, dias = 90) {
 
       const { data, error } = await supabase
         .from("cartera_resultados")
-        .select("acierto, acierto_segundo, acierto_tercero, evaluated_at, carteras!inner(fecha, hora, contexto)")
-        .eq("carteras.estrategia", ADAPTIVE_STRATEGY)
+        .select("acierto, acierto_segundo, acierto_tercero, evaluated_at, carteras!inner(fecha, hora, estrategia, contexto)")
         .gte("evaluated_at", since.toISOString())
         .order("evaluated_at", { ascending: true })
         .limit(5000);
       if (error) throw error;
 
+      const byKey = new Map<string, any>();
+      for (const r of data ?? []) {
+        const key = `${r.carteras.fecha}-${r.carteras.hora}`;
+        const current = byKey.get(key);
+        if (!current || r.carteras.estrategia === ADAPTIVE_STRATEGY) {
+          byKey.set(key, r);
+        }
+      }
+
       const premio = cfg.apuestaPorNumero * cfg.pago;
       const premio2 = cfg.apuestaPorNumero * (cfg.pago2 ?? 0);
       const premio3 = cfg.apuestaPorNumero * (cfg.pago3 ?? 0);
 
-      const all: SimRow[] = (data ?? []).map((r: any) => {
+      const all: SimRow[] = Array.from(byKey.values()).map((r: any) => {
         const a1 = !!r.acierto;
         const a2 = !!r.acierto_segundo;
         const a3 = !!r.acierto_tercero;
