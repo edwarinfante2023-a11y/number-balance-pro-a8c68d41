@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   ADAPTIVE_STRATEGY,
   buildCartera,
+  classifyWeek,
+  godModePredict,
   type CarteraPattern,
   type CarteraRule,
   type CarteraHistoricalStats,
@@ -104,13 +106,30 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
         const errors: Array<{ hora: string; error: string }> = [];
         for (const hora of horas) {
           try {
+            // ─── SISTEMA DUAL AI (Fase 14) ─────────────────────
+            const drawsForDual = draws.map(d => ({
+              numero: d.numero,
+              fecha: d.fecha,
+              hora: d.hora,
+            }));
+            const recentForRadar = draws
+              .filter(d => d.hora === hora)
+              .sort((a, b) => `${b.fecha}`.localeCompare(`${a.fecha}`))
+              .slice(0, 5);
+            const weekType = classifyWeek(recentForRadar);
+            const godResult = godModePredict(drawsForDual, hora, fecha);
+
             const r = buildCartera(
               draws,
               (rawRules ?? []) as CarteraRule[],
               (rawPatterns ?? []) as CarteraPattern[],
               hora,
               statsByHora.get(hora),
-              { strategy: ADAPTIVE_STRATEGY },
+              {
+                strategy: ADAPTIVE_STRATEGY,
+                godModeQuadrant: godResult?.quadrant ?? null,
+                weekType,
+              },
             );
             const { error } = await supabaseAdmin.from("carteras").upsert(
               [{
