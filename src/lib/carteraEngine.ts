@@ -288,6 +288,13 @@ export function buildCartera(
       patronesHora: patronesHora.length,
       estrategia: "composite_v1",
       historicalSorteos: historicalStats?.totalSorteos,
+      momentum: {
+        rango: rangoDom,
+        paridad: paridadDom,
+        fuerzaRango: Math.round(fuerzaRango * 100) / 100,
+        fuerzaParidad: Math.round(fuerzaParidad * 100) / 100,
+        ventana: ventanaN,
+      },
       confidence: {
         topMean: Math.round(topMean * 10) / 10,
         nextMean: Math.round(nextMean * 10) / 10,
