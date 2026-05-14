@@ -143,11 +143,9 @@ export function buildCartera(
   // El cliente pidió: si el sorteo viene corriendo BAJO_IMPAR, la cartera
   // debe seguir pesando BAJO_IMPAR mientras esa racha se mantenga.
   const VENTANA = 5;
-  const ordered = [...drawsHora].sort((a, b) => {
-    const ka = `${(a as { fecha?: string }).fecha ?? ""} ${(a as { hora?: string }).hora ?? ""}`;
-    const kb = `${(b as { fecha?: string }).fecha ?? ""} ${(b as { hora?: string }).hora ?? ""}`;
-    return kb.localeCompare(ka); // desc → más reciente primero
-  });
+  const ordered = [...drawsHora].sort((a, b) =>
+    `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`),
+  );
   const ventana = ordered.slice(0, VENTANA);
   const ventanaN = ventana.length;
   let mAlto = 0, mPar = 0;
