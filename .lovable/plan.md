@@ -1,94 +1,78 @@
-## Objetivo
+## Qué pidió el cliente
 
-Hacer que las carteras se **regeneren automáticamente cada vez que sale un sorteo nuevo**, para que las próximas horas del día siempre jueguen con la data más fresca posible.
+Que el sistema **deje de adivinar por compensación** ("ya vinieron muchos BAJO → ahora toca ALTO") y en su lugar **siga el comportamiento real** del sorteo en vivo. Si la hora viene corriendo BAJO_IMPAR, la cartera tiene que pesar BAJO_IMPAR mientras esa racha se mantenga, y recién cambiar cuando el comportamiento cambie.
 
----
-
-## Cómo funciona hoy (problema)
-
-```
-00:02 → cron genera TODAS las carteras del día (con data de ayer)
-12:00 → sale sorteo → scraper lo guarda → llama evaluate-results
-15:00 → juega cartera generada a las 00:02 (NO sabe que salió el de las 12:00)
-```
-
-Las 4 señales del motor (frecuencia por hora, balance ALTO/BAJO, balance PAR/IMPAR, patrones) **no se actualizan** durante el día.
+Modo elegido: **Momentum puro** (sigue la racha de los últimos sorteos).
+Reglas/patrones de compensación: **se mantienen pero con peso bajo**.
 
 ---
 
-## Cómo va a funcionar (solución)
+## Cambios a hacer
 
+### 1. `src/lib/carteraEngine.ts` — invertir el bloque de Equilibrio
+
+**Hoy (líneas ~95-115):** detecta el lado sub-representado y lo boostea (compensación).
+
+**Nuevo:** reemplazar ese bloque por un **bloque de Momentum**:
+- Tomar los últimos **5 sorteos** de esa hora (orden cronológico desc).
+- Contar cuántos son ALTO vs BAJO y PAR vs IMPAR en esa ventana.
+- El lado **dominante en la racha** recibe el boost (no el opuesto).
+- Boost máximo +20 por eje (mismo techo que hoy), proporcional a qué tan marcada viene la racha (ej. 5/5 = boost máximo, 3/5 = boost medio).
+- Si la ventana está empatada (3-2 / 2-3) → boost mínimo o cero, no forzamos dirección.
+
+Nuevas razones que aparecerán en `reasons`: `+momentum BAJO (4/5)`, `+momentum IMPAR (5/5)`.
+
+### 2. `src/lib/carteraEngine.ts` — bajar peso de reglas y patrones de compensación
+
+Reglas y patrones siguen activos pero con peso reducido **solo cuando son de tipo compensación**:
+- Boost base de reglas: `15` → `7` para reglas con `tipo='compensacion'` (queda 15 para `racha`/`patron`/`bloqueo`).
+- Boost base de patrones: `10` → `5` cuando el patrón describe compensación (heurística: si el `resultado_esperado` es opuesto al cuadrante dominante actual de los últimos 5).
+
+Esto cumple "dejarlos pero con peso bajo" sin tener que apagarlos en la base.
+
+### 3. `supabase/functions/_shared/opportunityEngine.ts` — alinear el ranking con momentum
+
+El score de oportunidad por hora hoy también asume compensación vía `computeEscenarioProbablePorHora`. Cambios mínimos:
+- Reemplazar el cálculo de "escenario probable" por un escenario derivado del **momentum de los últimos 5 sorteos de esa hora**.
+- La "Confianza base" pasa a medir **qué tan consistente viene la racha** (5/5 = alta, 3/2 = baja), no qué tan desbalanceado está el histórico.
+
+### 4. `src/lib/lottery.ts` (compartido) — nueva función `computeMomentum`
+
+Helper puro y testeado:
 ```
-12:00 → sale sorteo → scraper lo guarda
-12:00:05 → scraper llama evaluate-results (ya lo hace hoy)
-12:00:06 → scraper llama generate-carteras  ← NUEVO
-         → recalcula SOLO las horas futuras (15:00, 18:00, 21:00…)
-         → upsert idempotente sobre carteras existentes
-15:00 → juega cartera FRESCA con data hasta las 12:00
-```
-
----
-
-## Cambios concretos (2 archivos)
-
-### 1. `src/routes/api/public/hooks/generate-carteras.ts`
-
-Agregar filtro de horas futuras antes del loop de generación:
-
-- Calcular `ahora` en formato `HH:mm` (zona horaria del servidor — confirmar con vos cuál usar).
-- Filtrar `horas` para quedarse solo con `h > ahora`.
-- Aceptar un parámetro opcional `?force=true` para que el cron de las 00:02 siga generando TODO el día (caso inicial).
-- Devolver en la respuesta cuántas horas se saltaron por ser pasadas (para debugging).
-
-**No cambia:** la lógica de `buildCartera`, el upsert idempotente sobre `(fecha, hora, estrategia)`, ni el manejo de errores por hora.
-
-### 2. `supabase/functions/sync-web/index.ts`
-
-Después del bloque que llama a `evaluate-results` (línea ~326), agregar un bloque gemelo que llame a `generate-carteras`:
-
-```ts
-if (summary.nuevasInsertadas > 0) {
-  // ... evaluate-results existente ...
-
-  // NUEVO: regenerar carteras de horas futuras
-  try {
-    const genUrl = "https://project--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app/api/public/hooks/generate-carteras";
-    const genRes = await fetch(genUrl, { method: "POST", headers: {...}, body: "{}" });
-    summary.detalle.push(`↻ generate-carteras: ${...}`);
-  } catch (err) { ... }
-}
+computeMomentum(draws, hora, ventana = 5)
+  → { rangoDom, paridadDom, fuerzaRango (0-1), fuerzaParidad (0-1), ventanaReal }
 ```
 
-**No cambia:** el resto del scraper, la inserción de draws, el sync_logs.
+Se usa desde `carteraEngine.ts` y `opportunityEngine.ts` para no duplicar lógica.
+
+### 5. UI: mostrar el cambio al usuario
+
+En la página de Cartera (`src/routes/cartera.tsx`) y en el badge de razones de cada número, los textos de "compensación pendiente" pasan a "siguiendo racha". Cambio cosmético para que el cliente entienda que el motor dejó de adivinar.
 
 ---
 
-## Garantías de seguridad
+## Lo que NO se toca
 
-- **Idempotente:** la tabla `carteras` tiene `unique(fecha, hora, estrategia)`. El upsert sobreescribe la futura, nunca la pasada.
-- **Cero riesgo de pisar resultados ya evaluados:** filtramos por `hora > ahora`, así que carteras ya jugadas no se tocan.
-- **El cron diario de las 00:02 sigue funcionando** (con `?force=true` para generar el día entero al arrancar).
-- **Si el scraper falla:** el cron diario de las 00:02 + el de cada hora siguen siendo red de seguridad.
-
----
-
-## Lo que NO incluye este plan
-
-- Cron extra de "seguridad cada 15min" → lo dejamos para después si vemos que el scraper falla seguido. Hoy con el trigger del scraper alcanza.
-- Cambios en `buildCartera` ni en los pesos de las 4 señales → eso sería otra optimización aparte (la mencioné antes).
-- UI nueva → todo invisible para el usuario, solo mejora la calidad de las carteras.
+- **Frecuencia histórica por hora** (bloque 1) — sigue igual, es señal robusta.
+- **Histórico agregado de `lottery_stats`** (bloque 5) — sigue igual.
+- **Cron de generación de carteras** — la lógica nueva entra automáticamente en el próximo ciclo horario.
+- **Schema de DB** — cero migraciones.
+- **Datos históricos** — todas las carteras pasadas quedan tal cual.
 
 ---
 
-## Validación post-deploy
+## Cómo verificar que funciona
 
-1. Esperar a que salga el próximo sorteo del día.
-2. Verificar en `sync_logs.detalle` que aparece la línea `↻ generate-carteras: ...`.
-3. Ver en `/cartera` que la cartera de la próxima hora tiene un `created_at` reciente (no de las 00:02).
-4. Trackear el hit rate durante 2 semanas y comparar con el 55% actual.
+1. Después de aplicar, mirar la cartera de la próxima hora y revisar las `reasons` de los top 25 → tienen que aparecer `+momentum X` en vez de `+balance X`.
+2. Si los últimos 5 sorteos de las 14:00 fueron mayormente BAJO_IMPAR, los números BAJO_IMPAR (0-49 impares) tienen que dominar el top.
+3. Comparar manualmente con la cartera anterior para confirmar el giro de comportamiento.
 
 ---
 
-## Pregunta antes de implementar
+## Sección técnica (detalles para implementación)
 
-**Zona horaria:** ¿el servidor corre en UTC o en hora local? Si las horas en `lottery_draws.hora` están en hora local Argentina/Colombia/etc, necesito calcular `ahora` en esa misma zona para que el filtro `hora > ahora` funcione bien. Decime qué zona usás y arranco.
+- `computeMomentum` ordena por `fecha desc, hora desc` (ya filtrado por hora) y toma los primeros 5; tolera ventanas de 1-4 si hay menos histórico, ajustando proporcionalmente la fuerza.
+- En `carteraEngine.ts`, el nuevo bloque queda determinista: misma input → misma output (mantiene el contrato actual del archivo).
+- `_meta` y el campo `contexto` de `CarteraResult` se amplían con `momentum: { rango, paridad, fuerzaRango, fuerzaParidad }` para debug y UI.
+- El detector de "patrón de compensación" en el paso 2 usa una regla simple: si el `resultado_esperado` del patrón es el **opuesto** del cuadrante dominante en la ventana de momentum, se considera compensación → peso reducido.

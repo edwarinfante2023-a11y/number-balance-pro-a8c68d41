@@ -19,6 +19,8 @@ export interface CarteraRule {
   resultado_esperado: string | null;
   efectividad: number | string | null;
   activo: boolean;
+  /** rules.tipo del enum rule_tipo: 'racha' | 'compensacion' | 'patron' | 'bloqueo' | 'otro' */
+  tipo?: string | null;
 }
 
 export interface CarteraPattern {
@@ -29,6 +31,7 @@ export interface CarteraPattern {
   hora: string | null;
   activa: boolean;
   estado: string;
+  tipo?: string | null;
 }
 
 /** Stats agregadas scrapeadas (lottery_stats) para una hora dada. */
@@ -55,6 +58,13 @@ export interface CarteraResult {
     patronesHora: number;
     estrategia: string;
     historicalSorteos?: number;
+    momentum?: {
+      rango: "ALTO" | "BAJO" | null;
+      paridad: "PAR" | "IMPAR" | null;
+      fuerzaRango: number;       // 0-1
+      fuerzaParidad: number;     // 0-1
+      ventana: number;           // sorteos efectivamente usados
+    };
     confidence: {
       topMean: number;       // promedio de score del top 25
       nextMean: number;      // promedio de score de los siguientes 25 (26-50)
@@ -129,19 +139,45 @@ export function buildCartera(
   const pctPares = (pares / tot) * 100;
   const pctImpares = (impares / tot) * 100;
 
-  // Δ desde 50% indica compensación pendiente. Boost lado sub-representado.
-  const deltaAB = pctAltos - pctBajos; // >0 = altos sobre-representados → boost BAJO
-  const deltaPI = pctPares - pctImpares;
-  const boostAB = Math.min(20, Math.abs(deltaAB) * 0.6);
-  const boostPI = Math.min(20, Math.abs(deltaPI) * 0.6);
-  const sideAB = deltaAB > 0 ? "BAJO" : "ALTO";
-  const sidePI = deltaPI > 0 ? "IMPAR" : "PAR";
+  // ─── 2. Momentum (sigue la racha actual, no la compensa) ────
+  // El cliente pidió: si el sorteo viene corriendo BAJO_IMPAR, la cartera
+  // debe seguir pesando BAJO_IMPAR mientras esa racha se mantenga.
+  const VENTANA = 5;
+  const ordered = [...drawsHora].sort((a, b) =>
+    `${b.fecha} ${b.hora}`.localeCompare(`${a.fecha} ${a.hora}`),
+  );
+  const ventana = ordered.slice(0, VENTANA);
+  const ventanaN = ventana.length;
+  let mAlto = 0, mPar = 0;
+  for (const d of ventana) {
+    if (isAlto(d.numero)) mAlto++;
+    if (isPar(d.numero)) mPar++;
+  }
+  const mBajo = ventanaN - mAlto;
+  const mImpar = ventanaN - mPar;
+
+  // Lado dominante de la racha (null si empate)
+  const rangoDom: "ALTO" | "BAJO" | null =
+    mAlto > mBajo ? "ALTO" : mBajo > mAlto ? "BAJO" : null;
+  const paridadDom: "PAR" | "IMPAR" | null =
+    mPar > mImpar ? "PAR" : mImpar > mPar ? "IMPAR" : null;
+
+  // Fuerza 0-1: qué tan marcada viene la racha (3/5 = 0.6, 5/5 = 1.0)
+  const fuerzaRango = ventanaN > 0 ? Math.max(mAlto, mBajo) / ventanaN : 0;
+  const fuerzaParidad = ventanaN > 0 ? Math.max(mPar, mImpar) / ventanaN : 0;
+
+  const boostMomAB = rangoDom ? Math.round(20 * fuerzaRango) : 0;
+  const boostMomPI = paridadDom ? Math.round(20 * fuerzaParidad) : 0;
 
   for (let n = RANGE_MIN; n <= RANGE_MAX; n++) {
     const ab = isAlto(n) ? "ALTO" : "BAJO";
     const pi = isPar(n) ? "PAR" : "IMPAR";
-    if (ab === sideAB && boostAB > 0) addScore(n, Math.round(boostAB), `+balance ${sideAB}`);
-    if (pi === sidePI && boostPI > 0) addScore(n, Math.round(boostPI), `+balance ${sidePI}`);
+    if (rangoDom && ab === rangoDom && boostMomAB > 0) {
+      addScore(n, boostMomAB, `+momentum ${rangoDom} (${Math.max(mAlto, mBajo)}/${ventanaN})`);
+    }
+    if (paridadDom && pi === paridadDom && boostMomPI > 0) {
+      addScore(n, boostMomPI, `+momentum ${paridadDom} (${Math.max(mPar, mImpar)}/${ventanaN})`);
+    }
   }
 
   // ─── 3. Reglas activas ──────────────────────────────────────
@@ -149,7 +185,13 @@ export function buildCartera(
   for (const r of reglasAct) {
     const target = (r.resultado_esperado ?? "").toUpperCase();
     const eff = num(r.efectividad, 50) / 100;
-    const boost = Math.round(15 * Math.max(0.3, eff));
+    // Reglas de compensación pesan menos: el cliente prefiere seguir la racha,
+    // no apostar al opuesto. Detectamos compensación por tipo o por target opuesto al momentum.
+    const isCompensacionByTipo = (r.tipo ?? "").toLowerCase() === "compensacion";
+    const isCompensacionByTarget =
+      !!rangoDom && target.includes(rangoDom === "ALTO" ? "BAJO" : "ALTO");
+    const baseBoost = isCompensacionByTipo || isCompensacionByTarget ? 7 : 15;
+    const boost = Math.round(baseBoost * Math.max(0.3, eff));
     for (let n = RANGE_MIN; n <= RANGE_MAX; n++) {
       if (matchesTarget(n, target)) addScore(n, boost, `+regla ${r.nombre}`);
     }
@@ -163,7 +205,11 @@ export function buildCartera(
     const target = (p.resultado_esperado ?? "").toUpperCase();
     if (!target) continue;
     const eff = num(p.efectividad, 50) / 100;
-    const boost = Math.round(10 * Math.max(0.3, eff));
+    const isCompensacionByTipo = (p.tipo ?? "").toLowerCase() === "compensacion";
+    const isCompensacionByTarget =
+      !!rangoDom && target.includes(rangoDom === "ALTO" ? "BAJO" : "ALTO");
+    const baseBoost = isCompensacionByTipo || isCompensacionByTarget ? 5 : 10;
+    const boost = Math.round(baseBoost * Math.max(0.3, eff));
     for (let n = RANGE_MIN; n <= RANGE_MAX; n++) {
       if (matchesTarget(n, target)) addScore(n, boost, `+patrón ${p.nombre}`);
     }
@@ -240,6 +286,13 @@ export function buildCartera(
       patronesHora: patronesHora.length,
       estrategia: "composite_v1",
       historicalSorteos: historicalStats?.totalSorteos,
+      momentum: {
+        rango: rangoDom,
+        paridad: paridadDom,
+        fuerzaRango: Math.round(fuerzaRango * 100) / 100,
+        fuerzaParidad: Math.round(fuerzaParidad * 100) / 100,
+        ventana: ventanaN,
+      },
       confidence: {
         topMean: Math.round(topMean * 10) / 10,
         nextMean: Math.round(nextMean * 10) / 10,
