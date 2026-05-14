@@ -163,13 +163,21 @@ export function useCarteraStats(dias = 90) {
       // Join cartera_resultados → carteras
       const { data, error } = await supabase
         .from("cartera_resultados")
-        .select("cartera_id, numero_ganador, acierto, evaluated_at, carteras!inner(fecha, hora)")
-        .eq("carteras.estrategia", ADAPTIVE_STRATEGY)
+        .select("cartera_id, numero_ganador, acierto, evaluated_at, carteras!inner(fecha, hora, estrategia)")
         .gte("evaluated_at", since.toISOString())
         .limit(5000);
       if (error) throw error;
 
-      const rows: CarteraStatRow[] = (data ?? []).map((r: any) => ({
+      const byKey = new Map<string, any>();
+      for (const r of data ?? []) {
+        const key = `${r.carteras.fecha}-${r.carteras.hora}`;
+        const current = byKey.get(key);
+        if (!current || r.carteras.estrategia === ADAPTIVE_STRATEGY) {
+          byKey.set(key, r);
+        }
+      }
+
+      const rows: CarteraStatRow[] = Array.from(byKey.values()).map((r: any) => ({
         cartera_id: r.cartera_id,
         fecha: r.carteras.fecha,
         hora: r.carteras.hora,

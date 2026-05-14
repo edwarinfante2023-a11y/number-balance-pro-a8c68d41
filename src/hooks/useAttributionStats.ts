@@ -52,13 +52,20 @@ export function useAttributionStats(dias = 90) {
 
       const { data, error } = await supabase
         .from("cartera_resultados")
-        .select("acierto, numero_ganador, carteras!inner(id, fecha, numeros, contexto)")
-        .eq("carteras.estrategia", ADAPTIVE_STRATEGY)
+        .select("acierto, numero_ganador, carteras!inner(id, fecha, hora, estrategia, numeros, contexto)")
         .gte("evaluated_at", since.toISOString())
         .limit(5000);
       if (error) throw error;
 
-      const rows = (data ?? []) as any[];
+      const byKey = new Map<string, any>();
+      for (const r of data ?? []) {
+        const key = `${r.carteras.fecha}-${r.carteras.hora}`;
+        const current = byKey.get(key);
+        if (!current || r.carteras.estrategia === ADAPTIVE_STRATEGY) {
+          byKey.set(key, r);
+        }
+      }
+      const rows = Array.from(byKey.values());
       const aciertosTocados: Record<SenalKey, number> = { freq: 0, balance: 0, regla: 0, patron: 0 };
       const presencias: Record<SenalKey, number> = { freq: 0, balance: 0, regla: 0, patron: 0 };
       const patronesAciertos = new Map<string, number>();
