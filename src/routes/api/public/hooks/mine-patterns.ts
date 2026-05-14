@@ -27,7 +27,7 @@ interface Discovery {
   hora: string | null;
 }
 
-const MIN_EFECTIVIDAD = 60;
+const MIN_EFECTIVIDAD = 40;
 const MIN_OCURRENCIAS = 20;
 const MAX_PATTERNS_PER_RUN = 15;
 
