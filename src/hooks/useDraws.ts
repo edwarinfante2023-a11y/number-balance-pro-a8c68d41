@@ -69,6 +69,8 @@ export function useCreateDraw() {
       sorteo_id: string;
       fecha: string;
       numero: number;
+      numero_segundo?: number | null;
+      numero_tercero?: number | null;
       observacion?: string | null;
       movimiento?: string | null;
     }) => {
@@ -83,6 +85,10 @@ export function useCreateDraw() {
         origen: "manual",
         observacion: input.observacion ?? null,
         movimiento: input.movimiento ?? null,
+        extra: {
+          segundo: input.numero_segundo ?? null,
+          tercero: input.numero_tercero ?? null,
+        },
       };
       const { data, error } = await supabase.from("draws").insert(payload).select().single();
       if (error) throw error;

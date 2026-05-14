@@ -33,6 +33,8 @@ function Captura() {
   const createDraw = useCreateDraw();
 
   const [numero, setNumero] = useState<string>("");
+  const [numeroSegundo, setNumeroSegundo] = useState<string>("");
+  const [numeroTercero, setNumeroTercero] = useState<string>("");
   const [fecha, setFecha] = useState<string>(todayStr());
   const [loteriaId, setLoteriaId] = useState<string>("");
   const [sorteoId, setSorteoId] = useState<string>("");
@@ -73,10 +75,14 @@ function Captura() {
         sorteo_id: sorteoId,
         fecha,
         numero: n,
+        numero_segundo: numeroSegundo ? parseInt(numeroSegundo) : null,
+        numero_tercero: numeroTercero ? parseInt(numeroTercero) : null,
         observacion: observacion.trim() || undefined,
       });
       toast.success(`Payload insertado: ${n.toString().padStart(2, "0")} (${c?.subcuadrante})`);
       setNumero("");
+      setNumeroSegundo("");
+      setNumeroTercero("");
       setObservacion("");
 
       // Auto focus on number input after success
@@ -120,7 +126,7 @@ function Captura() {
           </div>
 
           <div className="space-y-6 flex-1 relative z-10">
-            <Field label="Target Value (Número)">
+            <Field label="1er Premio (Target Value)">
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <span className="text-primary/70 font-mono text-xl font-bold">{">"}</span>
@@ -138,6 +144,31 @@ function Captura() {
                 />
               </div>
             </Field>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <Field label="2do Premio (Opcional)">
+                <input
+                  type="number"
+                  value={numeroSegundo}
+                  onChange={(e) => setNumeroSegundo(e.target.value)}
+                  min={config.rangeMin}
+                  max={config.rangeMax}
+                  placeholder="XX"
+                  className="w-full h-14 px-5 rounded-[16px] border border-border bg-muted/50 text-[18px] font-bold text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner placeholder:text-muted-foreground/30"
+                />
+              </Field>
+              <Field label="3er Premio (Opcional)">
+                <input
+                  type="number"
+                  value={numeroTercero}
+                  onChange={(e) => setNumeroTercero(e.target.value)}
+                  min={config.rangeMin}
+                  max={config.rangeMax}
+                  placeholder="XX"
+                  className="w-full h-14 px-5 rounded-[16px] border border-border bg-muted/50 text-[18px] font-bold text-foreground tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner placeholder:text-muted-foreground/30"
+                />
+              </Field>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Field label="Timestamp (Fecha)">
