@@ -106,11 +106,53 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-results")({
         }
 
         const aciertos = rows.filter((r) => r.acierto).length;
+
+        // ─── 4. Actualizar efectividad mensual de los patrones ───
+        // Calculamos el mes actual y actualizamos los stats del mes
+        const mesKey = String(new Date().getMonth() + 1).padStart(2, "0");
+        const mesInicio = new Date();
+        mesInicio.setDate(1);
+        mesInicio.setHours(0, 0, 0, 0);
+
+        const { data: allPatterns } = await supabaseAdmin
+          .from("patterns")
+          .select("id, efectividad_mensual, condiciones, resultado_esperado");
+
+        if (allPatterns && allPatterns.length > 0) {
+          // Obtener todos los resultados del mes actual para calcular stats
+          const { data: monthResults } = await supabaseAdmin
+            .from("cartera_resultados")
+            .select("acierto, created_at")
+            .gte("created_at", mesInicio.toISOString());
+
+          if (monthResults && monthResults.length > 0) {
+            const totalMes = monthResults.length;
+            const aciertosMes = monthResults.filter((r: any) => r.acierto).length;
+            const efMes = totalMes > 0 ? Math.round((aciertosMes / totalMes) * 100) : 0;
+
+            for (const pat of allPatterns) {
+              const mensual = ((pat as any).efectividad_mensual ?? {}) as Record<string, any>;
+              mensual[mesKey] = {
+                ocurrencias: totalMes,
+                aciertos: aciertosMes,
+                efectividad: efMes,
+                updatedAt: new Date().toISOString(),
+              };
+
+              await supabaseAdmin
+                .from("patterns")
+                .update({ efectividad_mensual: mensual as any })
+                .eq("id", pat.id);
+            }
+          }
+        }
+
         return Response.json({
           ok: true,
           evaluadas: rows.length,
           aciertos,
           hitRate: rows.length > 0 ? aciertos / rows.length : null,
+          mesActualizado: mesKey,
         });
       },
     },
