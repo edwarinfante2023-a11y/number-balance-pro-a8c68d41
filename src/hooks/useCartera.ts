@@ -4,6 +4,8 @@ import {
   ADAPTIVE_STRATEGY,
   buildCartera,
   computeRollingStats,
+  classifyWeek,
+  godModePredict,
   type CarteraResult,
   type CarteraStatRow,
   type CarteraRule,
@@ -45,11 +47,30 @@ export function useGenerateCartera() {
         sorteo_nombre: r.lottery_draws.nombre,
       }));
 
+      // ─── SISTEMA DUAL AI (Fase 14) ─────────────────────
+      // Evaluar el Radar y el Modo Dios antes de generar la cartera
+      const drawsForDual = draws.map(d => ({
+        numero: d.numero,
+        fecha: d.fecha,
+        hora: d.hora,
+      }));
+      const recentForRadar = draws
+        .filter(d => d.hora === input.hora)
+        .sort((a, b) => `${b.fecha}`.localeCompare(`${a.fecha}`))
+        .slice(0, 5);
+      const weekType = classifyWeek(recentForRadar);
+      const godResult = godModePredict(drawsForDual, input.hora, fecha);
+
       const result: CarteraResult = buildCartera(
         draws,
         (rawRules ?? []) as CarteraRule[],
         (rawPatterns ?? []) as CarteraPattern[],
         input.hora,
+        undefined,
+        {
+          godModeQuadrant: godResult?.quadrant ?? null,
+          weekType,
+        },
       );
 
       // Upsert (idempotente por (fecha, hora, estrategia))

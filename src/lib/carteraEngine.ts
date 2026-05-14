@@ -49,6 +49,10 @@ export interface CarteraBuildOptions {
   allowCompact?: boolean;
   strategy?: typeof ADAPTIVE_STRATEGY;
   momentumMode?: "follow" | "compensate";
+  /** Cuadrante predicho por el Modo Dios (Fase 14). Si se provee, se aplica un boost masivo. */
+  godModeQuadrant?: string | null;
+  /** Clasificación de la semana actual */
+  weekType?: WeekClassification;
 }
 
 export interface CarteraRankedNumber {
@@ -87,6 +91,12 @@ export interface CarteraResult {
       currentRango: string | null;
       currentParidad: string | null;
       bloqueoAplicado: boolean;
+    };
+    dualSystem?: {
+      applied: boolean;
+      motor: "SNIPER" | "GOD_MODE" | "NONE";
+      godModeQuadrant: string | null;
+      weekType: WeekClassification | null;
     };
     confidence: {
       topMean: number;
@@ -466,6 +476,20 @@ export function buildCartera(
     }
   }
 
+  // ─── 6. SISTEMA DUAL AI (Modo Dios / Francotirador) ─────────
+  let dualSystemApplied = false;
+  let dualMotor: "SNIPER" | "GOD_MODE" | "NONE" = "NONE";
+  if (options.godModeQuadrant && CUADRANTES.includes(options.godModeQuadrant)) {
+    // Modo Dios detectó un patrón de 100% de confianza → Boost masivo
+    addScore(options.godModeQuadrant, 80, `+🌌 MODO DIOS (Disparo Quirúrgico)`);
+    dualSystemApplied = true;
+    dualMotor = "GOD_MODE";
+  } else if (options.weekType === "MATH") {
+    // Semana Matemática → el Francotirador confía en los scores normales
+    dualSystemApplied = true;
+    dualMotor = "SNIPER";
+  }
+
   // ─── Selección del Cuadrante Ganador ────────────────────────
   const allQuadrants = Array.from(scores.entries())
     .map(([q, s]) => ({ q, s: Math.max(0, Math.min(100, s)) }))
@@ -537,6 +561,12 @@ export function buildCartera(
         currentRango,
         currentParidad,
         bloqueoAplicado,
+      },
+      dualSystem: {
+        applied: dualSystemApplied,
+        motor: dualMotor,
+        godModeQuadrant: options.godModeQuadrant ?? null,
+        weekType: options.weekType ?? null,
       },
       confidence: {
         topMean: bestQ.s,
