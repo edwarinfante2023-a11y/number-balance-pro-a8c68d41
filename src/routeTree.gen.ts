@@ -33,6 +33,7 @@ import { Route as ApiPublicHooksLearnPatternsRouteImport } from './routes/api/pu
 import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
 import { Route as ApiPublicHooksEvaluateResultsRouteImport } from './routes/api/public/hooks/evaluate-results'
 import { Route as ApiPublicHooksBacktestCarterasRouteImport } from './routes/api/public/hooks/backtest-carteras'
+import { Route as ApiPublicHooksBackfillHistoryRouteImport } from './routes/api/public/hooks/backfill-history'
 
 const SimuladorRoute = SimuladorRouteImport.update({
   id: '/simulador',
@@ -161,6 +162,12 @@ const ApiPublicHooksBacktestCarterasRoute =
     path: '/api/public/hooks/backtest-carteras',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBackfillHistoryRoute =
+  ApiPublicHooksBackfillHistoryRouteImport.update({
+    id: '/api/public/hooks/backfill-history',
+    path: '/api/public/hooks/backfill-history',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/simulador': typeof SimuladorRoute
+  '/api/public/hooks/backfill-history': typeof ApiPublicHooksBackfillHistoryRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
@@ -206,6 +214,7 @@ export interface FileRoutesByTo {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/simulador': typeof SimuladorRoute
+  '/api/public/hooks/backfill-history': typeof ApiPublicHooksBackfillHistoryRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
@@ -233,6 +242,7 @@ export interface FileRoutesById {
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/simulador': typeof SimuladorRoute
+  '/api/public/hooks/backfill-history': typeof ApiPublicHooksBackfillHistoryRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/simulador'
+    | '/api/public/hooks/backfill-history'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/simulador'
+    | '/api/public/hooks/backfill-history'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
@@ -313,6 +325,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reportes'
     | '/simulador'
+    | '/api/public/hooks/backfill-history'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
@@ -340,6 +353,7 @@ export interface RootRouteChildren {
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
   SimuladorRoute: typeof SimuladorRoute
+  ApiPublicHooksBackfillHistoryRoute: typeof ApiPublicHooksBackfillHistoryRoute
   ApiPublicHooksBacktestCarterasRoute: typeof ApiPublicHooksBacktestCarterasRoute
   ApiPublicHooksEvaluateResultsRoute: typeof ApiPublicHooksEvaluateResultsRoute
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
@@ -519,6 +533,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBacktestCarterasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/backfill-history': {
+      id: '/api/public/hooks/backfill-history'
+      path: '/api/public/hooks/backfill-history'
+      fullPath: '/api/public/hooks/backfill-history'
+      preLoaderRoute: typeof ApiPublicHooksBackfillHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -540,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
   SimuladorRoute: SimuladorRoute,
+  ApiPublicHooksBackfillHistoryRoute: ApiPublicHooksBackfillHistoryRoute,
   ApiPublicHooksBacktestCarterasRoute: ApiPublicHooksBacktestCarterasRoute,
   ApiPublicHooksEvaluateResultsRoute: ApiPublicHooksEvaluateResultsRoute,
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
