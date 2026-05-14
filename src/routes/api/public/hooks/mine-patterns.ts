@@ -2,18 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 /**
- * Minería de Datos — Auto-descubrimiento de patrones.
+ * Minería de Datos — Auto-descubrimiento de patrones (Arquitectura Cuadrantes)
  *
- * Escanea toda la historia de sorteos con 5 algoritmos distintos
- * buscando correlaciones estadísticas ocultas.
- *
- * Cuando encuentra una regla con ≥60% de efectividad y ≥20 ocurrencias,
- * la registra como patrón nuevo en estado 'observacion'.
- *
- * Programado: Domingos a las 3:00 AM (después del robot de aprendizaje).
+ * Escanea la historia de sorteos buscando correlaciones estadísticas ocultas
+ * estrictamente enfocadas en transiciones de cuadrantes y bloqueos.
+ * (Ignora predicción de números sueltos para maximizar el hit rate).
  */
 
-// ─── Tipos internos ──────────────────────────────────────────────
 interface MinedDraw {
   numero: number;
   fecha: string;
@@ -32,113 +27,15 @@ interface Discovery {
   hora: string | null;
 }
 
-// ─── Configuración ───────────────────────────────────────────────
 const MIN_EFECTIVIDAD = 60;
 const MIN_OCURRENCIAS = 20;
-const MAX_PATTERNS_PER_RUN = 15; // limitar para no saturar
+const MAX_PATTERNS_PER_RUN = 15;
 
-// ─── Helpers ─────────────────────────────────────────────────────
 const isAlto = (n: number) => n >= 50;
 const isPar = (n: number) => n % 2 === 0;
-const lastDigit = (n: number) => n % 10;
-const cuadrante = (n: number) =>
-  `${isAlto(n) ? "ALTO" : "BAJO"}_${isPar(n) ? "PAR" : "IMPAR"}`;
+const cuadrante = (n: number) => `${isAlto(n) ? "ALTO" : "BAJO"}_${isPar(n) ? "PAR" : "IMPAR"}`;
 
-// ─── ALGORITMO 1: Secuencial ────────────────────────────────────
-// "Después de que sale X, ¿qué número Y tiende a salir en los próximos 3?"
-function mineSequential(draws: MinedDraw[]): Discovery[] {
-  const results: Discovery[] = [];
-  const LOOKAHEAD = 3;
-
-  // Solo analizar los top 30 números más frecuentes para evitar explosión combinatoria
-  const freq = new Map<number, number>();
-  for (const d of draws) freq.set(d.numero, (freq.get(d.numero) ?? 0) + 1);
-  const topNums = [...freq.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 30)
-    .map(([n]) => n);
-
-  for (const trigger of topNums) {
-    const followers = new Map<number, { total: number; hits: number }>();
-
-    for (let i = 0; i < draws.length - LOOKAHEAD; i++) {
-      if (draws[i].numero !== trigger) continue;
-      const nextNums = new Set(
-        draws.slice(i + 1, i + 1 + LOOKAHEAD).map((d) => d.numero),
-      );
-      for (const n of topNums) {
-        if (n === trigger) continue;
-        const entry = followers.get(n) ?? { total: 0, hits: 0 };
-        entry.total++;
-        if (nextNums.has(n)) entry.hits++;
-        followers.set(n, entry);
-      }
-    }
-
-    for (const [follower, stats] of followers) {
-      if (stats.total < MIN_OCURRENCIAS) continue;
-      const ef = Math.round((stats.hits / stats.total) * 100);
-      if (ef >= MIN_EFECTIVIDAD) {
-        results.push({
-          nombre: `Secuencia ${trigger}→${follower}`,
-          descripcion: `Cuando sale el ${trigger}, el ${follower} tiende a aparecer en los siguientes ${LOOKAHEAD} sorteos (${ef}% de ${stats.total} veces).`,
-          tipo: "patron",
-          condiciones: { algorithm: "sequential", trigger, follower, lookahead: LOOKAHEAD },
-          resultado_esperado: String(follower),
-          ocurrencias: stats.total,
-          aciertos: stats.hits,
-          efectividad: ef,
-          hora: null,
-        });
-      }
-    }
-  }
-
-  return results.sort((a, b) => b.efectividad - a.efectividad).slice(0, 5);
-}
-
-// ─── ALGORITMO 2: Último Dígito ─────────────────────────────────
-// "Si el último dígito fue 3, ¿qué dígito tiende a seguir?"
-function mineLastDigit(draws: MinedDraw[]): Discovery[] {
-  const results: Discovery[] = [];
-
-  for (let triggerDigit = 0; triggerDigit <= 9; triggerDigit++) {
-    const followers = new Map<number, { total: number; hits: number }>();
-
-    for (let i = 0; i < draws.length - 1; i++) {
-      if (lastDigit(draws[i].numero) !== triggerDigit) continue;
-      const nextDigit = lastDigit(draws[i + 1].numero);
-      for (let d = 0; d <= 9; d++) {
-        const entry = followers.get(d) ?? { total: 0, hits: 0 };
-        entry.total++;
-        if (nextDigit === d) entry.hits++;
-        followers.set(d, entry);
-      }
-    }
-
-    for (const [followDigit, stats] of followers) {
-      if (stats.total < MIN_OCURRENCIAS) continue;
-      const ef = Math.round((stats.hits / stats.total) * 100);
-      if (ef >= MIN_EFECTIVIDAD) {
-        results.push({
-          nombre: `Eco-Dígito ${triggerDigit}→${followDigit}`,
-          descripcion: `Cuando el número termina en ${triggerDigit}, el siguiente sorteo tiende a terminar en ${followDigit} (${ef}% de ${stats.total} veces).`,
-          tipo: "patron",
-          condiciones: { algorithm: "last_digit", triggerDigit, followDigit },
-          resultado_esperado: `*${followDigit}`,
-          ocurrencias: stats.total,
-          aciertos: stats.hits,
-          efectividad: ef,
-          hora: null,
-        });
-      }
-    }
-  }
-
-  return results.sort((a, b) => b.efectividad - a.efectividad).slice(0, 3);
-}
-
-// ─── ALGORITMO 3: Racha de Cuadrante ────────────────────────────
+// ─── ALGORITMO 1: Racha de Cuadrante (Rebotes) ────────────────────────
 // "Después de N consecutivos ALTO, ¿sale BAJO?"
 function mineQuadrantStreak(draws: MinedDraw[]): Discovery[] {
   const results: Discovery[] = [];
@@ -160,7 +57,6 @@ function mineQuadrantStreak(draws: MinedDraw[]): Discovery[] {
         let hits = 0;
 
         for (let i = streakLen; i < draws.length; i++) {
-          // Verificar si los últimos streakLen sorteos son todos del mismo valor
           let isStreak = true;
           for (let j = 1; j <= streakLen; j++) {
             if (dim.classify(draws[i - j].numero) !== streakValue) {
@@ -196,65 +92,74 @@ function mineQuadrantStreak(draws: MinedDraw[]): Discovery[] {
   return results.sort((a, b) => b.efectividad - a.efectividad).slice(0, 4);
 }
 
-// ─── ALGORITMO 4: Gap (Hueco) ───────────────────────────────────
-// "Cuando el número X lleva N+ sorteos sin salir, ¿aparece pronto?"
-function mineGap(draws: MinedDraw[]): Discovery[] {
+// ─── ALGORITMO 2: Transición de Bloqueos ─────────────────────────────
+// "Cuando se rompe una racha de 3 Altos y sale un Bajo, ¿qué paridad tiene ese Bajo?"
+// El cliente hipotetiza que asume la paridad contraria al último Alto. Vamos a minarlo.
+function mineBlockTransition(draws: MinedDraw[]): Discovery[] {
   const results: Discovery[] = [];
-  const GAP_THRESHOLDS = [10, 15, 20];
-  const LOOKAHEAD = 5;
+  
+  // Buscar bloqueos de Rango
+  let totalBloqueos = 0;
+  let hitsInvertedParity = 0;
+  let hitsSameParity = 0;
 
-  // Solo los 20 números más frecuentes
-  const freq = new Map<number, number>();
-  for (const d of draws) freq.set(d.numero, (freq.get(d.numero) ?? 0) + 1);
-  const topNums = [...freq.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map(([n]) => n);
+  for (let i = 3; i < draws.length; i++) {
+    const d1 = draws[i-3];
+    const d2 = draws[i-2];
+    const d3 = draws[i-1];
+    const target = draws[i];
 
-  for (const num of topNums) {
-    for (const gapThreshold of GAP_THRESHOLDS) {
-      let total = 0;
-      let hits = 0;
+    const r1 = isAlto(d1.numero) ? "ALTO" : "BAJO";
+    const r2 = isAlto(d2.numero) ? "ALTO" : "BAJO";
+    const r3 = isAlto(d3.numero) ? "ALTO" : "BAJO";
+    const rT = isAlto(target.numero) ? "ALTO" : "BAJO";
 
-      // Rastrear el gap actual de este número
-      let currentGap = 0;
-      for (let i = 0; i < draws.length - LOOKAHEAD; i++) {
-        if (draws[i].numero === num) {
-          currentGap = 0;
-        } else {
-          currentGap++;
-        }
-
-        if (currentGap === gapThreshold) {
-          total++;
-          // ¿Aparece en los próximos LOOKAHEAD sorteos?
-          const nextNums = draws.slice(i + 1, i + 1 + LOOKAHEAD).map((d) => d.numero);
-          if (nextNums.includes(num)) hits++;
-        }
-      }
-
-      if (total < MIN_OCURRENCIAS) continue;
-      const ef = Math.round((hits / total) * 100);
-      if (ef >= MIN_EFECTIVIDAD) {
-        results.push({
-          nombre: `Gap Explosivo #${num} (${gapThreshold}+)`,
-          descripcion: `Cuando el ${num} lleva ${gapThreshold}+ sorteos sin salir, tiende a aparecer en los próximos ${LOOKAHEAD} (${ef}% de ${total} veces).`,
-          tipo: "patron",
-          condiciones: { algorithm: "gap", numero: num, gapThreshold, lookahead: LOOKAHEAD },
-          resultado_esperado: String(num),
-          ocurrencias: total,
-          aciertos: hits,
-          efectividad: ef,
-          hora: null,
-        });
-      }
+    // Si hubo una racha de 3 del mismo rango, y el target la rompió
+    if (r1 === r2 && r2 === r3 && rT !== r3) {
+      totalBloqueos++;
+      const lastParity = isPar(d3.numero) ? "PAR" : "IMPAR";
+      const targetParity = isPar(target.numero) ? "PAR" : "IMPAR";
+      
+      if (targetParity !== lastParity) hitsInvertedParity++;
+      else hitsSameParity++;
     }
   }
 
-  return results.sort((a, b) => b.efectividad - a.efectividad).slice(0, 4);
+  if (totalBloqueos >= MIN_OCURRENCIAS) {
+    const efInverted = Math.round((hitsInvertedParity / totalBloqueos) * 100);
+    const efSame = Math.round((hitsSameParity / totalBloqueos) * 100);
+
+    if (efInverted >= MIN_EFECTIVIDAD) {
+      results.push({
+        nombre: `Bloqueo Rango → Paridad Invertida`,
+        descripcion: `Cuando se rompe una racha de Rango, el bloqueo tiende a traer la paridad contraria al último sorteo (${efInverted}% de ${totalBloqueos} bloqueos).`,
+        tipo: "bloqueo",
+        condiciones: { algorithm: "block_transition", type: "inverted_parity" },
+        resultado_esperado: "OPPOSITE_PARITY_BLOCK", // El motor ya maneja la inversión nativamente
+        ocurrencias: totalBloqueos,
+        aciertos: hitsInvertedParity,
+        efectividad: efInverted,
+        hora: null,
+      });
+    } else if (efSame >= MIN_EFECTIVIDAD) {
+      results.push({
+        nombre: `Bloqueo Rango → Paridad Mantenida`,
+        descripcion: `Cuando se rompe una racha de Rango, el bloqueo tiende a mantener la paridad del último sorteo (${efSame}% de ${totalBloqueos} bloqueos).`,
+        tipo: "bloqueo",
+        condiciones: { algorithm: "block_transition", type: "same_parity" },
+        resultado_esperado: "SAME_PARITY_BLOCK",
+        ocurrencias: totalBloqueos,
+        aciertos: hitsSameParity,
+        efectividad: efSame,
+        hora: null,
+      });
+    }
+  }
+
+  return results;
 }
 
-// ─── ALGORITMO 5: Día de Semana + Hora ──────────────────────────
+// ─── ALGORITMO 3: Día de Semana + Hora ──────────────────────────
 // "Los martes a las 14:00, ¿salen más PARES o IMPARES?"
 function mineDayHour(draws: MinedDraw[]): Discovery[] {
   const results: Discovery[] = [];
@@ -270,7 +175,6 @@ function mineDayHour(draws: MinedDraw[]): Discovery[] {
 
       if (matching.length < MIN_OCURRENCIAS) continue;
 
-      // Analizar cuadrantes
       const cuadranteCounts: Record<string, number> = {};
       for (const d of matching) {
         const q = cuadrante(d.numero);
@@ -299,10 +203,8 @@ function mineDayHour(draws: MinedDraw[]): Discovery[] {
   return results.sort((a, b) => b.efectividad - a.efectividad).slice(0, 4);
 }
 
-// ─── ALGORITMO 6: Estacionalidad Mensual ────────────────────────
+// ─── ALGORITMO 4: Estacionalidad Mensual ────────────────────────
 // "¿Hay cuadrantes que dominan solo en ciertos meses del año?"
-// Analiza todos los sorteos agrupados por mes+hora y detecta cuadrantes
-// con efectividad ≥70% solo en un subconjunto de meses.
 function mineSeasonalMonthly(draws: MinedDraw[]): Discovery[] {
   const results: Discovery[] = [];
   const horas = [...new Set(draws.map((d) => d.hora))];
@@ -310,9 +212,8 @@ function mineSeasonalMonthly(draws: MinedDraw[]): Discovery[] {
 
   for (const hora of horas) {
     const drawsHora = draws.filter((d) => d.hora === hora);
-    if (drawsHora.length < 100) continue; // necesitamos suficiente data
+    if (drawsHora.length < 100) continue;
 
-    // Agrupar por mes
     const byMonth = new Map<number, MinedDraw[]>();
     for (const d of drawsHora) {
       const month = parseInt(d.fecha.split("-")[1], 10);
@@ -320,28 +221,23 @@ function mineSeasonalMonthly(draws: MinedDraw[]): Discovery[] {
       byMonth.get(month)!.push(d);
     }
 
-    // Para cada cuadrante, calcular efectividad por mes
     const cuadrantes = ["ALTO_PAR", "ALTO_IMPAR", "BAJO_PAR", "BAJO_IMPAR"];
     for (const q of cuadrantes) {
       const monthlyEf: Array<{ month: number; ef: number; count: number; total: number }> = [];
 
       for (const [month, monthDraws] of byMonth) {
-        if (monthDraws.length < 10) continue; // mínimo por mes
+        if (monthDraws.length < 10) continue;
         const hits = monthDraws.filter((d) => cuadrante(d.numero) === q).length;
         const ef = Math.round((hits / monthDraws.length) * 100);
         monthlyEf.push({ month, ef, count: hits, total: monthDraws.length });
       }
 
-      if (monthlyEf.length < 3) continue; // al menos 3 meses con datos
+      if (monthlyEf.length < 3) continue;
 
-      // Detectar "meses calientes": meses donde este cuadrante domina (≥40%)
-      // vs el promedio global. Nota: con 4 cuadrantes, el baseline es ~25%.
       const avgEf = monthlyEf.reduce((s, m) => s + m.ef, 0) / monthlyEf.length;
       const hotMonths = monthlyEf.filter((m) => m.ef >= 40 && m.ef >= avgEf + 10);
       const coldMonths = monthlyEf.filter((m) => m.ef < avgEf - 5);
 
-      // Solo crear patrón si hay una estacionalidad clara
-      // (algunos meses calientes Y algunos meses fríos)
       if (hotMonths.length >= 2 && coldMonths.length >= 2 && hotMonths.length <= 6) {
         const activeMonthNums = hotMonths.map((m) => m.month).sort((a, b) => a - b);
         const totalOc = hotMonths.reduce((s, m) => s + m.total, 0);
@@ -352,7 +248,7 @@ function mineSeasonalMonthly(draws: MinedDraw[]): Discovery[] {
           const monthLabels = activeMonthNums.map((m) => monthNames[m - 1]).join(", ");
           results.push({
             nombre: `Estacional ${q} ${hora} (${monthLabels})`,
-            descripcion: `El cuadrante ${q} domina a las ${hora} durante ${monthLabels} con ${ef}% de efectividad (${totalOc} sorteos). Fuera de esos meses cae significativamente.`,
+            descripcion: `El cuadrante ${q} domina a las ${hora} durante ${monthLabels} con ${ef}% de efectividad (${totalOc} sorteos). Fuera de esos meses cae.`,
             tipo: "patron",
             condiciones: {
               algorithm: "seasonal_monthly",
@@ -392,7 +288,6 @@ export const Route = createFileRoute("/api/public/hooks/mine-patterns")({
       POST: async () => {
         const startTime = Date.now();
 
-        // 1. Cargar toda la historia de sorteos
         const { data: rawDraws, error: e1 } = await supabaseAdmin
           .from("draws")
           .select("numero, fecha, lottery_draws!inner(hora)")
@@ -417,7 +312,6 @@ export const Route = createFileRoute("/api/public/hooks/mine-patterns")({
           });
         }
 
-        // 2. Cargar patrones existentes para evitar duplicados
         const { data: existingPatterns } = await supabaseAdmin
           .from("patterns")
           .select("condiciones")
@@ -427,22 +321,17 @@ export const Route = createFileRoute("/api/public/hooks/mine-patterns")({
           (existingPatterns ?? []).map((p: any) => JSON.stringify(p.condiciones)),
         );
 
-        // 3. Ejecutar los 5 algoritmos de minería
         const allDiscoveries: Discovery[] = [
-          ...mineSequential(draws),
-          ...mineLastDigit(draws),
           ...mineQuadrantStreak(draws),
-          ...mineGap(draws),
+          ...mineBlockTransition(draws),
           ...mineDayHour(draws),
           ...mineSeasonalMonthly(draws),
         ];
 
-        // 4. Filtrar duplicados y limitar
         const newDiscoveries = allDiscoveries
           .filter((d) => !existingKeys.has(JSON.stringify(d.condiciones)))
           .slice(0, MAX_PATTERNS_PER_RUN);
 
-        // 5. Insertar nuevos patrones descubiertos
         const inserted: string[] = [];
         for (const d of newDiscoveries) {
           const { data: row, error: ie } = await supabaseAdmin
@@ -472,7 +361,6 @@ export const Route = createFileRoute("/api/public/hooks/mine-patterns")({
 
         const elapsedMs = Date.now() - startTime;
 
-        // 6. Guardar log del último mining run
         await supabaseAdmin.from("settings").upsert(
           [
             {

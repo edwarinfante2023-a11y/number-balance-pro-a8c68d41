@@ -139,6 +139,23 @@ export const Route = createFileRoute("/api/public/hooks/audit-rules")({
           const realEf = Math.round((totalHits / totalMatched) * 100);
           const declaredEf = Number(rule.efectividad ?? 0);
           const efDiff = Math.abs(declaredEf - realEf);
+          
+          const isNumberTarget = !isNaN(parseInt(target, 10));
+
+          if (isNumberTarget && rule.activo) {
+            // Advertencia por usar números sueltos en vez de cuadrantes
+            await supabaseAdmin.from("alerts").insert({
+              tipo: "correccion_robot",
+              descripcion: `⚠️ ARQUITECTURA SUBÓPTIMA: La regla "${rule.nombre}" apunta a un número suelto ("${target}"). Se recomienda migrar esta regla a una de Cuadrantes (ej. ALTO_PAR) para reducir el ruido estadístico y subir el Win Rate.`,
+              nivel: "warning" as any,
+              score: 0,
+              fecha: todayStr(),
+              contexto: {
+                rule_id: rule.id,
+                action: "architecture_warning",
+              },
+            });
+          }
 
           if (realEf <= VETO_THRESHOLD && rule.activo) {
             // ─── VETAR: regla perdedora ───────────────────────
@@ -227,7 +244,9 @@ export const Route = createFileRoute("/api/public/hooks/audit-rules")({
               real_ef: realEf,
               total_evaluated: totalMatched,
               total_hits: totalHits,
-              reason: `Efectividad verificada: ${realEf}% (declarada: ${declaredEf}%). Dentro del margen aceptable.`,
+              reason: isNumberTarget 
+                ? `Efectividad ${realEf}%. Advertencia: Regla de número suelto. Sugerido migrar a Cuadrante.`
+                : `Efectividad verificada: ${realEf}% (declarada: ${declaredEf}%). Dentro del margen aceptable.`,
             });
           }
         }
