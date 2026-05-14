@@ -159,8 +159,8 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
             .select(
               "*, lottery_draws!inner(id, hora, nombre, loteria_id, lotteries!inner(id, nombre))",
             )
-            .order("fecha", { ascending: true })
-            .limit(limit),
+            .order("fecha", { ascending: false })
+            .limit(5000),
           supabaseAdmin
             .from("rules")
             .select("id,nombre,resultado_esperado,efectividad,activo,tipo")
@@ -181,20 +181,25 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
           );
         }
 
-        const draws: Draw[] = ((rawDraws ?? []) as unknown as RawDrawRow[]).map((r) => ({
-          ...r,
-          hora: r.lottery_draws.hora,
-          loteria: r.lottery_draws.lotteries.nombre,
-          loteria_id: r.lottery_draws.loteria_id,
-          sorteo_nombre: r.lottery_draws.nombre,
-        }));
+        const allDraws: Draw[] = ((rawDraws ?? []) as unknown as RawDrawRow[])
+          .map((r) => ({
+            ...r,
+            hora: r.lottery_draws.hora,
+            loteria: r.lottery_draws.lotteries.nombre,
+            loteria_id: r.lottery_draws.loteria_id,
+            sorteo_nombre: r.lottery_draws.nombre,
+          }))
+          .reverse(); // Revertir para que queden cronológicos (oldest to newest)
 
         const adaptiveRows: BacktestEval[] = [];
         const standardRows: BacktestEval[] = [];
 
-        for (let i = minTrain; i < draws.length; i++) {
-          const target = draws[i];
-          const train = draws.slice(0, i);
+        // Evaluamos solo los últimos `limit` draws, asegurando que tienen al menos `minTrain` de historia
+        const targetStartIndex = Math.max(minTrain, allDraws.length - limit);
+
+        for (let i = targetStartIndex; i < allDraws.length; i++) {
+          const target = allDraws[i];
+          const train = allDraws.slice(0, i);
           const stats = buildHistoricalStats(train, target.hora, target.fecha);
           if (stats.totalSorteos < Math.min(20, minTrain / 2)) continue;
 
