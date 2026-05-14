@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SimuladorRouteImport } from './routes/simulador'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
@@ -31,6 +32,11 @@ import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api
 import { Route as ApiPublicHooksEvaluateResultsRouteImport } from './routes/api/public/hooks/evaluate-results'
 import { Route as ApiPublicHooksBacktestCarterasRouteImport } from './routes/api/public/hooks/backtest-carteras'
 
+const SimuladorRoute = SimuladorRouteImport.update({
+  id: '/simulador',
+  path: '/simulador',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportesRoute = ReportesRouteImport.update({
   id: '/reportes',
   path: '/reportes',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/simulador': typeof SimuladorRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/simulador': typeof SimuladorRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/simulador': typeof SimuladorRoute
   '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/simulador'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/simulador'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/simulador'
     | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
@@ -301,6 +313,7 @@ export interface RootRouteChildren {
   OportunidadesRoute: typeof OportunidadesRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
+  SimuladorRoute: typeof SimuladorRoute
   ApiPublicHooksBacktestCarterasRoute: typeof ApiPublicHooksBacktestCarterasRoute
   ApiPublicHooksEvaluateResultsRoute: typeof ApiPublicHooksEvaluateResultsRoute
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
@@ -311,6 +324,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/simulador': {
+      id: '/simulador'
+      path: '/simulador'
+      fullPath: '/simulador'
+      preLoaderRoute: typeof SimuladorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reportes': {
       id: '/reportes'
       path: '/reportes'
@@ -477,6 +497,7 @@ const rootRouteChildren: RootRouteChildren = {
   OportunidadesRoute: OportunidadesRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
+  SimuladorRoute: SimuladorRoute,
   ApiPublicHooksBacktestCarterasRoute: ApiPublicHooksBacktestCarterasRoute,
   ApiPublicHooksEvaluateResultsRoute: ApiPublicHooksEvaluateResultsRoute,
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,

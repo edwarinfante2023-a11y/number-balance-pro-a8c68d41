@@ -36,13 +36,13 @@ export type BacktestResult = {
   };
 };
 
-export function useCarteraBacktest(enabled: boolean) {
+export function useCarteraBacktest(enabled: boolean, limit = 600, minTrain = 80, payout = 70) {
   return useQuery({
-    queryKey: ["cartera-backtest", 600, 80, 70],
+    queryKey: ["cartera-backtest", limit, minTrain, payout],
     enabled,
     queryFn: async (): Promise<BacktestResult> => {
       const res = await fetch(
-        "/api/public/hooks/backtest-carteras?limit=600&minTrain=80&payout=70",
+        `https://project--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app/api/public/hooks/backtest-carteras?limit=${limit}&minTrain=${minTrain}&payout=${payout}`,
         {
           method: "POST",
         },
