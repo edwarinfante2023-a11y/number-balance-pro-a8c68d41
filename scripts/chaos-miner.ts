@@ -158,31 +158,31 @@ async function run() {
       const recent = memoryStream.slice(-25);
       
       // -----------------------------------------------------
-      // ALGORITMO 1: Frecuencia Inversa (El Péndulo Largo)
-      // Buscar el cuadrante más frío/atrasado esperando corrección
+      // ALGORITMO 1: Frecuencia Directa (Surfeando la Ola)
+      // Buscar el cuadrante MÁS CALIENTE asumiendo que la lotería está "pegada"
       // -----------------------------------------------------
       const frecs: Record<string, number> = { "ALTO_PAR": 0, "ALTO_IMPAR": 0, "BAJO_PAR": 0, "BAJO_IMPAR": 0 };
       recent.forEach(r => frecs[getCuad(r.numero)]++);
       
-      // Encontrar el cuadrante con la MENOR frecuencia
-      let minCuad = "ALTO_PAR";
-      let minVal = 25;
+      // Encontrar el cuadrante con la MAYOR frecuencia
+      let maxCuad = "ALTO_PAR";
+      let maxVal = 0;
       for (const cuad of CUADRANTES) {
-        if (frecs[cuad] < minVal) {
-          minVal = frecs[cuad];
-          minCuad = cuad;
+        if (frecs[cuad] > maxVal) {
+          maxVal = frecs[cuad];
+          maxCuad = cuad;
         }
       }
 
-      // Si el cuadrante está SEVERAMENTE ATRASADO (Salió 2 veces o menos en 25 sorteos, cuando debería salir 6 veces)
-      if (minVal <= 2) {
+      // Si el cuadrante está EN LLAMAS (Salió 10 veces o más en 25 sorteos)
+      if (maxVal >= 10) {
         jugadasRegresion++;
-        if (getCuad(draw.numero) === minCuad) aciertosRegresion++;
+        if (getCuad(draw.numero) === maxCuad) aciertosRegresion++;
       }
 
       // -----------------------------------------------------
-      // ALGORITMO 2: Saturación de Anomalía Numérica
-      // Si el Rango (ALTO/BAJO) está desbalanceado > 75% en los últimos 15 sorteos
+      // ALGORITMO 2: Inercia de Anomalía (Ir con la Ola)
+      // Si el Rango está desbalanceado > 75%, asumimos que seguirá pegado
       // -----------------------------------------------------
       const hyperRecent = memoryStream.slice(-15);
       let altos = 0;
@@ -193,15 +193,14 @@ async function run() {
       });
 
       let targetAlto = null;
-      if (altos >= 12) targetAlto = false; // Muchos altos, apostamos BAJO
-      else if (altos <= 3) targetAlto = true; // Muchos bajos, apostamos ALTO
+      if (altos >= 11) targetAlto = true; // Muchos altos, surfeamos el ALTO
+      else if (altos <= 4) targetAlto = false; // Muchos bajos, surfeamos el BAJO
 
       let targetPar = null;
-      if (pares >= 12) targetPar = false; // Muchos pares, apostamos IMPAR
-      else if (pares <= 3) targetPar = true; // Muchos impares, apostamos PAR
+      if (pares >= 11) targetPar = true; // Muchos pares, surfeamos el PAR
+      else if (pares <= 4) targetPar = false; // Muchos impares, surfeamos el IMPAR
 
-      // Disparo de Francotirador por Saturación
-      // Si detectamos saturación en AMBOS (Rango y Paridad), apostamos al Cuadrante corrector
+      // Disparo surfeando la ola caótica
       if (targetAlto !== null && targetPar !== null) {
         jugadasSaturacion++;
         const predCuad = `${targetAlto ? "ALTO" : "BAJO"}_${targetPar ? "PAR" : "IMPAR"}`;
@@ -219,27 +218,27 @@ async function run() {
   console.log("💥 REPORTE DE HACKEO DE CAOS 💥");
   console.log("=========================================");
   
-  console.log(`Algoritmo 1: Frecuencia Inversa (Ley de los Atrasos)`);
-  console.log(`Disparó a cuadrantes congelados: ${jugadasRegresion} veces`);
-  console.log(`Aciertos de corrección: ${aciertosRegresion}`);
+  console.log(`Algoritmo 1: Frecuencia Directa (Surfeando la Ola)`);
+  console.log(`Disparó a cuadrantes en llamas: ${jugadasRegresion} veces`);
+  console.log(`Aciertos surfeando: ${aciertosRegresion}`);
   console.log(`🏆 WIN RATE: ${wrRegresion}% \n`);
 
-  console.log(`Algoritmo 2: Saturación de Anomalía Numérica`);
-  console.log(`Disparó en picos de saturación masiva: ${jugadasSaturacion} veces`);
-  console.log(`Aciertos de corrección: ${aciertosSaturacion}`);
+  console.log(`Algoritmo 2: Inercia de Anomalía Numérica`);
+  console.log(`Disparó a favor del pico extremo: ${jugadasSaturacion} veces`);
+  console.log(`Aciertos surfeando: ${aciertosSaturacion}`);
   console.log(`🏆 WIN RATE: ${wrSaturacion}% \n`);
 
   const breakEven = 35.7;
   if (parseFloat(wrRegresion) > breakEven || parseFloat(wrSaturacion) > breakEven) {
     console.log("💡 CONCLUSIÓN DEL CIENTÍFICO DE DATOS:");
-    console.log("EL CAOS HA SIDO MATEMÁTICAMENTE QUEBRADO.");
-    console.log("Incluso cuando la lotería intenta ser 'aleatoria', sus generadores ");
-    console.log("cometen el error de sobre-saturar números y se ven obligados a auto-corregirse.");
-    console.log("Si atacamos los Atrasos Extremos en semanas caóticas, el sistema es RENTABLE.");
+    console.log("¡HAS DOMADO EL CAOS SURFEANDO LA OLA!");
+    console.log("Los generadores se atascan en el mismo número para generar caos, ");
+    console.log("y apostar a favor de la tendencia es matemáticamente rentable.");
   } else {
     console.log("💡 CONCLUSIÓN:");
-    console.log("Durante el Caos, el generador PRNG es altamente letal. La mejor");
-    console.log("estrategia durante estas semanas sigue siendo quedarse en HOLD (No apostar).");
+    console.log("Ni siquiera surfeando la ola logramos vencer al PRNG durante las semanas");
+    console.log("caóticas. La varianza es tan grande que la ola colapsa al momento de apostar.");
+    console.log("El Modo Francotirador (Solo Semanas Puras) se reafirma como la ÚNICA VÍA.");
   }
 }
 
