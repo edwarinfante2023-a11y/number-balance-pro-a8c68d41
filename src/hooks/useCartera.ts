@@ -95,7 +95,18 @@ export function useCarteraDelDia(hora: string | null, fecha?: string) {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      if (data) return data;
+
+      const { data: fallback, error: fallbackError } = await supabase
+        .from("carteras")
+        .select("*")
+        .eq("fecha", f)
+        .eq("hora", hora!)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (fallbackError) throw fallbackError;
+      return fallback;
     },
   });
 }
@@ -108,12 +119,18 @@ export function useCarterasDelDia(fecha?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("carteras")
-        .select("id, fecha, hora, numeros, scores, contexto, created_at, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, acierto_tercero, numero_tercero, evaluated_at )")
+        .select("id, fecha, hora, numeros, scores, contexto, created_at, estrategia, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, numero_tercero, numero_tercero, evaluated_at )")
         .eq("fecha", f)
-        .eq("estrategia", ADAPTIVE_STRATEGY)
         .order("hora", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      const byHour = new Map<string, any>();
+      for (const row of data ?? []) {
+        const current = byHour.get(row.hora);
+        if (!current || row.estrategia === ADAPTIVE_STRATEGY) {
+          byHour.set(row.hora, row);
+        }
+      }
+      return Array.from(byHour.values()).sort((a, b) => a.hora.localeCompare(b.hora));
     },
   });
 }
