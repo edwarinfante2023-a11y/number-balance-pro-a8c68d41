@@ -487,6 +487,10 @@ function CarteraPage() {
                               <CheckCircle2 className="size-3.5" />
                               Acierto{acierto2 ? " + 2da" : ""}{acierto3 ? " + 3ra" : ""}
                             </span>
+                          ) : acierto === false && acierto2 && acierto3 ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
+                              <CheckCircle2 className="size-3.5" /> Acierto 2da + 3ra
+                            </span>
                           ) : acierto === false && acierto2 ? (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
                               <CheckCircle2 className="size-3.5" /> Acierto 2da
