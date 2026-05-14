@@ -197,17 +197,17 @@ serve(async (req: Request) => {
       sorteoMap[row.hora] = row.id;
     }
 
-    // ─── Precargar claves existentes SOLO de hoy para deduplicación ──────
+    // ─── Precargar claves existentes SOLO de hoy para deduplicación y backfill ──────
     const { data: drawsData, error: drawsErr } = await supabase
       .from("draws")
-      .select("fecha, sorteo_id")
+      .select("id, fecha, sorteo_id, extra")
       .eq("fecha", todayISO);
 
     if (drawsErr) throw drawsErr;
 
-    const existingKeys = new Set<string>();
+    const existingDraws = new Map<string, any>();
     for (const row of drawsData ?? []) {
-      existingKeys.add(`${row.fecha}|${row.sorteo_id}`);
+      existingDraws.set(`${row.fecha}|${row.sorteo_id}`, row);
     }
 
     // ─── Procesar cada slot ──────────────────────────────────────────────
@@ -243,11 +243,33 @@ serve(async (req: Request) => {
           continue;
         }
 
-        // ─── Deduplicación ─────────────────────────────────────────────
+        // ─── Deduplicación y Backfill ──────────────────────────────────
         const key = `${todayISO}|${sorteoId}`;
-        if (existingKeys.has(key)) {
-          summary.duplicadasIgnoradas++;
-          summary.detalle.push(`≡ ${slot.label} ${todayISO} ya existe — ignorada`);
+        const existing = existingDraws.get(key);
+
+        if (existing) {
+          const hasExtra = existing.extra && (existing.extra as any).segundo !== undefined && (existing.extra as any).segundo !== null;
+          
+          if (!hasExtra && prizes.segundo !== null) {
+            // Actualizar para inyectar 2da y 3ra
+            const { error: updateErr } = await supabase.from("draws").update({
+              extra: {
+                segundo: prizes.segundo,
+                tercero: prizes.tercero,
+              }
+            }).eq("id", existing.id);
+
+            if (updateErr) {
+              summary.errores++;
+              summary.detalle.push(`✗ Error actualizando ${slot.label} ${todayISO}: ${updateErr.message}`);
+            } else {
+              summary.nuevasInsertadas++; // Lo contamos como "nuevo" para que triggeree el re-evaluate
+              summary.detalle.push(`↻ ${slot.label} ${todayISO} actualizado con 2da y 3ra`);
+            }
+          } else {
+            summary.duplicadasIgnoradas++;
+            summary.detalle.push(`≡ ${slot.label} ${todayISO} ya existe y está completo — ignorada`);
+          }
           continue;
         }
 
@@ -268,7 +290,7 @@ serve(async (req: Request) => {
           summary.detalle.push(`✗ Error insertando ${slot.label} ${todayISO}: ${insertErr.message}`);
         } else {
           summary.nuevasInsertadas++;
-          existingKeys.add(key);
+          existingDraws.set(key, { id: "new", fecha: todayISO, sorteo_id: sorteoId, extra: { segundo: prizes.segundo, tercero: prizes.tercero } });
           summary.detalle.push(`✓ ${slot.label} ${todayISO} → #${numero.toString().padStart(2, "0")}`);
         }
       } catch (err) {
