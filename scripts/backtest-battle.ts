@@ -161,7 +161,7 @@ async function runBacktest() {
     for (const cuad of CUADRANTES) {
       const hits = stats.hits[cuad];
       const ef = Math.round((hits / stats.total) * 100);
-      if (ef >= 38) { // Efectividad letal
+      if (ef >= 42) { // MODO FRANCOTIRADOR BALANCEADO: Diamantes > 42%
         const conds = JSON.parse(key);
         discoveries.push({
           nombre: `D-Miner [${cuad}]`,
@@ -180,8 +180,8 @@ async function runBacktest() {
   }
 
   discoveries.sort((a, b) => b.efectividad - a.efectividad);
-  const patterns = discoveries.slice(0, 50); // Los 50 mejores francotiradores
-  console.log(`IA armó su arsenal con los ${patterns.length} mejores patrones (hasta ${patterns[0].efectividad}% win rate).`);
+  const patterns = discoveries.slice(0, 150); // Los 150 mejores francotiradores para más volumen
+  console.log(`IA armó su arsenal con los ${patterns.length} mejores patrones (efectividad entre ${patterns[patterns.length-1]?.efectividad || 0}% y ${patterns[0]?.efectividad || 0}%).`);
   
   const rules = [];
 

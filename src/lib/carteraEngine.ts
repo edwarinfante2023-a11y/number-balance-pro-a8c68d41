@@ -240,13 +240,36 @@ export function buildCartera(
   }
 
   // ─── 4. Patrones activos para la hora ───────────────────────
-  const patronesHora = patterns.filter(
-    (p) => p.activa && p.estado === "activo" && (!p.hora || p.hora === hora),
-  );
+  const patronesHora = patterns.filter((p) => p.activa && p.estado === "activo" && (!p.hora || p.hora === hora));
+  
   for (const p of patronesHora) {
     const target = (p.resultado_esperado ?? "").toUpperCase();
     if (!target) continue;
-    const eff = num(p.efectividad, 50) / 100;
+
+    // Evaluador Multidimensional (Deep Miner)
+    if (p.condiciones && (p.condiciones as any).algorithm === "deep_miner") {
+      const c = p.condiciones as any;
+      const d = new Date(ordered[0]?.fecha + "T12:00:00");
+      if (!d || isNaN(d.getTime())) continue;
+
+      if (c.dayOfWeek !== "ANY" && d.getDay() !== c.dayOfWeek) continue;
+      if (c.month !== "ANY" && (d.getMonth() + 1) !== c.month) continue;
+      if (c.lastCuadrante !== "ANY" && lastDraw && getQuadrant(lastDraw.numero) !== c.lastCuadrante) continue;
+      
+      // La racha de rango previa evalúa la racha HASTA el último sorteo
+      if (c.prevRachaRango !== "ANY" && streakRango !== c.prevRachaRango) continue;
+      
+      // Si pasa todos los filtros, es un tiro de Francotirador (D-Miner)
+      const ef = num(p.efectividad, 50) / 100;
+      const boost = 50; // Boost MASIVO para forzar la selección de este cuadrante
+      for (const q of CUADRANTES) {
+        if (matchesQuadrant(q, target)) addScore(q, boost, `+D-Miner ${p.nombre}`);
+      }
+      continue; // Ya se evaluó este patrón
+    }
+
+    // Patrones normales (Estacionales, Rebotes, etc)
+    const ef = num(p.efectividad, 50) / 100;
     const boost = Math.round(15 * Math.max(0.3, eff));
     for (const q of CUADRANTES) {
       if (matchesQuadrant(q, target)) addScore(q, boost, `+patrón ${p.nombre}`);
