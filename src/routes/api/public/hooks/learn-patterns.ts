@@ -107,7 +107,7 @@ export const Route = createFileRoute("/api/public/hooks/learn-patterns")({
           ) {
             const { error: ue } = await supabaseAdmin
               .from("patterns")
-              .update({ estado: "activo" })
+              .update({ estado: "activo", activa: true })
               .eq("id", p.id);
             if (!ue) {
               promoted.push(p.id);
@@ -120,7 +120,7 @@ export const Route = createFileRoute("/api/public/hooks/learn-patterns")({
           ) {
             const { error: ue } = await supabaseAdmin
               .from("patterns")
-              .update({ estado: "hibernando" })
+              .update({ estado: "hibernando", activa: false })
               .eq("id", p.id);
             if (!ue) {
               hibernated.push(p.id);
@@ -132,7 +132,7 @@ export const Route = createFileRoute("/api/public/hooks/learn-patterns")({
           ) {
             const { error: ue } = await supabaseAdmin
               .from("patterns")
-              .update({ estado: "activo" })
+              .update({ estado: "activo", activa: true })
               .eq("id", p.id);
             if (!ue) {
               awoken.push(p.id);

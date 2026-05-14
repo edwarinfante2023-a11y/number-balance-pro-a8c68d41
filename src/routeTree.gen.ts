@@ -13,6 +13,7 @@ import { Route as SimuladorRouteImport } from './routes/simulador'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as OportunidadesRouteImport } from './routes/oportunidades'
+import { Route as InteligenciaRouteImport } from './routes/inteligencia'
 import { Route as ImportarRouteImport } from './routes/importar'
 import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as EstadoSyncRouteImport } from './routes/estado-sync'
@@ -27,6 +28,7 @@ import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicHooksSyncLotteryStatsRouteImport } from './routes/api/public/hooks/sync-lottery-stats'
 import { Route as ApiPublicHooksScanOpportunitiesRouteImport } from './routes/api/public/hooks/scan-opportunities'
+import { Route as ApiPublicHooksMinePatternsRouteImport } from './routes/api/public/hooks/mine-patterns'
 import { Route as ApiPublicHooksLearnPatternsRouteImport } from './routes/api/public/hooks/learn-patterns'
 import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
 import { Route as ApiPublicHooksEvaluateResultsRouteImport } from './routes/api/public/hooks/evaluate-results'
@@ -50,6 +52,11 @@ const ReglasRoute = ReglasRouteImport.update({
 const OportunidadesRoute = OportunidadesRouteImport.update({
   id: '/oportunidades',
   path: '/oportunidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InteligenciaRoute = InteligenciaRouteImport.update({
+  id: '/inteligencia',
+  path: '/inteligencia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImportarRoute = ImportarRouteImport.update({
@@ -124,6 +131,12 @@ const ApiPublicHooksScanOpportunitiesRoute =
     path: '/api/public/hooks/scan-opportunities',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksMinePatternsRoute =
+  ApiPublicHooksMinePatternsRouteImport.update({
+    id: '/api/public/hooks/mine-patterns',
+    path: '/api/public/hooks/mine-patterns',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksLearnPatternsRoute =
   ApiPublicHooksLearnPatternsRouteImport.update({
     id: '/api/public/hooks/learn-patterns',
@@ -162,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/estado-sync': typeof EstadoSyncRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
+  '/inteligencia': typeof InteligenciaRoute
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
@@ -170,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
+  '/api/public/hooks/mine-patterns': typeof ApiPublicHooksMinePatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
   '/api/public/hooks/sync-lottery-stats': typeof ApiPublicHooksSyncLotteryStatsRoute
 }
@@ -186,6 +201,7 @@ export interface FileRoutesByTo {
   '/estado-sync': typeof EstadoSyncRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
+  '/inteligencia': typeof InteligenciaRoute
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
@@ -194,6 +210,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
+  '/api/public/hooks/mine-patterns': typeof ApiPublicHooksMinePatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
   '/api/public/hooks/sync-lottery-stats': typeof ApiPublicHooksSyncLotteryStatsRoute
 }
@@ -211,6 +228,7 @@ export interface FileRoutesById {
   '/estado-sync': typeof EstadoSyncRoute
   '/historial': typeof HistorialRoute
   '/importar': typeof ImportarRoute
+  '/inteligencia': typeof InteligenciaRoute
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
@@ -219,6 +237,7 @@ export interface FileRoutesById {
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
+  '/api/public/hooks/mine-patterns': typeof ApiPublicHooksMinePatternsRoute
   '/api/public/hooks/scan-opportunities': typeof ApiPublicHooksScanOpportunitiesRoute
   '/api/public/hooks/sync-lottery-stats': typeof ApiPublicHooksSyncLotteryStatsRoute
 }
@@ -237,6 +256,7 @@ export interface FileRouteTypes {
     | '/estado-sync'
     | '/historial'
     | '/importar'
+    | '/inteligencia'
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
@@ -245,6 +265,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
+    | '/api/public/hooks/mine-patterns'
     | '/api/public/hooks/scan-opportunities'
     | '/api/public/hooks/sync-lottery-stats'
   fileRoutesByTo: FileRoutesByTo
@@ -261,6 +282,7 @@ export interface FileRouteTypes {
     | '/estado-sync'
     | '/historial'
     | '/importar'
+    | '/inteligencia'
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
@@ -269,6 +291,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
+    | '/api/public/hooks/mine-patterns'
     | '/api/public/hooks/scan-opportunities'
     | '/api/public/hooks/sync-lottery-stats'
   id:
@@ -285,6 +308,7 @@ export interface FileRouteTypes {
     | '/estado-sync'
     | '/historial'
     | '/importar'
+    | '/inteligencia'
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
@@ -293,6 +317,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
+    | '/api/public/hooks/mine-patterns'
     | '/api/public/hooks/scan-opportunities'
     | '/api/public/hooks/sync-lottery-stats'
   fileRoutesById: FileRoutesById
@@ -310,6 +335,7 @@ export interface RootRouteChildren {
   EstadoSyncRoute: typeof EstadoSyncRoute
   HistorialRoute: typeof HistorialRoute
   ImportarRoute: typeof ImportarRoute
+  InteligenciaRoute: typeof InteligenciaRoute
   OportunidadesRoute: typeof OportunidadesRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
@@ -318,6 +344,7 @@ export interface RootRouteChildren {
   ApiPublicHooksEvaluateResultsRoute: typeof ApiPublicHooksEvaluateResultsRoute
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
   ApiPublicHooksLearnPatternsRoute: typeof ApiPublicHooksLearnPatternsRoute
+  ApiPublicHooksMinePatternsRoute: typeof ApiPublicHooksMinePatternsRoute
   ApiPublicHooksScanOpportunitiesRoute: typeof ApiPublicHooksScanOpportunitiesRoute
   ApiPublicHooksSyncLotteryStatsRoute: typeof ApiPublicHooksSyncLotteryStatsRoute
 }
@@ -350,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/oportunidades'
       fullPath: '/oportunidades'
       preLoaderRoute: typeof OportunidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inteligencia': {
+      id: '/inteligencia'
+      path: '/inteligencia'
+      fullPath: '/inteligencia'
+      preLoaderRoute: typeof InteligenciaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/importar': {
@@ -450,6 +484,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksScanOpportunitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/mine-patterns': {
+      id: '/api/public/hooks/mine-patterns'
+      path: '/api/public/hooks/mine-patterns'
+      fullPath: '/api/public/hooks/mine-patterns'
+      preLoaderRoute: typeof ApiPublicHooksMinePatternsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/learn-patterns': {
       id: '/api/public/hooks/learn-patterns'
       path: '/api/public/hooks/learn-patterns'
@@ -494,6 +535,7 @@ const rootRouteChildren: RootRouteChildren = {
   EstadoSyncRoute: EstadoSyncRoute,
   HistorialRoute: HistorialRoute,
   ImportarRoute: ImportarRoute,
+  InteligenciaRoute: InteligenciaRoute,
   OportunidadesRoute: OportunidadesRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
@@ -502,6 +544,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksEvaluateResultsRoute: ApiPublicHooksEvaluateResultsRoute,
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
   ApiPublicHooksLearnPatternsRoute: ApiPublicHooksLearnPatternsRoute,
+  ApiPublicHooksMinePatternsRoute: ApiPublicHooksMinePatternsRoute,
   ApiPublicHooksScanOpportunitiesRoute: ApiPublicHooksScanOpportunitiesRoute,
   ApiPublicHooksSyncLotteryStatsRoute: ApiPublicHooksSyncLotteryStatsRoute,
 }
