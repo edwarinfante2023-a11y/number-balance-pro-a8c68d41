@@ -8,6 +8,7 @@ import { useClassificationConfig } from "@/hooks/useSettings";
 import { useLotteries } from "@/hooks/useLotteries";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatDateInTimeZone } from "@/lib/timezone";
 
 export const Route = createFileRoute("/captura")({
   head: () => ({
@@ -23,10 +24,7 @@ export const Route = createFileRoute("/captura")({
 });
 
 function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
+  return formatDateInTimeZone();
 }
 
 function Captura() {

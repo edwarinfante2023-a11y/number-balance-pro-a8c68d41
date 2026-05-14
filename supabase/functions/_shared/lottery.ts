@@ -1,4 +1,5 @@
 // Lógica central de clasificación y datos demo
+import { formatDateInTimeZone, getTimePartsInTimeZone } from "./timezone.ts";
 
 export type AltoBajo = "ALTO" | "BAJO";
 export type ParImpar = "PAR" | "IMPAR";
@@ -116,17 +117,17 @@ export function generateDemoHistory(
   ];
   const out: Sorteo[] = [];
   const today = new Date();
+  const { hour: currentHour } = getTimePartsInTimeZone(today);
 
   for (let d = days - 1; d >= 0; d--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - d);
-    const fecha = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    const date = new Date(today.getTime() - d * 24 * 60 * 60 * 1000);
+    const fecha = formatDateInTimeZone(date);
 
     for (const hora of horas) {
       // Sólo hasta la hora actual si es hoy
       if (d === 0) {
         const [hh] = hora.split(":");
-        if (parseInt(hh) > today.getHours()) continue;
+        if (parseInt(hh) > currentHour) continue;
       }
       for (const loteria of LOTERIAS_DEMO) {
         const numero = Math.floor(rand() * (cfg.rangeMax - cfg.rangeMin + 1)) + cfg.rangeMin;

@@ -43,12 +43,31 @@ export interface CarteraHistoricalStats {
   totalSorteos: number;
 }
 
+export type CarteraMode = "standard_25" | "compact_15";
+export const ADAPTIVE_STRATEGY = "adaptive_v2";
+
+export interface CarteraBuildOptions {
+  allowCompact?: boolean;
+  strategy?: typeof ADAPTIVE_STRATEGY;
+}
+
+export interface CarteraRankedNumber {
+  numero: number;
+  score: number;
+  rank: number;
+  selected: boolean;
+  reasons: string[];
+}
+
 export interface CarteraResult {
-  numeros: number[];                    // 25 elegidos
+  numeros: number[];                    // 25 elegidos, o 15 si hay alta confianza
   scores: Record<string, number>;       // "23" -> 87
   reasons: Record<string, string[]>;    // "23" -> ["+freq hora","+balance BAJO"]
   contexto: {
     hora: string;
+    mode: CarteraMode;
+    selectedSize: number;
+    baselineHitRate: number;
     totalDrawsHora: number;
     pctAltos: number;
     pctBajos: number;
@@ -58,6 +77,21 @@ export interface CarteraResult {
     patronesHora: number;
     estrategia: string;
     historicalSorteos?: number;
+    ranking: CarteraRankedNumber[];
+    compactDecision: {
+      eligible: boolean;
+      reasons: string[];
+      top15Mean: number;
+      next15Mean: number;
+      gap15: number;
+      sampleBase: number;
+    };
+    roiModel: {
+      numerosJugados: number;
+      baselineHitRate: number;
+      costIndex: number;
+      efficiencyIndex: number;
+    };
     momentum?: {
       rango: "ALTO" | "BAJO" | null;
       paridad: "PAR" | "IMPAR" | null;
@@ -98,6 +132,7 @@ export function buildCartera(
   patterns: CarteraPattern[],
   hora: string,
   historicalStats?: CarteraHistoricalStats,
+  options: CarteraBuildOptions = {},
 ): CarteraResult {
   // Pool de números 0-99
   const scores = new Map<number, number>();
@@ -244,19 +279,17 @@ export function buildCartera(
     .map(([n, s]) => ({ n, s: Math.max(0, Math.min(100, s)) }))
     .sort((a, b) => (b.s - a.s) || (a.n - b.n)); // tiebreaker estable
 
-  const top = all.slice(0, SIZE);
-  const numeros = top.map((x) => x.n).sort((a, b) => a - b);
-  const scoresOut: Record<string, number> = {};
-  const reasonsOut: Record<string, string[]> = {};
-  for (const { n, s } of top) {
-    scoresOut[String(n)] = s;
-    reasonsOut[String(n)] = reasons.get(n) ?? [];
-  }
+  const top15Scores = all.slice(0, 15).map((x) => x.s);
+  const next15Scores = all.slice(15, 30).map((x) => x.s);
+  const mean = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+  const top15Mean = mean(top15Scores);
+  const next15Mean = mean(next15Scores);
+  const gap15 = top15Mean - next15Mean;
 
   // ─── Confianza interna (datos crudos para calibrar Fase 2) ──
-  const topScores = top.map((x) => x.s);
+  const top25 = all.slice(0, SIZE);
+  const topScores = top25.map((x) => x.s);
   const nextSlice = all.slice(SIZE, SIZE * 2).map((x) => x.s);
-  const mean = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
   const topMean = mean(topScores);
   const nextMean = mean(nextSlice);
   const gap = topMean - nextMean;
@@ -266,10 +299,46 @@ export function buildCartera(
   const stdevTop = Math.sqrt(variance);
   const spread = topScores.length ? Math.max(...topScores) - Math.min(...topScores) : 0;
   // Heurística provisoria: gap fuerte + topMean alto + sample suficiente.
+  const sampleBase = Math.max(totalHora, historicalStats?.totalSorteos ?? 0);
   const sampleFactor = Math.min(1, totalHora / 50);
   const internalScore = Math.round(
     Math.max(0, Math.min(100, topMean * 0.5 + gap * 1.5 + sampleFactor * 20)),
   );
+
+  const compactDecisionReasons: string[] = [];
+  if (options.allowCompact === false) compactDecisionReasons.push("compact disabled");
+  if (internalScore < 85) compactDecisionReasons.push("internalScore < 85");
+  if (gap15 < 8) compactDecisionReasons.push("top15 gap < 8");
+  if (top15Mean < 70) compactDecisionReasons.push("top15 mean < 70");
+  if (sampleBase < 50) compactDecisionReasons.push("sample < 50");
+
+  const compactEligible =
+    options.allowCompact !== false &&
+    internalScore >= 85 &&
+    gap15 >= 8 &&
+    top15Mean >= 70 &&
+    sampleBase >= 50;
+  if (compactEligible) compactDecisionReasons.push("high confidence compact portfolio");
+
+  const selectedSize = compactEligible ? 15 : SIZE;
+  const mode: CarteraMode = compactEligible ? "compact_15" : "standard_25";
+  const top = all.slice(0, selectedSize);
+  const numeros = top.map((x) => x.n).sort((a, b) => a - b);
+  const scoresOut: Record<string, number> = {};
+  const reasonsOut: Record<string, string[]> = {};
+  for (const { n, s } of top) {
+    scoresOut[String(n)] = s;
+    reasonsOut[String(n)] = reasons.get(n) ?? [];
+  }
+
+  const selectedSet = new Set(top.map((x) => x.n));
+  const ranking: CarteraRankedNumber[] = all.map((x, idx) => ({
+    numero: x.n,
+    score: x.s,
+    rank: idx + 1,
+    selected: selectedSet.has(x.n),
+    reasons: reasons.get(x.n) ?? [],
+  }));
 
   return {
     numeros,
@@ -277,6 +346,9 @@ export function buildCartera(
     reasons: reasonsOut,
     contexto: {
       hora,
+      mode,
+      selectedSize,
+      baselineHitRate: selectedSize / (RANGE_MAX - RANGE_MIN + 1),
       totalDrawsHora: totalHora,
       pctAltos: Math.round(pctAltos * 10) / 10,
       pctBajos: Math.round(pctBajos * 10) / 10,
@@ -284,8 +356,23 @@ export function buildCartera(
       pctImpares: Math.round(pctImpares * 10) / 10,
       reglasActivas: reglasAct.length,
       patronesHora: patronesHora.length,
-      estrategia: "composite_v1",
+      estrategia: options.strategy ?? ADAPTIVE_STRATEGY,
       historicalSorteos: historicalStats?.totalSorteos,
+      ranking,
+      compactDecision: {
+        eligible: compactEligible,
+        reasons: compactDecisionReasons,
+        top15Mean: Math.round(top15Mean * 10) / 10,
+        next15Mean: Math.round(next15Mean * 10) / 10,
+        gap15: Math.round(gap15 * 10) / 10,
+        sampleBase,
+      },
+      roiModel: {
+        numerosJugados: selectedSize,
+        baselineHitRate: selectedSize / (RANGE_MAX - RANGE_MIN + 1),
+        costIndex: selectedSize / SIZE,
+        efficiencyIndex: Math.round((internalScore / selectedSize) * 100) / 100,
+      },
       momentum: {
         rango: rangoDom,
         paridad: paridadDom,
@@ -302,6 +389,53 @@ export function buildCartera(
         internalScore,
       },
     },
+  };
+}
+
+export interface WinnerDiagnostic {
+  numero: number;
+  selected: boolean;
+  rank: number | null;
+  score: number;
+  inTop15: boolean;
+  inTop25: boolean;
+  inTop35: boolean;
+  inTop50: boolean;
+  rango: "ALTO" | "BAJO";
+  paridad: "PAR" | "IMPAR";
+  missType: "hit" | "near_miss" | "deep_miss";
+  reasons: string[];
+}
+
+export function diagnoseWinner(
+  numero: number,
+  cartera: { numeros?: number[] | null; scores?: Record<string, number> | null; contexto?: any },
+): WinnerDiagnostic {
+  const ranking = Array.isArray(cartera.contexto?.ranking)
+    ? (cartera.contexto.ranking as CarteraRankedNumber[])
+    : [];
+  const found = ranking.find((r) => r.numero === numero);
+  const selected = Array.isArray(cartera.numeros)
+    ? cartera.numeros.includes(numero)
+    : !!found?.selected;
+  const rank = found?.rank ?? null;
+  const score = found?.score ?? num(cartera.scores?.[String(numero)], 0);
+  const missType =
+    selected ? "hit" : rank !== null && rank <= 35 ? "near_miss" : "deep_miss";
+
+  return {
+    numero,
+    selected,
+    rank,
+    score,
+    inTop15: rank !== null && rank <= 15,
+    inTop25: rank !== null && rank <= 25,
+    inTop35: rank !== null && rank <= 35,
+    inTop50: rank !== null && rank <= 50,
+    rango: isAlto(numero) ? "ALTO" : "BAJO",
+    paridad: isPar(numero) ? "PAR" : "IMPAR",
+    missType,
+    reasons: found?.reasons ?? [],
   };
 }
 

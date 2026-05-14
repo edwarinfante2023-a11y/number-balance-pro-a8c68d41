@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ADAPTIVE_STRATEGY } from "@/lib/carteraEngine";
 
 export type CarteraEvalRow = {
   cartera_id: string;
@@ -7,6 +8,8 @@ export type CarteraEvalRow = {
   hora: string;
   acierto: boolean | null;
   alert_score: number | null;
+  mode: string | null;
+  selected_size: number;
 };
 
 export type ConfusionMatrix = {
@@ -41,10 +44,11 @@ export function useScoreMetrics(limit = 500) {
       const { data, error } = await supabase
         .from("carteras")
         .select(
-          `id, fecha, hora,
+          `id, fecha, hora, contexto,
            cartera_resultados ( acierto ),
            opportunity_alerts ( internal_score )`,
         )
+        .eq("estrategia", ADAPTIVE_STRATEGY)
         .order("fecha", { ascending: false })
         .limit(limit);
       if (error) throw error;
@@ -61,6 +65,8 @@ export function useScoreMetrics(limit = 500) {
           hora: r.hora,
           acierto: res?.acierto ?? null,
           alert_score: alert?.internal_score ?? null,
+          mode: r.contexto?.mode ?? null,
+          selected_size: Number(r.contexto?.selectedSize ?? 25),
         };
       });
     },

@@ -17,6 +17,7 @@ import { Link } from "@tanstack/react-router";
 import { StatCard } from "@/components/StatCard";
 import { BalanceBar } from "@/components/BalanceBar";
 import { AltoBajoBadge, ParImparBadge, SubcuadranteBadge } from "@/components/ClassificationBadge";
+import { formatDateInTimeZone } from "@/lib/timezone";
 import {
   computeBalance,
   computeRachas,
@@ -107,13 +108,7 @@ function DashboardContent({ sorteos }: { sorteos: Sorteo[] }) {
   const ultimo = ordered[0];
   
   // Forzamos "today" a ser el día actual en la vida real, no de la DB.
-  const today = useMemo(() => {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }, []);
+  const today = useMemo(() => formatDateInTimeZone(), []);
 
   const todaySorteos = useMemo(() => sorteos.filter((s) => s.fecha === today), [sorteos, today]);
   const balance = useMemo(() => computeBalance(sorteos.slice(-20)), [sorteos]);

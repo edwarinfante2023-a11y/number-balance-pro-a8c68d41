@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { APP_TIME_ZONE, formatDateInTimeZone, getTimePartsInTimeZone } from "../_shared/timezone.ts";
 
 // ─── Headers CORS ────────────────────────────────────────────────────────
 const corsHeaders = {
@@ -37,25 +38,7 @@ const SLOTS: SlotConfig[] = [
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 /**
- * Obtener la fecha actual en zona horaria AST/Caribe (UTC-4).
- * Supabase Edge Functions corren en UTC, así que ajustamos manualmente.
- */
-function getNowAST(): Date {
-  const now = new Date();
-  // UTC-4 (AST — Atlantic Standard Time, que es la zona del RSS de enloteria.com)
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000;
-  return new Date(utcMs - 4 * 60 * 60_000);
-}
-
-function formatDateISO(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/**
- * Determina qué slot(s) scrape-ar según la hora actual AST.
+ * Determina qué slot(s) scrape-ar según la hora actual de República Dominicana.
  * 
  * Modo "hora" (default / cron): Solo el slot que acaba de cerrar.
  *   - Si son las 11:05, scrapea el slot de 11am.
@@ -63,9 +46,7 @@ function formatDateISO(d: Date): string {
  *
  * Modo "full": Todos los slots cuya hora ya pasó hoy (para backfill manual).
  */
-function getSlotsToScrape(mode: "hora" | "full", nowAST: Date): SlotConfig[] {
-  const currentHour = nowAST.getHours();
-
+function getSlotsToScrape(mode: "hora" | "full", currentHour: number): SlotConfig[] {
   if (mode === "full") {
     // Solo slots cuya hora ya pasó (no futuras)
     return SLOTS.filter(s => s.hour24 <= currentHour);
@@ -175,15 +156,16 @@ serve(async (req: Request) => {
       // Si no hay body o no es JSON, usamos modo "hora" por defecto
     }
 
-    const nowAST = getNowAST();
-    const todayISO = formatDateISO(nowAST);
-    const currentHourAST = nowAST.getHours();
-    const slotsToScrape = getSlotsToScrape(mode, nowAST);
+    const now = new Date();
+    const todayISO = formatDateInTimeZone(now, APP_TIME_ZONE);
+    const { hour: currentHourAST, minute: currentMinuteAST } = getTimePartsInTimeZone(now, APP_TIME_ZONE);
+    const slotsToScrape = getSlotsToScrape(mode, currentHourAST);
 
     const summary = {
       ok: true,
       mode,
-      horaActualAST: `${String(currentHourAST).padStart(2, "0")}:${String(nowAST.getMinutes()).padStart(2, "0")}`,
+      timeZone: APP_TIME_ZONE,
+      horaActualAST: `${String(currentHourAST).padStart(2, "0")}:${String(currentMinuteAST).padStart(2, "0")}`,
       fechaHoy: todayISO,
       slotsEvaluados: slotsToScrape.map(s => s.slug),
       totalProcesadas: 0,

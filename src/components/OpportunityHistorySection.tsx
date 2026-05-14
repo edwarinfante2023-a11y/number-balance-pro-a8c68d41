@@ -8,6 +8,7 @@ import {
   bucketByScore,
   type OpportunityHistoryRow,
 } from "@/hooks/useOpportunityHistory";
+import { APP_TIME_ZONE, appDateTimeToInstant, dateOnlyToNoonUtc } from "@/lib/timezone";
 
 export function OpportunityHistorySection() {
   const { data: rows = [], isLoading } = useOpportunityHistory(200);
@@ -136,7 +137,8 @@ export function OpportunityHistorySection() {
 }
 
 function HistoryRow({ row }: { row: OpportunityHistoryRow }) {
-  const fecha = new Date(row.fecha + "T00:00:00").toLocaleDateString("es-AR", {
+  const fecha = dateOnlyToNoonUtc(row.fecha).toLocaleDateString("es-DO", {
+    timeZone: APP_TIME_ZONE,
     day: "2-digit",
     month: "short",
   });
@@ -154,7 +156,8 @@ function HistoryRow({ row }: { row: OpportunityHistoryRow }) {
 
   // Hora real de generación de la cartera (timestamp) → HH:mm
   const genTime = row.cartera_created_at
-    ? new Date(row.cartera_created_at).toLocaleTimeString("es-AR", {
+    ? new Date(row.cartera_created_at).toLocaleTimeString("es-DO", {
+        timeZone: APP_TIME_ZONE,
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
@@ -165,9 +168,7 @@ function HistoryRow({ row }: { row: OpportunityHistoryRow }) {
   let leadMin: number | null = null;
   if (row.cartera_created_at && row.hora) {
     const gen = new Date(row.cartera_created_at);
-    const [hh, mm] = row.hora.split(":").map(Number);
-    const draw = new Date(row.fecha + "T00:00:00");
-    draw.setHours(hh ?? 0, mm ?? 0, 0, 0);
+    const draw = appDateTimeToInstant(row.fecha, row.hora);
     leadMin = Math.round((draw.getTime() - gen.getTime()) / 60000);
   }
 

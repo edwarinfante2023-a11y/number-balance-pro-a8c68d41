@@ -24,6 +24,7 @@ import { OpportunityHistorySection } from "@/components/OpportunityHistorySectio
 import { ScoreMetricsSection } from "@/components/ScoreMetricsSection";
 import { CronStatusSection } from "@/components/CronStatusSection";
 import { PatternsLearningSection } from "@/components/PatternsLearningSection";
+import { CarteraBacktestSection } from "@/components/CarteraBacktestSection";
 import {
   buildOpportunityRanking,
   type HourOpportunity,
@@ -225,6 +226,10 @@ function OportunidadesPage() {
       </div>
 
       {/* ─── Métricas avanzadas: precisión, recall, evolución por hora ───── */}
+      <div className="stagger-4 animate-fade-up">
+        <CarteraBacktestSection />
+      </div>
+
       <div className="stagger-4 animate-fade-up">
         <ScoreMetricsSection />
       </div>

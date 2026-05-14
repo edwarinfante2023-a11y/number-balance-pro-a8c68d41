@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { ADAPTIVE_STRATEGY } from "@/lib/carteraEngine";
+import { APP_TIME_ZONE, formatDateInTimeZone, minutesSinceMidnightInTimeZone } from "@/lib/timezone";
 
 /**
  * Cron — busca carteras de hoy cuyo sorteo ocurra en los próximos 25-35 min,
@@ -15,8 +17,8 @@ export const Route = createFileRoute("/api/public/hooks/scan-opportunities")({
     handlers: {
       POST: async () => {
         const now = new Date();
-        const fecha = now.toISOString().slice(0, 10);
-        const minutesNow = now.getHours() * 60 + now.getMinutes();
+        const fecha = formatDateInTimeZone(now, APP_TIME_ZONE);
+        const minutesNow = minutesSinceMidnightInTimeZone(now, APP_TIME_ZONE);
         const lo = minutesNow + LEAD_MIN;
         const hi = minutesNow + LEAD_MAX;
 
@@ -24,6 +26,7 @@ export const Route = createFileRoute("/api/public/hooks/scan-opportunities")({
         const { data: carteras, error: e1 } = await supabaseAdmin
           .from("carteras")
           .select("id, fecha, hora, contexto")
+          .eq("estrategia", ADAPTIVE_STRATEGY)
           .eq("fecha", fecha);
         if (e1) return Response.json({ ok: false, error: e1.message }, { status: 500 });
 

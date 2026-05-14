@@ -7,13 +7,13 @@ import {
   type OpportunityAlertRow,
 } from "@/hooks/useOpportunityAlerts";
 import { cn } from "@/lib/utils";
+import { minutesSinceMidnightInTimeZone } from "@/lib/timezone";
 
 function minutesUntil(hora: string): number {
   const [hh, mm] = hora.split(":").map((v) => parseInt(v, 10));
   if (Number.isNaN(hh) || Number.isNaN(mm)) return 0;
-  const now = new Date();
   const slot = hh * 60 + mm;
-  return slot - (now.getHours() * 60 + now.getMinutes());
+  return slot - minutesSinceMidnightInTimeZone();
 }
 
 export function OpportunityBanner() {

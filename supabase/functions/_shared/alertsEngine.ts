@@ -1,5 +1,6 @@
 import type { HourOpportunity, OpportunityRanking } from "./opportunityEngine.ts";
 import type { AlertInsertExterno as AlertInsert, AlertRowExterno as AlertRow } from "./types.ts";
+import { APP_TIME_ZONE, formatDateInTimeZone } from "./timezone.ts";
 
 export type { AlertInsert, AlertRow };
 
@@ -14,8 +15,8 @@ export interface AlertEngineConfig {
   escalationThreshold: number;
   /** Máximo de escalaciones permitidas por slot/día (default: 2) */
   maxEscalationsPerSlot: number;
-  /** Offset UTC en horas para zona horaria local (default: -4 para AST) */
-  utcOffsetHours: number;
+  /** Zona horaria operativa de la lotería */
+  timeZone: string;
 }
 
 export const DEFAULT_ALERT_CONFIG: AlertEngineConfig = {
@@ -23,7 +24,7 @@ export const DEFAULT_ALERT_CONFIG: AlertEngineConfig = {
   maxAlertsPerRun: 5,
   escalationThreshold: 10,
   maxEscalationsPerSlot: 2,
-  utcOffsetHours: -4, // AST (República Dominicana)
+  timeZone: APP_TIME_ZONE,
 };
 
 // ─── Utilidad de fecha con timezone correcto ─────────────────────────────────
@@ -32,11 +33,8 @@ export const DEFAULT_ALERT_CONFIG: AlertEngineConfig = {
  * Devuelve la fecha local "yyyy-MM-dd" ajustada a la zona horaria configurada.
  * Evita el bug donde UTC devuelve la fecha del día siguiente después de las 8pm AST.
  */
-export function getTodayLocal(utcOffsetHours: number = -4): string {
-  const now = new Date();
-  const localMs = now.getTime() + utcOffsetHours * 60 * 60 * 1000;
-  const local = new Date(localMs);
-  return local.toISOString().slice(0, 10);
+export function getTodayLocal(timeZone: string = APP_TIME_ZONE): string {
+  return formatDateInTimeZone(new Date(), timeZone);
 }
 
 // ─── Generación de alertas ───────────────────────────────────────────────────
@@ -49,7 +47,7 @@ export function generateAlertsFromRanking(
   ranking: OpportunityRanking,
   config: AlertEngineConfig = DEFAULT_ALERT_CONFIG,
 ): AlertInsert[] {
-  const today = getTodayLocal(config.utcOffsetHours);
+  const today = getTodayLocal(config.timeZone);
 
   const candidates = ranking.ranking
     .filter((opp) => opp.nivel === "ALTO" || opp.score >= config.minScore)

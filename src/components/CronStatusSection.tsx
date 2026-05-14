@@ -55,7 +55,7 @@ export function CronStatusSection() {
       }
       toast.success(
         kind === "gen"
-          ? `Generación: ${json.creadas ?? 0} carteras`
+          ? `Generación: ${json.generated?.length ?? json.creadas ?? 0} carteras`
           : `Evaluación: ${json.evaluadas ?? 0} (${json.aciertos ?? 0} aciertos)`,
       );
       qc.invalidateQueries({ queryKey: ["cron_status"] });

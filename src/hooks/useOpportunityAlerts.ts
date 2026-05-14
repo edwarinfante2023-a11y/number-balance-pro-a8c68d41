@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDateInTimeZone } from "@/lib/timezone";
 
 export interface OpportunityAlertRow {
   id: string;
@@ -18,7 +19,7 @@ export interface OpportunityAlertRow {
 /** Trae alertas de oportunidad activas (no descartadas) de hoy. */
 export function useActiveOpportunityAlerts() {
   const qc = useQueryClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = formatDateInTimeZone();
 
   const query = useQuery<OpportunityAlertRow[]>({
     queryKey: ["opportunity-alerts", "active", today],

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ADAPTIVE_STRATEGY,
   buildCartera,
   computeRollingStats,
   type CarteraResult,
@@ -9,13 +10,14 @@ import {
   type CarteraPattern,
 } from "@/lib/carteraEngine";
 import type { Draw } from "@/hooks/useDraws";
+import { daysAgoDateInTimeZone, formatDateInTimeZone } from "@/lib/timezone";
 
 /** Genera y persiste la cartera de la fecha+hora pedida (idempotente por unique). */
 export function useGenerateCartera() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { hora: string; fecha?: string }) => {
-      const fecha = input.fecha ?? new Date().toISOString().slice(0, 10);
+      const fecha = input.fecha ?? formatDateInTimeZone();
 
       // Cargar inputs
       const [{ data: rawDraws, error: e1 }, { data: rawRules, error: e2 }, { data: rawPatterns, error: e3 }] =
@@ -58,9 +60,9 @@ export function useGenerateCartera() {
             fecha,
             hora: input.hora,
             numeros: result.numeros,
-            scores: result.scores,
-            estrategia: result.contexto.estrategia,
-            contexto: { ...result.contexto, reasons: result.reasons },
+            scores: result.scores as any,
+            estrategia: ADAPTIVE_STRATEGY,
+            contexto: JSON.parse(JSON.stringify({ ...result.contexto, reasons: result.reasons })) as any,
           }],
           { onConflict: "fecha,hora,estrategia" },
         )
@@ -78,7 +80,7 @@ export function useGenerateCartera() {
 
 /** Última cartera para una fecha+hora (o null). */
 export function useCarteraDelDia(hora: string | null, fecha?: string) {
-  const f = fecha ?? new Date().toISOString().slice(0, 10);
+  const f = fecha ?? formatDateInTimeZone();
   return useQuery({
     queryKey: ["carteras", f, hora],
     enabled: !!hora,
@@ -88,6 +90,9 @@ export function useCarteraDelDia(hora: string | null, fecha?: string) {
         .select("*")
         .eq("fecha", f)
         .eq("hora", hora!)
+        .eq("estrategia", ADAPTIVE_STRATEGY)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -97,7 +102,7 @@ export function useCarteraDelDia(hora: string | null, fecha?: string) {
 
 /** Todas las carteras de un día (todas las horas). */
 export function useCarterasDelDia(fecha?: string) {
-  const f = fecha ?? new Date().toISOString().slice(0, 10);
+  const f = fecha ?? formatDateInTimeZone();
   return useQuery({
     queryKey: ["carteras-dia", f],
     queryFn: async () => {
@@ -105,6 +110,7 @@ export function useCarterasDelDia(fecha?: string) {
         .from("carteras")
         .select("id, fecha, hora, numeros, scores, contexto, created_at, cartera_resultados ( acierto, numero_ganador, acierto_segundo, numero_segundo, acierto_tercero, numero_tercero, evaluated_at )")
         .eq("fecha", f)
+        .eq("estrategia", ADAPTIVE_STRATEGY)
         .order("hora", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -117,14 +123,14 @@ export function useCarteraStats(dias = 90) {
   return useQuery({
     queryKey: ["cartera-stats", dias],
     queryFn: async () => {
-      const since = new Date();
-      since.setDate(since.getDate() - dias);
-      const sinceStr = since.toISOString().slice(0, 10);
+      const sinceStr = daysAgoDateInTimeZone(dias);
+      const since = new Date(Date.now() - dias * 24 * 60 * 60 * 1000);
 
       // Join cartera_resultados → carteras
       const { data, error } = await supabase
         .from("cartera_resultados")
         .select("cartera_id, numero_ganador, acierto, evaluated_at, carteras!inner(fecha, hora)")
+        .eq("carteras.estrategia", ADAPTIVE_STRATEGY)
         .gte("evaluated_at", since.toISOString())
         .limit(5000);
       if (error) throw error;

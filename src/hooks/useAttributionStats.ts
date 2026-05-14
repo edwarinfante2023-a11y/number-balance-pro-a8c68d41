@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ADAPTIVE_STRATEGY } from "@/lib/carteraEngine";
 
 export type SenalKey = "freq" | "balance" | "regla" | "patron";
 
@@ -52,6 +53,7 @@ export function useAttributionStats(dias = 90) {
       const { data, error } = await supabase
         .from("cartera_resultados")
         .select("acierto, numero_ganador, carteras!inner(id, fecha, numeros, contexto)")
+        .eq("carteras.estrategia", ADAPTIVE_STRATEGY)
         .gte("evaluated_at", since.toISOString())
         .limit(5000);
       if (error) throw error;

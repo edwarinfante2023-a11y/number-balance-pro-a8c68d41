@@ -29,6 +29,7 @@ import { Route as ApiPublicHooksScanOpportunitiesRouteImport } from './routes/ap
 import { Route as ApiPublicHooksLearnPatternsRouteImport } from './routes/api/public/hooks/learn-patterns'
 import { Route as ApiPublicHooksGenerateCarterasRouteImport } from './routes/api/public/hooks/generate-carteras'
 import { Route as ApiPublicHooksEvaluateResultsRouteImport } from './routes/api/public/hooks/evaluate-results'
+import { Route as ApiPublicHooksBacktestCarterasRouteImport } from './routes/api/public/hooks/backtest-carteras'
 
 const ReportesRoute = ReportesRouteImport.update({
   id: '/reportes',
@@ -135,6 +136,12 @@ const ApiPublicHooksEvaluateResultsRoute =
     path: '/api/public/hooks/evaluate-results',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBacktestCarterasRoute =
+  ApiPublicHooksBacktestCarterasRouteImport.update({
+    id: '/api/public/hooks/backtest-carteras',
+    path: '/api/public/hooks/backtest-carteras',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
@@ -197,6 +206,7 @@ export interface FileRoutesById {
   '/oportunidades': typeof OportunidadesRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/api/public/hooks/backtest-carteras': typeof ApiPublicHooksBacktestCarterasRoute
   '/api/public/hooks/evaluate-results': typeof ApiPublicHooksEvaluateResultsRoute
   '/api/public/hooks/generate-carteras': typeof ApiPublicHooksGenerateCarterasRoute
   '/api/public/hooks/learn-patterns': typeof ApiPublicHooksLearnPatternsRoute
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
@@ -265,6 +277,7 @@ export interface FileRouteTypes {
     | '/oportunidades'
     | '/reglas'
     | '/reportes'
+    | '/api/public/hooks/backtest-carteras'
     | '/api/public/hooks/evaluate-results'
     | '/api/public/hooks/generate-carteras'
     | '/api/public/hooks/learn-patterns'
@@ -288,6 +301,7 @@ export interface RootRouteChildren {
   OportunidadesRoute: typeof OportunidadesRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
+  ApiPublicHooksBacktestCarterasRoute: typeof ApiPublicHooksBacktestCarterasRoute
   ApiPublicHooksEvaluateResultsRoute: typeof ApiPublicHooksEvaluateResultsRoute
   ApiPublicHooksGenerateCarterasRoute: typeof ApiPublicHooksGenerateCarterasRoute
   ApiPublicHooksLearnPatternsRoute: typeof ApiPublicHooksLearnPatternsRoute
@@ -437,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksEvaluateResultsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/backtest-carteras': {
+      id: '/api/public/hooks/backtest-carteras'
+      path: '/api/public/hooks/backtest-carteras'
+      fullPath: '/api/public/hooks/backtest-carteras'
+      preLoaderRoute: typeof ApiPublicHooksBacktestCarterasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -456,6 +477,7 @@ const rootRouteChildren: RootRouteChildren = {
   OportunidadesRoute: OportunidadesRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
+  ApiPublicHooksBacktestCarterasRoute: ApiPublicHooksBacktestCarterasRoute,
   ApiPublicHooksEvaluateResultsRoute: ApiPublicHooksEvaluateResultsRoute,
   ApiPublicHooksGenerateCarterasRoute: ApiPublicHooksGenerateCarterasRoute,
   ApiPublicHooksLearnPatternsRoute: ApiPublicHooksLearnPatternsRoute,
@@ -465,3 +487,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

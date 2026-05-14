@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AttributionSection } from "@/components/AttributionSection";
 import { BankrollSimSection } from "@/components/BankrollSimSection";
+import { APP_TIME_ZONE, appDateTimeToInstant, dateOnlyToNoonUtc, formatDateInTimeZone } from "@/lib/timezone";
 
 export const Route = createFileRoute("/cartera")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -51,7 +52,7 @@ function CarteraPage() {
   const [windowDays, setWindowDays] = useState<30 | 60 | 90>(30);
 
   // Fecha para tabla de carteras (winners). Por defecto: hoy.
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = formatDateInTimeZone();
   const [fechaTabla, setFechaTabla] = useState<string>(todayStr);
 
   const generate = useGenerateCartera();
@@ -159,6 +160,7 @@ function CarteraPage() {
               <span className="font-semibold text-foreground">{ctx.totalDrawsHora ?? 0}</span> sorteos en esta hora ·
               ALTO {ctx.pctAltos}% / BAJO {ctx.pctBajos}% · PAR {ctx.pctPares}% / IMPAR {ctx.pctImpares}% ·
               {" "}{ctx.reglasActivas} reglas · {ctx.patronesHora} patrones
+              {ctx.compactDecision ? ` · gap15 ${ctx.compactDecision.gap15}` : ""}
             </div>
           )}
         </div>
@@ -186,18 +188,19 @@ function CarteraPage() {
           <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px]">
             <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-primary/10 text-primary font-bold">
               <Sparkles className="size-3" />
-              Generada {new Date((cartera.data as any).created_at).toLocaleString("es-AR", {
-                day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
+              Generada {new Date((cartera.data as any).created_at).toLocaleString("es-DO", {
+                timeZone: APP_TIME_ZONE, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
               })}
             </span>
             <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-muted text-muted-foreground font-bold">
-              Sorteo {(cartera.data as any).hora} · {new Date((cartera.data as any).fecha + "T00:00:00").toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" })}
+              Sorteo {(cartera.data as any).hora} · {dateOnlyToNoonUtc((cartera.data as any).fecha).toLocaleDateString("es-DO", { timeZone: APP_TIME_ZONE, day: "2-digit", month: "short", year: "numeric" })}
+            </span>
+            <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-700 font-bold">
+              {(cartera.data as any).contexto?.selectedSize ?? numeros.length} números · {(cartera.data as any).contexto?.mode === "compact_15" ? "alta confianza" : "estándar"}
             </span>
             {(() => {
               const created = new Date((cartera.data as any).created_at);
-              const [hh, mm] = String((cartera.data as any).hora).split(":").map(Number);
-              const draw = new Date((cartera.data as any).fecha + "T00:00:00");
-              draw.setHours(hh ?? 0, mm ?? 0, 0, 0);
+              const draw = appDateTimeToInstant((cartera.data as any).fecha, (cartera.data as any).hora);
               const diffMin = Math.round((draw.getTime() - created.getTime()) / 60000);
               if (diffMin >= 0) {
                 return (
@@ -225,8 +228,8 @@ function CarteraPage() {
                   const pad = (n: number) => String(n).padStart(2, "0");
                   const sorted = [...numeros].sort((a, b) => a - b);
                   const altos = sorted.filter((n) => (scoresMap[String(n)] ?? 0) >= 80).map(pad);
-                  const fecha = new Date((cartera.data as any).fecha + "T00:00:00")
-                    .toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
+                  const fecha = dateOnlyToNoonUtc((cartera.data as any).fecha)
+                    .toLocaleDateString("es-DO", { timeZone: APP_TIME_ZONE, day: "2-digit", month: "short" });
                   const filas: string[] = [];
                   for (let i = 0; i < sorted.length; i += 10) {
                     filas.push(sorted.slice(i, i + 10).map(pad).join(" - "));
@@ -473,8 +476,8 @@ function CarteraPage() {
                         </td>
                         <td className="px-3 py-2.5 tabular-nums text-muted-foreground text-[11px]">
                           {c.created_at
-                            ? new Date(c.created_at).toLocaleString("es-AR", {
-                                day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
+                            ? new Date(c.created_at).toLocaleString("es-DO", {
+                                timeZone: APP_TIME_ZONE, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
                               })
                             : "—"}
                         </td>

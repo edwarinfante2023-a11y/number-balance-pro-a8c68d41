@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { ADAPTIVE_STRATEGY, diagnoseWinner } from "@/lib/carteraEngine";
 
 /**
  * Cron hook — evalúa carteras vs draws ganadores de las últimas 48h.
@@ -42,7 +43,8 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-results")({
         // 2. Carteras de esas (fecha, hora) sin resultado aún
         const { data: carteras, error: e2 } = await supabaseAdmin
           .from("carteras")
-          .select("id, fecha, hora, numeros")
+          .select("id, fecha, hora, numeros, scores, contexto")
+          .eq("estrategia", ADAPTIVE_STRATEGY)
           .gte("fecha", since);
         if (e2) {
           return Response.json({ ok: false, error: e2.message }, { status: 500 });
@@ -61,6 +63,11 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-results")({
           const g = ganadores.get(`${c.fecha}|${c.hora}`);
           if (!g) continue;
           const numeros: number[] = Array.isArray(c.numeros) ? c.numeros : [];
+          const diagnostic = diagnoseWinner(g.primero, {
+            numeros,
+            scores: c.scores ?? {},
+            contexto: c.contexto ?? {},
+          });
           rows.push({
             cartera_id: c.id,
             numero_ganador: g.primero,
@@ -70,6 +77,21 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-results")({
             acierto_segundo: g.segundo !== null ? numeros.includes(g.segundo) : null,
             acierto_tercero: g.tercero !== null ? numeros.includes(g.tercero) : null,
           });
+          await supabaseAdmin
+            .from("carteras")
+            .update({
+              contexto: JSON.parse(JSON.stringify({
+                ...((c.contexto ?? {}) as Record<string, unknown>),
+                lastEvaluation: {
+                  evaluatedAt: new Date().toISOString(),
+                  primero: g.primero,
+                  segundo: g.segundo,
+                  tercero: g.tercero,
+                  diagnostic,
+                },
+              })) as any,
+            })
+            .eq("id", c.id);
         }
 
         if (rows.length === 0) {

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ADAPTIVE_STRATEGY } from "@/lib/carteraEngine";
 
 export interface BankrollConfig {
   fondoInicial: number;
@@ -14,6 +15,7 @@ export interface BankrollConfig {
 export interface SimRow {
   fecha: string;
   hora: string;
+  selectedSize: number;
   internalScore: number;
   acierto: boolean;
   acierto2: boolean;
@@ -115,12 +117,12 @@ export function useBankrollSim(cfg: BankrollConfig, dias = 90) {
       const { data, error } = await supabase
         .from("cartera_resultados")
         .select("acierto, acierto_segundo, acierto_tercero, evaluated_at, carteras!inner(fecha, hora, contexto)")
+        .eq("carteras.estrategia", ADAPTIVE_STRATEGY)
         .gte("evaluated_at", since.toISOString())
         .order("evaluated_at", { ascending: true })
         .limit(5000);
       if (error) throw error;
 
-      const costo = cfg.numerosPorCartera * cfg.apuestaPorNumero;
       const premio = cfg.apuestaPorNumero * cfg.pago;
       const premio2 = cfg.apuestaPorNumero * (cfg.pago2 ?? 0);
       const premio3 = cfg.apuestaPorNumero * (cfg.pago3 ?? 0);
@@ -129,10 +131,13 @@ export function useBankrollSim(cfg: BankrollConfig, dias = 90) {
         const a1 = !!r.acierto;
         const a2 = !!r.acierto_segundo;
         const a3 = !!r.acierto_tercero;
+        const selectedSize = Number(r.carteras?.contexto?.selectedSize ?? cfg.numerosPorCartera);
+        const costo = selectedSize * cfg.apuestaPorNumero;
         const cobro = (a1 ? premio : 0) + (a2 ? premio2 : 0) + (a3 ? premio3 : 0);
         return {
           fecha: r.carteras.fecha,
           hora: r.carteras.hora,
+          selectedSize,
           internalScore: Number(r.carteras?.contexto?.confidence?.internalScore ?? 0),
           acierto: a1,
           acierto2: a2,

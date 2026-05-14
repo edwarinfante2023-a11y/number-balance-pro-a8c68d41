@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
+  ADAPTIVE_STRATEGY,
   buildCartera,
   type CarteraPattern,
   type CarteraRule,
   type CarteraHistoricalStats,
 } from "@/lib/carteraEngine";
 import type { Draw } from "@/hooks/useDraws";
+import { APP_TIME_ZONE, formatDateInTimeZone } from "@/lib/timezone";
 
 /**
  * Cron hook — genera/upserta carteras para todas las horas activas del día.
@@ -17,12 +19,12 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const fecha = new Date().toISOString().slice(0, 10);
         const url = new URL(request.url);
         const force = url.searchParams.get("force") === "true";
-        const tz = url.searchParams.get("tz") ?? "America/Santo_Domingo";
+        const tz = url.searchParams.get("tz") ?? APP_TIME_ZONE;
+        const fecha = formatDateInTimeZone(new Date(), tz);
 
-        // Hora actual "HH:mm" en la zona de las loterías (default Colombia).
+        // Hora actual "HH:mm" en la zona de las loterías.
         const ahora = new Intl.DateTimeFormat("en-GB", {
           timeZone: tz,
           hour: "2-digit",
@@ -108,15 +110,16 @@ export const Route = createFileRoute("/api/public/hooks/generate-carteras")({
               (rawPatterns ?? []) as CarteraPattern[],
               hora,
               statsByHora.get(hora),
+              { strategy: ADAPTIVE_STRATEGY },
             );
             const { error } = await supabaseAdmin.from("carteras").upsert(
               [{
                 fecha,
                 hora,
                 numeros: r.numeros,
-                scores: r.scores,
-                estrategia: r.contexto.estrategia,
-                contexto: { ...r.contexto, reasons: r.reasons },
+                scores: r.scores as any,
+                estrategia: ADAPTIVE_STRATEGY,
+                contexto: JSON.parse(JSON.stringify({ ...r.contexto, reasons: r.reasons })) as any,
               }],
               { onConflict: "fecha,hora,estrategia" },
             );

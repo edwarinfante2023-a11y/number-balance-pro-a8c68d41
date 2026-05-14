@@ -8,6 +8,7 @@ import {
   sendPushToAll,
   type PushSubscriptionRecord,
 } from "../_shared/webPush.ts";
+import { formatDateInTimeZone } from "../_shared/timezone.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,7 +51,7 @@ Deno.serve(async (req) => {
     // Mejor oportunidad como mensaje principal; las otras se mencionan en body.
     const top = alerts.reduce((a, b) => (a.internal_score > b.internal_score ? a : b));
     const extra = alerts.length > 1 ? ` (+${alerts.length - 1} más)` : "";
-    const today = new Date().toISOString().slice(0, 10);
+    const today = formatDateInTimeZone();
 
     const result = await sendPushToAll(subs as PushSubscriptionRecord[], {
       title: `🔥 Oportunidad ${top.hora}`,
