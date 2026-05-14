@@ -89,7 +89,7 @@ async function runInfiniteLoop() {
   console.log("Entrando en bucle de aprendizaje profundo...\n");
 
   let depth = 1;
-  const targetWinRate = 45.0; // Rentabilidad pura
+  const targetWinRate = 80.0; // ¡ROMPIENDO LA SIGUIENTE PARED! (Modo Dios Supremo)
   let currentWinRate = 0;
 
   while (true) {
