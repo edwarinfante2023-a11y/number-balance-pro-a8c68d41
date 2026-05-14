@@ -48,6 +48,7 @@ const NAV: NavItem[] = [
   { to: "/equilibrio", label: "Equilibrio", icon: Scale, section: "MENU" },
   { to: "/cartera", label: "Cartera 25 (MVP)", icon: Briefcase, section: "MENU" },
   { to: "/simulador", label: "Simulador", icon: Activity, section: "MENU" },
+  { to: "/inteligencia", label: "Inteligencia IA", icon: ShieldAlert, section: "MENU" },
   { to: "/comparativa", label: "Manual vs Real", icon: FileBarChart, section: "MENU" },
   { to: "/reglas", label: "Reglas Lógicas", icon: ScrollText, section: "MENU" },
   { to: "/importar", label: "Ingestión de Datos", icon: FileSpreadsheet, section: "DATA" },
