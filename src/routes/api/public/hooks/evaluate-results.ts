@@ -44,7 +44,6 @@ export const Route = createFileRoute("/api/public/hooks/evaluate-results")({
         const { data: carteras, error: e2 } = await supabaseAdmin
           .from("carteras")
           .select("id, fecha, hora, numeros, scores, contexto")
-          .eq("estrategia", ADAPTIVE_STRATEGY)
           .gte("fecha", since);
         if (e2) {
           return Response.json({ ok: false, error: e2.message }, { status: 500 });
