@@ -161,12 +161,16 @@ async function run() {
       month: d.getMonth() + 1,
       dayOfWeek: d.getDay(),
       rachaRango: 1,
-      lastCuadrante: null as string | null
+      lastCuadrante: null as string | null,
+      secondLastCuadrante: null as string | null
     };
     const arr = drawsByHora[hora];
     if (arr.length > 0) {
       const last = arr[arr.length - 1];
       ctx.lastCuadrante = last.cuadrante;
+      if (arr.length > 1) {
+        ctx.secondLastCuadrante = arr[arr.length - 2].cuadrante;
+      }
       if (isAlto(last.numero) === isAlto(ctx.numero)) ctx.rachaRango = last.rachaRango + 1;
     }
     arr.push(ctx);
@@ -184,21 +188,24 @@ async function run() {
         for (const m of [current.month, "ANY"]) {
           for (const lc of [prev.cuadrante, "ANY"]) {
             for (const rr of [prev.rachaRango, "ANY"]) {
-              let specs = 0;
-              if (d !== "ANY") specs++;
-              if (m !== "ANY") specs++;
-              if (lc !== "ANY") specs++;
-              if (rr !== "ANY") specs++;
-              if (specs < 1) continue;
+              for (const slc of [current.secondLastCuadrante, "ANY"]) {
+                let specs = 0;
+                if (d !== "ANY") specs++;
+                if (m !== "ANY") specs++;
+                if (lc !== "ANY") specs++;
+                if (rr !== "ANY") specs++;
+                if (slc !== "ANY") specs++;
+                if (specs < 2) continue; // Exigimos más profundidad (mínimo 2 filtros)
 
-              const key = JSON.stringify({ hora, dayOfWeek: d, month: m, lastCuadrante: lc, prevRachaRango: rr });
-              let entry = combinations.get(key);
-              if (!entry) {
-                entry = { total: 0, hits: { ALTO_PAR: 0, ALTO_IMPAR: 0, BAJO_PAR: 0, BAJO_IMPAR: 0 } };
-                combinations.set(key, entry);
+                const key = JSON.stringify({ hora, dayOfWeek: d, month: m, lastCuadrante: lc, prevRachaRango: rr, secondLastCuadrante: slc });
+                let entry = combinations.get(key);
+                if (!entry) {
+                  entry = { total: 0, hits: { ALTO_PAR: 0, ALTO_IMPAR: 0, BAJO_PAR: 0, BAJO_IMPAR: 0 } };
+                  combinations.set(key, entry);
+                }
+                entry.total++;
+                entry.hits[current.cuadrante]++;
               }
-              entry.total++;
-              entry.hits[current.cuadrante]++;
             }
           }
         }
@@ -212,17 +219,18 @@ async function run() {
   const monthNames = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
   for (const [key, stats] of combinations.entries()) {
-    if (stats.total < 10) continue; // Mínimo de veces en semanas puras
+    if (stats.total < 5) continue; // Reducimos muestra para encontrar diamantes súper profundos de 80%
     for (const cuad of CUADRANTES) {
       const hits = stats.hits[cuad];
       const ef = Math.round((hits / stats.total) * 100);
       
-      if (ef >= 60) { // MARGEN DE FRANCOTIRADOR EXTREMO (Win Rate > 60%)
+      if (ef >= 80) { // MARGEN DIOS (Win Rate >= 80%)
         const conds = JSON.parse(key);
         let descParts = [];
         if (conds.dayOfWeek !== "ANY") descParts.push(`los ${dayNames[conds.dayOfWeek]}`);
         if (conds.month !== "ANY") descParts.push(`en ${monthNames[conds.month]}`);
-        if (conds.lastCuadrante !== "ANY") descParts.push(`tras salir ${conds.lastCuadrante}`);
+        if (conds.secondLastCuadrante !== "ANY") descParts.push(`si hace 2 sorteos salió ${conds.secondLastCuadrante}`);
+        if (conds.lastCuadrante !== "ANY") descParts.push(`y luego salió ${conds.lastCuadrante}`);
         if (conds.prevRachaRango !== "ANY") descParts.push(`con racha de ${conds.prevRachaRango}`);
         
         discoveries.push({
@@ -251,7 +259,7 @@ async function run() {
   });
   
   if (top10.length === 0) {
-    console.log("No se encontraron patrones de margen extremo (>60%) en la muestra pura.");
+    console.log("No se encontraron patrones de nivel DIOS (>80%) en la muestra pura.");
   }
 }
 
