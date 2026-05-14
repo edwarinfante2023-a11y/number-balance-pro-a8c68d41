@@ -98,8 +98,9 @@ export function useCreateDraw() {
       qc.invalidateQueries({ queryKey: ["draws"] });
       // Forzar evaluación de cartera al insertar manualmente
       try {
-        await fetch("/api/public/hooks/evaluate-results", { method: "POST" });
-        qc.invalidateQueries({ queryKey: ["carteras"] });
+        await fetch("https://project--eaae42aa-34c4-457c-a07c-36f8131c182e.lovable.app/api/public/hooks/evaluate-results", { method: "POST" });
+        qc.invalidateQueries({ queryKey: ["carterasDelDia"] });
+        qc.invalidateQueries({ queryKey: ["draws"] });
       } catch (e) {
         console.error("Error triggering evaluation:", e);
       }
