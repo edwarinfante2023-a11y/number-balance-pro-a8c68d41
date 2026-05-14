@@ -348,7 +348,7 @@ function SimCard({
       {porDia.length > 0 && (
         <div className="mb-3 p-3 rounded-xl bg-background/60 border border-border">
           <div className="font-bold text-[10px] uppercase text-muted-foreground mb-2">
-            Aciertos por día ({fmt(sim.aciertos + sim.aciertos2 + sim.aciertos3)} de {fmt(sim.jugadas)} en total · 1ra: {fmt(sim.aciertos)}, 2da: {fmt(sim.aciertos2)}, 3ra: {fmt(sim.aciertos3)}) — toca un día para ver sus jugadas
+            Aciertos por día ({fmt(sim.aciertos)} de {fmt(sim.jugadas)} en 1ra{sim.aciertos2 > 0 || sim.aciertos3 > 0 ? ` · +${fmt(sim.aciertos2)} en 2da · +${fmt(sim.aciertos3)} en 3ra` : ""}) — toca un día para ver sus jugadas
           </div>
           <div className="space-y-1.5">
             {porDia.map((d) => {
@@ -375,9 +375,15 @@ function SimCard({
                       style={{ width: `${Math.min(100, pct)}%` }}
                     />
                   </div>
-                  <span className="font-mono font-semibold w-24 text-right shrink-0">
-                    <span className="text-emerald-600">{d.totalAciertos} ✓</span>
+                  <span className="font-mono font-semibold text-right shrink-0">
+                    <span className="text-emerald-600">{d.aciertos} ✓</span>
                     <span className="text-muted-foreground"> de {d.jugadas}</span>
+                    {(d.aciertos2 > 0 || d.aciertos3 > 0) && (
+                      <span className="text-amber-600 text-[9px] ml-1">
+                        {d.aciertos2 > 0 ? `+${d.aciertos2}(2da)` : ""}
+                        {d.aciertos3 > 0 ? `+${d.aciertos3}(3ra)` : ""}
+                      </span>
+                    )}
                   </span>
                   <span className={`text-[10px] shrink-0 ${activo ? "text-primary font-bold" : "text-muted-foreground/60"}`}>
                     {activo ? "✕" : "›"}
