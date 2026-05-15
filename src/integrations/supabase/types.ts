@@ -429,6 +429,7 @@ export type Database = {
           created_at: string
           descripcion: string
           efectividad: number
+          efectividad_mensual: Json
           estado: string
           hora: string | null
           id: string
@@ -448,6 +449,7 @@ export type Database = {
           created_at?: string
           descripcion: string
           efectividad?: number
+          efectividad_mensual?: Json
           estado?: string
           hora?: string | null
           id?: string
@@ -467,6 +469,7 @@ export type Database = {
           created_at?: string
           descripcion?: string
           efectividad?: number
+          efectividad_mensual?: Json
           estado?: string
           hora?: string | null
           id?: string
