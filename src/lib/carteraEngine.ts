@@ -456,7 +456,7 @@ export function buildCartera(
 
     // Patrones normales (Estacionales, Rebotes, etc)
     const ef = num(p.efectividad, 50) / 100;
-    const boost = Math.round(15 * Math.max(0.3, eff));
+    const boost = Math.round(15 * Math.max(0.3, ef));
     for (const q of CUADRANTES) {
       if (matchesQuadrant(q, target)) addScore(q, boost, `+patrón ${p.nombre}`);
     }
