@@ -33,6 +33,7 @@ export interface CarteraPattern {
   activa: boolean;
   estado: string;
   tipo?: string | null;
+  condiciones?: Record<string, unknown> | null;
 }
 
 /** Stats agregadas scrapeadas (lottery_stats) para una hora dada. */
