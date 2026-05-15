@@ -10,7 +10,7 @@ import {
 } from "@/lib/carteraEngine";
 import type { Draw } from "@/hooks/useDraws";
 
-type StrategyKey = "standard_25" | "adaptive_v2";
+type StrategyKey = "standard_25" | "adaptive_v2" | "adaptive_compensation";
 
 type BacktestEval = {
   fecha: string;
