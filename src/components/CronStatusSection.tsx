@@ -39,14 +39,16 @@ function formatRelative(min: number | null): string {
 export function CronStatusSection() {
   const { data, isLoading, refetch } = useCronStatus();
   const qc = useQueryClient();
-  const [running, setRunning] = useState<null | "gen" | "eval">(null);
+  const [running, setRunning] = useState<null | "gen" | "eval" | "force_gen">(null);
 
-  const triggerEndpoint = async (kind: "gen" | "eval") => {
+  const triggerEndpoint = async (kind: "gen" | "eval" | "force_gen") => {
     setRunning(kind);
     try {
       const url =
         kind === "gen"
           ? "/api/public/hooks/generate-carteras"
+          : kind === "force_gen"
+          ? "/api/public/hooks/generate-carteras?force=true"
           : "/api/public/hooks/evaluate-results";
       const res = await fetch(url, { method: "POST" });
       const json = await res.json().catch(() => ({}));
@@ -54,13 +56,16 @@ export function CronStatusSection() {
         throw new Error(json.error ?? `HTTP ${res.status}`);
       }
       toast.success(
-        kind === "gen"
+        kind === "gen" || kind === "force_gen"
           ? `Generación: ${json.generated?.length ?? json.creadas ?? 0} carteras`
           : `Evaluación: ${json.evaluadas ?? 0} (${json.aciertos ?? 0} aciertos)`,
       );
       qc.invalidateQueries({ queryKey: ["cron_status"] });
       qc.invalidateQueries({ queryKey: ["opportunity_history"] });
       qc.invalidateQueries({ queryKey: ["score_metrics"] });
+      qc.invalidateQueries({ queryKey: ["carteras"] });
+      qc.invalidateQueries({ queryKey: ["cartera-stats"] });
+      qc.invalidateQueries({ queryKey: ["carteras-dia"] });
       refetch();
     } catch (err: any) {
       toast.error(err?.message ?? "Error ejecutando cron");
@@ -148,6 +153,19 @@ export function CronStatusSection() {
           running={running === "eval"}
           onRun={() => triggerEndpoint("eval")}
         />
+      </div>
+
+      {/* Botón de Regeneración Forzada */}
+      <div className="flex justify-end pt-2">
+        <button
+          type="button"
+          onClick={() => triggerEndpoint("force_gen")}
+          disabled={running !== null}
+          className="flex items-center gap-2 px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-[14px] text-[13px] font-bold shadow-sm shadow-rose-500/20 transition disabled:opacity-50"
+        >
+          {running === "force_gen" ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+          Regenerar TODO el día (Fuerza Bruta)
+        </button>
       </div>
 
       {/* Hint */}
