@@ -45,7 +45,7 @@ export interface CarteraHistoricalStats {
 }
 
 export type CarteraMode = "standard_25" | "compact_15";
-export const ADAPTIVE_STRATEGY = "adaptive_v2";
+export const ADAPTIVE_STRATEGY = "composite_v1";
 
 export interface CarteraBuildOptions {
   allowCompact?: boolean;
