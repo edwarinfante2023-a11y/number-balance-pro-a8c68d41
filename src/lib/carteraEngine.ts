@@ -121,6 +121,9 @@ const SIZE = 25;
 
 function isAlto(n: number) { return n >= ALTO_THRESHOLD; }
 function isPar(n: number) { return n % 2 === 0; }
+function getQuadrant(n: number): string {
+  return `${isAlto(n) ? "ALTO" : "BAJO"}_${isPar(n) ? "PAR" : "IMPAR"}`;
+}
 
 function num(v: unknown, fallback = 0): number {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
