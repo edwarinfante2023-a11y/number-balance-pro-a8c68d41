@@ -45,7 +45,7 @@ export interface CarteraHistoricalStats {
 }
 
 export type CarteraMode = "standard_25" | "compact_15";
-export const ADAPTIVE_STRATEGY = "adaptive_v2";
+export const ADAPTIVE_STRATEGY = "composite_v1";
 
 export interface CarteraBuildOptions {
   allowCompact?: boolean;
@@ -121,6 +121,9 @@ const SIZE = 25;
 
 function isAlto(n: number) { return n >= ALTO_THRESHOLD; }
 function isPar(n: number) { return n % 2 === 0; }
+function getQuadrant(n: number): string {
+  return `${isAlto(n) ? "ALTO" : "BAJO"}_${isPar(n) ? "PAR" : "IMPAR"}`;
+}
 
 function num(v: unknown, fallback = 0): number {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
