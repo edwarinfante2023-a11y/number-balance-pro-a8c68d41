@@ -210,7 +210,7 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
             (rawPatterns ?? []) as CarteraPattern[],
             target.hora,
             stats,
-            { allowCompact: true, momentumMode: "follow" },
+            { allowCompact: true },
           );
           const compensation = buildCartera(
             train,
@@ -218,7 +218,7 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
             (rawPatterns ?? []) as CarteraPattern[],
             target.hora,
             stats,
-            { allowCompact: true, momentumMode: "compensate" },
+            { allowCompact: true },
           );
           const standard = buildCartera(
             train,
@@ -226,7 +226,7 @@ export const Route = createFileRoute("/api/public/hooks/backtest-carteras")({
             (rawPatterns ?? []) as CarteraPattern[],
             target.hora,
             stats,
-            { allowCompact: false, momentumMode: "follow" },
+            { allowCompact: false },
           );
 
           adaptiveRows.push(evaluateStrategy("adaptive_v2", adaptive, target, payoutPerHit));
