@@ -431,7 +431,6 @@ function CarteraPage() {
                     const score = conf.internalScore ?? 0;
                     return { c, conf, score };
                   })
-                  .sort((a, b) => b.score - a.score)
                   .map(({ c, conf, score }) => {
                     const tier = score >= 70 ? "alta" : score >= 50 ? "media" : "baja";
                     const res = Array.isArray(c.cartera_resultados) ? c.cartera_resultados[0] : c.cartera_resultados;
