@@ -160,7 +160,7 @@ export function useCarterasDelDia(fecha?: string) {
           byHour.set(row.hora, row);
         }
       }
-      return Array.from(byHour.values()).sort((a, b) => a.hora.localeCompare(b.hora));
+      return Array.from(byHour.values()).sort((a, b) => b.hora.localeCompare(a.hora));
     },
   });
 }
