@@ -424,6 +424,8 @@ function CarteraPage() {
               </thead>
               <tbody>
                 {carterasHoy.data
+                  .slice()
+                  .sort((a: any, b: any) => String(a.hora).localeCompare(String(b.hora)))
                   .map((c: any) => {
                     const conf = (c.contexto?.confidence ?? {}) as {
                       internalScore?: number; topMean?: number; gap?: number;
